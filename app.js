@@ -71,8 +71,8 @@
   function legacyVoteCodeToRating(code) { return TVTIME_LEGACY_RATING_MAP[String(code || '').trim()] || 0; }
 
   const DEFAULT_PROFILES = [
-    { id: 'profile-1', name: 'Profilo 1', initial: '1', role: 'owner', avatarType: 'emoji', avatarValue: '1', pinHash: null, pinSalt: null },
-    { id: 'profile-2', name: 'Profilo 2', initial: '2', role: 'member', avatarType: 'emoji', avatarValue: '2', pinHash: null, pinSalt: null }
+    { id: 'profile-daniela', name: 'Daniela', initial: 'D', role: 'owner', avatarType: 'emoji', avatarValue: '🎬', pinHash: null, pinSalt: null },
+    { id: 'profile-elena', name: 'Elena', initial: 'E', role: 'member', avatarType: 'emoji', avatarValue: '📚', pinHash: null, pinSalt: null }
   ];
 
   const DEFAULT_CINEMAS = Object.freeze([
@@ -3473,7 +3473,7 @@
       state.db=await openDB();
       // Completa i campi dei profili creati con versioni precedenti.
       state.profiles=state.profiles.map((p,i)=>Object.assign({role:i===0?'owner':'member',avatarType:'emoji',avatarValue:i===0?'🎬':'📚',pinHash:null,pinSalt:null},p));
-      if(!state.profiles.some(p=>p.id==='profile-2') && !storedProfiles) state.profiles=structuredClone(DEFAULT_PROFILES);
+      if(!state.profiles.some(p=>p.name==='Elena') && !storedProfiles) state.profiles=structuredClone(DEFAULT_PROFILES);
       saveProfiles();bindShellEvents();
       if('serviceWorker'in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
       if(!WatchverseAuth.readAccount()){showSetupScreen();return;}
