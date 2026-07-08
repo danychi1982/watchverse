@@ -1,0 +1,16 @@
+const fs = require('fs');
+const path = require('path');
+const assert = require('assert');
+const app = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
+assert(app.includes("const APP_VERSION = '2.0.27'"), 'Versione 2.0.21 non impostata');
+assert(app.includes('function renderEmptyLibraryHome()'), 'Onboarding libreria vuota mancante');
+assert(app.includes('id="emptyHomeImport"'), 'Pulsante import Home mancante');
+assert(app.includes('id="emptyHomeDrop"'), 'Dropzone Home mancante');
+assert(app.includes("if (libraryIsEmpty()) { renderEmptyLibraryHome(); return; }"), 'Rilevamento libreria vuota mancante');
+const activate = app.match(/async function activateProfile\(id\) \{[\s\S]*?\n  \}/)?.[0] || '';
+assert(!activate.includes('seedDemo('), 'Il profilo non deve più creare automaticamente dati demo');
+assert(activate.includes('state.settings.demoSeeded'), 'Manca la pulizia delle demo delle versioni precedenti');
+assert(!app.includes('id="resetDemo"'), 'Il comando Ricrea demo non deve essere esposto');
+assert(!app.includes('function demoSeries()'), 'I dati demo non devono essere inclusi nella versione pulita');
+assert(!app.includes('function seedDemo('), 'Il generatore demo non deve essere incluso nella versione pulita');
+console.log('✓ Libreria pulita e onboarding import dalla Home');

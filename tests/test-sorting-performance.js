@@ -1,0 +1,24 @@
+const fs = require('fs');
+const path = require('path');
+const assert = require('assert');
+const app = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
+assert(app.includes("seriesFilter: 'unwatched', movieFilter: 'watched'"), 'Filtri predefiniti non corretti');
+assert(app.includes("seriesSort: 'latestEpisode', movieSort: 'recent'"), 'Ordinamenti predefiniti non corretti');
+assert(app.includes("state.seriesSort=e.target.value"), 'Il cambio ordinamento serie non aggiorna lo stato');
+assert(app.includes("state.movieSort=e.target.value"), 'Il cambio ordinamento film non aggiorna lo stato');
+assert(app.includes('function rebuildIndexes()'), 'Indice progressi mancante');
+assert(app.includes('state.indexes.progressByEpisode.get'), 'Ricerca progressi indicizzata mancante');
+assert(app.includes('items.slice(0, state.seriesVisible)'), 'Paginazione serie mancante');
+assert(app.includes('items.slice(0,state.movieVisible)'), 'Paginazione film mancante');
+assert(app.includes('queuePublicMetadata'), 'Aggiornamento metadati pubblico mancante');
+assert(app.includes('libraryUiVersion = 205'), 'Migrazione valori predefiniti per profili esistenti mancante');
+assert(app.includes('watchedMinutesBySeries'), 'Indice minuti per serie mancante');
+assert(app.includes('watchedProgressCount'), 'Conteggio episodi indicizzato mancante');
+console.log('✓ Ordinamenti, valori predefiniti e ottimizzazioni principali');
+
+assert(app.includes("['favorite','Preferite'],['all','Tutte']"), 'Tutte deve essere ultimo tra i filtri serie');
+assert(app.includes("['favorite','Preferiti'],['all','Tutti']"), 'Tutti deve essere ultimo tra i filtri film');
+assert(!app.includes("['paused','In pausa']"), 'Il filtro In pausa deve essere rimosso');
+assert(!app.includes("['dropped','Abbandonate']"), 'Il filtro Abbandonate deve essere rimosso');
+assert(app.includes('function scheduleBackgroundMetadataSync('), 'Aggiornamento metadati in background mancante');
+assert(app.includes('matchesMediaSearch(item, query)'), 'Ricerca bilingue titolo/originale mancante');

@@ -1,0 +1,13 @@
+const fs = require('fs');
+const path = require('path');
+const assert = require('assert');
+const app = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
+const meta = fs.readFileSync(path.join(__dirname, '..', 'public-metadata.js'), 'utf8');
+const css = fs.readFileSync(path.join(__dirname, '..', 'styles.css'), 'utf8');
+assert(app.includes('async function updateAutomaticItalySchedule'), 'Risoluzione automatica palinsesto Italia mancante');
+assert(meta.includes('async function lookupItalySchedule'), 'Provider palinsesto Italia mancante');
+assert(app.includes('originalLine') && app.includes('italyLine'), 'Notifiche multilinea USA/Italia mancanti');
+assert(meta.includes('async function lookupPerson'), 'Scheda persona pubblica mancante');
+assert(app.includes('data-person-filter="movie"') && app.includes('data-person-filter="tv"'), 'Filtri filmografia mancanti');
+assert(css.includes('.detail-banner') && !css.includes('.detail-bg-img {'), 'Banner dettaglio non confinato');
+console.log('✓ Palinsesti Italia, notifiche, persone e banner confinato');

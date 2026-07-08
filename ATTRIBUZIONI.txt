@@ -1,0 +1,32 @@
+Watchverse è un progetto originale di tracker privato familiare.
+
+FONTI PUBBLICHE ATTIVE SENZA CHIAVE
+- TVmaze: ricerca e metadati di serie, episodi, cast e immagini.
+  Licenza dati: Creative Commons Attribution-ShareAlike (CC BY-SA).
+  Sito e API: https://www.tvmaze.com / https://api.tvmaze.com
+- Wikipedia in italiano e in inglese: titoli localizzati, descrizioni e immagini disponibili nelle relative voci. La versione italiana ha priorità; l’inglese viene usato come fallback.
+- Wikidata: identificativi strutturati e cast.
+- Wikimedia Commons: immagini libere quando disponibili.
+  Le singole risorse possono avere licenze e attribuzioni specifiche indicate nelle rispettive pagine.
+
+FONTI PUBBLICHE LOCALI SENZA CHIAVE
+- YouTube: ricerca pubblica filtrata del trailer, tramite avvia_server.py. Il risultato è indicato come ufficiale solo quando i metadati e il canale lo supportano.
+- Siti ufficiali delle sale configurate: programmazione cinema per il titolo, tramite avvia_server.py. Watchverse mostra esclusivamente gli orari trovati nella pagina ufficiale.
+
+INTEGRAZIONE FACOLTATIVA
+- TMDB: metadati e immagini aggiuntivi, previa configurazione di una credenziale API protetta.
+- JustWatch tramite TMDB: disponibilità streaming, noleggio e acquisto; i cataloghi possono cambiare o risultare incompleti.
+
+Watchverse non è affiliata a TV Time, Trakt, TVmaze, Wikimedia Foundation, TMDB o JustWatch.
+Il pacchetto condivisibile non contiene dati personali estratti dal file GDPR dell’utente.
+
+COMPONENTE TECNICO INCLUSO
+- Pako Inflate, libreria JavaScript per decompressione DEFLATE/ZIP.
+- Licenza MIT, copyright 2014-2017 Vitaly Puzrin e Andrei Tuputcyn.
+- Testo completo della licenza: PAKO_LICENSE.txt.
+
+GRAFICA TEMATICA
+- Sfondo, icone e loader dei temi The Last of Us e Buffy: illustrazioni originali di Watchverse.
+- Logo verticale “The Last of Us” nel tema omonimo: ricavato dal logo della serie indicato su Wikimedia Commons come text-logo di pubblico dominio; il marchio può comunque essere soggetto a tutele distintive.
+  Fonte informativa: https://commons.wikimedia.org/wiki/File:The_Last_of_Us_TV_logo.svg
+- Il pacchetto non include poster o fotogrammi delle opere.

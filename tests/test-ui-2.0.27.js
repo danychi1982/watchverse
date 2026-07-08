@@ -1,0 +1,14 @@
+const fs=require('fs');
+const assert=require('assert');
+const app=fs.readFileSync('app.js','utf8');
+const css=fs.readFileSync('styles.css','utf8');
+const sw=fs.readFileSync('sw.js','utf8');
+assert(app.includes("const APP_VERSION = '2.0.27'"));
+assert(css.includes('last-of-us-proposal-3-wallpaper.jpg'));
+assert(css.includes('min-width:286px'));
+assert(css.includes('display:block!important'));
+assert(css.includes('grid-template-columns:repeat(5,minmax(0,1fr))'));
+assert(app.includes('castHtml(item.cast,10)'));
+for(const name of ['tlou-cordyceps.svg','tlou-firefly.svg','tlou-backpack.svg','tlou-tattoo.svg','tlou-flashlight.svg']) assert(fs.existsSync(`assets/themes/${name}`));
+assert(sw.includes('tlou-backpack.svg')&&sw.includes('tlou-flashlight.svg'));
+console.log('✓ Watchverse 2.0.27: proposta 3, contrasto e cast 5×2 verificati');

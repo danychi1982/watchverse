@@ -1,0 +1,12 @@
+const fs=require('fs');
+const assert=require('assert');
+const app=fs.readFileSync('app.js','utf8');
+assert(app.includes('const coveragePercent = totalTitles ?'), 'Manca il calcolo della copertura effettiva');
+assert(app.includes('const cyclePercent = batchCompleted ? 100'), 'Manca lo stato separato del ciclo di aggiornamento');
+assert(app.includes('Copertura effettiva dei metadati'), 'La copertura non è presentata come dato principale coerente');
+assert(app.includes('Titoli da verificare'), 'Gli elementi non risolti non sono indicati separatamente');
+assert(app.includes('Errori tecnici'), 'Gli errori tecnici non sono distinti dai titoli incompleti');
+assert(app.includes('function scheduleMetadataRecoveryPass()'), 'Manca il recupero automatico dei metadati falliti');
+assert(app.includes("queuePublicMetadata('series', failedSeries, { force: true"), 'Manca il retry automatico delle serie');
+assert(app.includes("queuePublicMetadata('movie', failedMovies, { force: true"), 'Manca il retry automatico dei film');
+console.log('✓ ciclo e copertura metadati separati e coerenti');
