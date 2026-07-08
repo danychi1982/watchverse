@@ -47,7 +47,7 @@ npm run serve
 
 `npm test` esegue la suite gia presente in `tests/run-tests.sh`.
 
-`npm run serve` avvia il server locale Python e apre l'app all'indirizzo indicato dal terminale.
+`npm run serve` avvia il server locale Python tramite il launcher Node cross-platform e apre l'app all'indirizzo indicato dal terminale.
 
 ## Build
 
@@ -73,4 +73,3 @@ Le regole di sicurezza HTTP e il fallback SPA sono definite in `netlify.toml`.
 ## Note su segreti e credenziali
 
 Il repository non deve contenere credenziali private. Eventuali chiavi TMDB/Supabase devono essere configurate tramite ambiente o proxy sicuri, non dentro i sorgenti versionati.
-
