@@ -13,5 +13,5 @@
 - sincronizzazione incrementale IndexedDB ↔ Supabase per film, serie e 15.000+ episodi;
 - risoluzione dei conflitti tra telefono e PC;
 - salvataggio cloud di avatar e impostazioni;
-- inviti familiari e trasferimento futuro del profilo Profilo 2 a un account autonomo;
+- inviti familiari e trasferimento futuro del profilo Elena a un account autonomo;
 - notifiche push a browser chiuso e controllo giornaliero delle uscite.

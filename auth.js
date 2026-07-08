@@ -28,7 +28,7 @@
     const local = readLocalAccount();
     if (local) return local;
     if (cloudConfigured()) return {
-      username: String(config.accountUsername || 'utente').toLowerCase(),
+      username: String(config.accountUsername || '').toLowerCase(),
       email: String(config.recoveryEmail || '').toLowerCase(),
       cloud: true
     };
@@ -169,7 +169,7 @@
   root.WatchverseAuth = {
     readAccount, setup, signIn, signOut, getSession, restoreSession, verifyPassword, changePassword, localReset,
     sendRecoveryEmail, cloudConfigured, defaults: {
-      username: config.accountUsername || 'utente',
+      username: config.accountUsername || '',
       email: config.recoveryEmail || ''
     }
   };
