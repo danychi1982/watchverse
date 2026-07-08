@@ -75,6 +75,11 @@ function writeBuildInfo() {
   );
 }
 
+function writePagesFiles() {
+  fs.writeFileSync(path.join(dist, ".nojekyll"), "", "utf8");
+  fs.copyFileSync(path.join(dist, "index.html"), path.join(dist, "404.html"));
+}
+
 function readVersion() {
   const versionFile = path.join(root, "VERSION.txt");
   if (!fs.existsSync(versionFile)) {
@@ -91,5 +96,6 @@ for (const entry of entries) {
 }
 
 writeBuildInfo();
+writePagesFiles();
 
 console.log(`Build completata in ${path.relative(root, dist)}`);
