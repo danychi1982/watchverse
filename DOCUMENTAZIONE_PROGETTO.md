@@ -70,6 +70,13 @@ Il deploy Netlify usa:
 
 Le regole di sicurezza HTTP e il fallback SPA sono definite in `netlify.toml`.
 
+Il deploy GitHub Pages e gestito da `.github/workflows/deploy-pages.yml`.
+
+- trigger automatico: ogni push su `main`
+- trigger manuale: `workflow_dispatch`
+- build: `npm run build`
+- artifact pubblicato: `dist`
+
 ## Note su segreti e credenziali
 
 Il repository non deve contenere credenziali private. Eventuali chiavi TMDB/Supabase devono essere configurate tramite ambiente o proxy sicuri, non dentro i sorgenti versionati.
