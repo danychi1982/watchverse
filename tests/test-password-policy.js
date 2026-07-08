@@ -40,14 +40,14 @@ vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'auth.js'), 'utf8'), 
 (async () => {
   let fiveRejected = false;
   try {
-    await window.WatchverseAuth.setup({ username: 'daniela', email: 'd@example.com', password: 'abcde' });
+    await window.WatchverseAuth.setup({ username: 'utente', email: 'u@example.com', password: 'abcde' });
   } catch (error) {
     fiveRejected = /almeno 6/.test(error.message);
   }
   if (!fiveRejected) throw new Error('Una password di 5 caratteri deve essere rifiutata.');
 
-  await window.WatchverseAuth.setup({ username: 'daniela', email: 'd@example.com', password: 'abcdef' });
-  await window.WatchverseAuth.signIn('daniela', 'abcdef', true);
+  await window.WatchverseAuth.setup({ username: 'utente', email: 'u@example.com', password: 'abcdef' });
+  await window.WatchverseAuth.signIn('utente', 'abcdef', true);
   if (!window.WatchverseAuth.getSession()) throw new Error('Una password di 6 caratteri deve essere accettata.');
 
   console.log('✓ Password: minimo 6 caratteri, senza altri vincoli');

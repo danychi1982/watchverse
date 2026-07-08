@@ -6,7 +6,7 @@ Questa cartella contiene lo schema e il proxy TMDB necessari per la futura modal
 
 1. Crea un progetto Supabase.
 2. In **SQL Editor**, esegui `schema.sql`.
-3. In **Authentication → Users**, crea manualmente l'utente proprietario con l'email `daniela.chiumarulo@gmail.com` e una password nuova e robusta.
+3. In **Authentication → Users**, crea manualmente l'utente proprietario con l'email scelta per l'account e una password nuova e robusta.
 4. In **Authentication → URL Configuration**, imposta l'indirizzo HTTPS definitivo di Watchverse come `Site URL` e tra i redirect consentiti.
 5. Disattiva le registrazioni pubbliche se l'app deve restare familiare.
 

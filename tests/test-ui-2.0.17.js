@@ -8,7 +8,7 @@ assert(html.includes('id="sidebarToggle"'));
 assert(html.includes('class="topbar-brand"'));
 assert(html.includes('id="sidebarProfileButton"'));
 assert(!html.includes('id="profileShortcut"'));
-assert(html.includes('© <span id="footerYear"></span> Daniela'));
+assert(html.includes('© <span id="footerYear"></span> Profilo 1'));
 assert(html.includes('id="aivengersButton"'));
 assert(app.includes('Ciao, sono il tuo assistente <strong>AIvengers</strong>. Come posso aiutarti?'));
 assert(app.includes("{ id:'stats', label:'Statistiche'"));
