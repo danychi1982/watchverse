@@ -75,6 +75,24 @@
     { id: 'profile-elena', name: 'Elena', initial: 'E', role: 'member', avatarType: 'emoji', avatarValue: '📚', pinHash: null, pinSalt: null }
   ];
 
+  const EMPTY_HOME_SERIES = [
+    { seedId:'stranger-things', kind:'tv', publicProvider:'tvmaze', id:'stranger-things', title:'Stranger Things', year:2016 },
+    { seedId:'breaking-bad', kind:'tv', publicProvider:'tvmaze', id:'breaking-bad', title:'Breaking Bad', year:2008 },
+    { seedId:'game-of-thrones', kind:'tv', publicProvider:'tvmaze', id:'game-of-thrones', title:'Game of Thrones', year:2011 },
+    { seedId:'the-last-of-us', kind:'tv', publicProvider:'tvmaze', id:'the-last-of-us', title:'The Last of Us', year:2023 },
+    { seedId:'the-bear', kind:'tv', publicProvider:'tvmaze', id:'the-bear', title:'The Bear', year:2022 },
+    { seedId:'the-boys', kind:'tv', publicProvider:'tvmaze', id:'the-boys', title:'The Boys', year:2019 },
+    { seedId:'house-of-the-dragon', kind:'tv', publicProvider:'tvmaze', id:'house-of-the-dragon', title:'House of the Dragon', year:2022 },
+    { seedId:'the-mandalorian', kind:'tv', publicProvider:'tvmaze', id:'the-mandalorian', title:'The Mandalorian', year:2019 },
+    { seedId:'the-crown', kind:'tv', publicProvider:'tvmaze', id:'the-crown', title:'The Crown', year:2016 },
+    { seedId:'friends', kind:'tv', publicProvider:'tvmaze', id:'friends', title:'Friends', year:1994 },
+    { seedId:'the-office', kind:'tv', publicProvider:'tvmaze', id:'the-office', title:'The Office', year:2005 },
+    { seedId:'greys-anatomy', kind:'tv', publicProvider:'tvmaze', id:'greys-anatomy', title:"Grey's Anatomy", year:2005 },
+    { seedId:'the-walking-dead', kind:'tv', publicProvider:'tvmaze', id:'the-walking-dead', title:'The Walking Dead', year:2010 },
+    { seedId:'dark', kind:'tv', publicProvider:'tvmaze', id:'dark', title:'Dark', year:2017 },
+    { seedId:'squid-game', kind:'tv', publicProvider:'tvmaze', id:'squid-game', title:'Squid Game', year:2021 }
+  ];
+
   const DEFAULT_CINEMAS = Object.freeze([
     { id:'the-space-surbo', name:'The Space Cinema Surbo', city:'Surbo', province:'LE', officialUrl:'https://www.thespacecinema.it/cinema/surbo/al-cinema', sourceType:'Sito ufficiale esercente' },
     { id:'the-space-casamassima', name:'The Space Cinema Casamassima', city:'Casamassima', province:'BA', officialUrl:'https://www.thespacecinema.it/cinema/casamassima/al-cinema', sourceType:'Sito ufficiale esercente' },
@@ -1588,6 +1606,77 @@
     return state.series.length === 0 && state.movies.length === 0 && state.progress.length === 0;
   }
 
+  function emptyPopularSeriesCard(row) {
+    const meta = [row.year, 'Serie'].filter(Boolean).join(' · ');
+    const initials = row.title.split(/\s+/).map(x => x[0]).join('').slice(0, 2).toUpperCase();
+    return `<article class="empty-popular-card" data-empty-popular-id="${esc(row.seedId)}">
+      <span class="empty-popular-poster" style="background:${row.posterGradient || gradient(row.title)}">${row.poster ? `<img class="poster-img" src="${esc(row.poster)}" alt="" loading="lazy" decoding="async">` : esc(initials)}</span>
+      <span class="empty-popular-copy"><strong>${esc(row.title)}</strong><small>${esc(meta)}</small></span>
+      <button class="secondary compact" type="button" data-add-empty-popular="${esc(row.seedId)}">＋ Aggiungi</button>
+    </article>`;
+  }
+
+  function emptyPopularSeriesSection() {
+    const railId = 'emptyPopularSeriesRail';
+    return `<section class="empty-popular-section" aria-label="Serie popolari da aggiungere">
+      <div class="section-head">
+        <div><span class="kicker">Idee per iniziare</span><h2>Serie molto viste</h2><p>Aggiungi qualche titolo alla watchlist, poi potrai segnare episodi, preferiti e rating.</p></div>
+        ${railControlsHtml(railId, 'serie molto viste')}
+      </div>
+      <div class="empty-popular-rail" id="${railId}" data-rail tabindex="0" role="list" aria-label="Serie molto viste">${EMPTY_HOME_SERIES.map(emptyPopularSeriesCard).join('')}</div>
+    </section>`;
+  }
+
+  async function hydrateEmptyPopularSeries() {
+    const api = publicMetadataApi();
+    if (!api?.searchSeries || !navigator.onLine) return;
+    await Promise.allSettled(EMPTY_HOME_SERIES.map(async seed => {
+      if (seed.poster && /^\d+$/.test(String(seed.id))) return;
+      const results = await api.searchSeries(seed.title);
+      const match = results.find(x => normalizeSearch(x.title) === normalizeSearch(seed.title)) || results[0];
+      if (!match) return;
+      Object.assign(seed, {
+        kind: 'tv',
+        publicProvider: match.publicProvider || 'tvmaze',
+        id: match.id || seed.id,
+        title: match.title || seed.title,
+        originalTitle: match.originalTitle || seed.title,
+        aliases: mergeAliases(seed.aliases || [], match.aliases || [], seed.title, match.title),
+        year: match.year || seed.year,
+        overview: match.overview || seed.overview,
+        poster: match.poster || seed.poster,
+        tvdbId: match.tvdbId || seed.tvdbId
+      });
+      const card = $(`[data-empty-popular-id="${seed.seedId}"]`);
+      if (card) card.outerHTML = emptyPopularSeriesCard(seed);
+    }));
+    bindEmptyPopularSeriesActions();
+    setupRailControls(document);
+  }
+
+  function bindEmptyPopularSeriesActions() {
+    $$('[data-add-empty-popular]').forEach(button => {
+      if (button.dataset.bound === '1') return;
+      button.dataset.bound = '1';
+      button.addEventListener('click', async () => {
+        const row = EMPTY_HOME_SERIES.find(item => item.seedId === button.dataset.addEmptyPopular);
+        if (!row) return;
+        button.disabled = true;
+        button.textContent = 'Aggiungo…';
+        try {
+          const item = await addFromPublicResult(row);
+          showToast('Aggiunta alla libreria', row.title);
+          await reloadData();
+          location.hash = `#/series/${encodeURIComponent(item.id)}`;
+        } catch (error) {
+          showToast('Impossibile aggiungere', error.message, '!', 6000, { kind:'error' });
+          button.disabled = false;
+          button.textContent = '＋ Aggiungi';
+        }
+      });
+    });
+  }
+
   function renderEmptyLibraryHome() {
     const profile = currentProfile();
     setMain(`<section class="empty-library-hero">
@@ -1602,6 +1691,7 @@
       </div>
       <div class="empty-library-orbit" aria-hidden="true"><span>🎬</span><span>📺</span><span>⭐</span><strong>W</strong></div>
     </section>
+    ${emptyPopularSeriesSection()}
     <section class="empty-library-grid" aria-label="Modi per iniziare">
       <article class="empty-option-card featured">
         <span class="empty-option-icon">⇧</span>
@@ -1635,6 +1725,9 @@
     });
     $('#emptyHomeManual')?.addEventListener('click', showQuickAdd);
     $('#emptyHomeSearch')?.addEventListener('click', () => { location.hash = '#/search'; });
+    bindEmptyPopularSeriesActions();
+    hydrateEmptyPopularSeries();
+    setupRailControls(document);
     const dz = $('#emptyHomeDrop');
     ['dragenter','dragover'].forEach(type => dz?.addEventListener(type, e => { e.preventDefault(); dz.classList.add('drag'); }));
     ['dragleave','drop'].forEach(type => dz?.addEventListener(type, e => { e.preventDefault(); dz.classList.remove('drag'); }));
