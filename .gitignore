@@ -10,6 +10,7 @@ manuale_watchverse_singolo_file.html
 
 # Dependencies and caches
 node_modules/
+__pycache__/
 .cache/
 .parcel-cache/
 .vite/
