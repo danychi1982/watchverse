@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 900" role="img" aria-label="Motivo originale con cimitero, luna e paletto">
+  <defs>
+    <linearGradient id="night" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#17080d"/><stop offset=".55" stop-color="#2a0c12"/><stop offset="1" stop-color="#090708"/></linearGradient>
+    <radialGradient id="moon"><stop stop-color="#f2d7a0"/><stop offset=".78" stop-color="#c89b55"/><stop offset="1" stop-color="#8f522f"/></radialGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="9"/></filter>
+  </defs>
+  <rect width="1400" height="900" fill="url(#night)"/>
+  <circle cx="1090" cy="170" r="124" fill="#d04a45" opacity=".2" filter="url(#glow)"/>
+  <circle cx="1090" cy="170" r="96" fill="url(#moon)" opacity=".92"/>
+  <path d="M0 640c190-80 380-54 560 16 180 71 345 46 520-7 122-37 229-30 320 5v246H0z" fill="#090708"/>
+  <g fill="#0d090a" stroke="#4c2226" stroke-width="4">
+    <path d="M120 690v-168c0-46 28-74 70-74s70 28 70 74v168z"/><path d="M340 710v-135c0-33 23-55 56-55s56 22 56 55v135z"/>
+    <path d="M875 700V520h105v180z"/><path d="M1150 710V545h95v165z"/>
+  </g>
+  <g fill="none" stroke="#6f3335" stroke-width="7" stroke-linecap="round">
+    <path d="M190 455v-74M157 414h66M397 525v-66M370 488h54M928 522v-84M894 474h68M1198 548v-74M1168 508h60"/>
+  </g>
+  <g fill="none" stroke="#2b1517" stroke-width="10" stroke-linecap="round">
+    <path d="M40 0c130 180 140 368 20 560M1360 0c-124 168-130 360-28 550"/>
+    <path d="M60 360c78-86 142-112 215-104M1330 322c-78-72-145-90-224-72"/>
+  </g>
+  <g transform="translate(640 230) rotate(24)">
+    <path d="M0 0h24v380L12 432 0 380z" fill="#9a5b31" stroke="#d59a43" stroke-width="4"/>
+    <path d="M-38 93h100v22H-38z" fill="#9a5b31" stroke="#d59a43" stroke-width="4"/>
+    <path d="M7 8h10v330H7z" fill="#d6a36a" opacity=".45"/>
+  </g>
+  <path d="M570 148c96-51 183-55 270-10" fill="none" stroke="#b41f35" stroke-width="5" opacity=".65"/>
+  <g fill="#cf8c43" opacity=".6"><circle cx="558" cy="150" r="4"/><circle cx="847" cy="137" r="5"/><circle cx="480" cy="250" r="3"/><circle cx="913" cy="268" r="3"/></g>
+</svg>

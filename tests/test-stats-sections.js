@@ -1,0 +1,11 @@
+'use strict';
+const assert=require('assert');
+const fs=require('fs');
+const app=fs.readFileSync(require('path').join(__dirname,'..','app.js'),'utf8');
+assert(app.includes("data-stats-view=\"movies\""));
+assert(app.includes("data-stats-view=\"series\""));
+assert(app.includes('movieRatings: ratingDistribution'));
+assert(app.includes('seriesRatings: ratingDistribution'));
+assert(app.includes('legacyVoteCodeToRating(movie.legacyVoteCode)'));
+assert(app.includes("state.statsPeriod = e.target.value"));
+console.log('✓ Statistiche separate, periodo e migrazione voti');

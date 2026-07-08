@@ -1,0 +1,14 @@
+const fs = require('fs');
+const assert = require('assert');
+const css = fs.readFileSync('styles.css','utf8');
+const html = fs.readFileSync('index.html','utf8');
+const app = fs.readFileSync('app.js','utf8');
+assert(app.includes("const APP_VERSION = '2.0.27'"), 'Versione 2.0.21 non impostata');
+assert(html.includes('id="aivengersButton"'), 'Launcher AIvengers mancante');
+assert(html.includes('id="aivengersPanel"'), 'Pannello AIvengers mancante');
+assert(css.includes('--aivengers-anchor-x'), 'Punto di ancoraggio AIvengers mancante');
+assert(css.includes('--aivengers-panel-left'), 'Posizione pannello collegata al launcher mancante');
+assert(css.includes('.aivengers-panel::before'), 'Coda esterna del fumetto mancante');
+assert(css.includes('.aivengers-panel::after'), 'Coda interna del fumetto mancante');
+assert(css.includes('transform-origin:calc(var(--aivengers-anchor-x) - var(--aivengers-panel-left)) bottom'), 'Animazione non ancorata al launcher');
+console.log('✓ UI 2.0.21: AIvengers ancorato al launcher con resa a fumetto');

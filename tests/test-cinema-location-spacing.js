@@ -1,0 +1,14 @@
+const fs=require('fs');
+const assert=require('assert');
+const app=fs.readFileSync('app.js','utf8');
+const css=fs.readFileSync('styles.css','utf8');
+assert(app.includes("const APP_VERSION = '2.0.27'"));
+assert(app.includes("browserGeolocationPermissionState"));
+assert(app.includes("window.isSecureContext"));
+assert(app.includes("$('#cinemaSearchForm')?.addEventListener('submit'"));
+assert(app.includes("Posizione acquisita per questa sessione"));
+assert(css.includes('.location-input-group'));
+assert(css.includes('.location-status.is-warning'));
+assert(css.includes('.profile-card-actions'));
+assert(css.includes('width:var(--sidebar-expanded)'));
+console.log('✓ Cinema, geolocalizzazione, spaziatura e AIvengers 2.0.18 verificati');

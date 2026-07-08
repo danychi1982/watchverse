@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#f4c400" />
+  <meta name="description" content="Watchverse — Tutto ciò che hai visto. Tutto ciò che vedrai. Tracker privato di film, serie ed episodi." />
+  <title>Watchverse</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="assets/icons/icon-192.png" />
+  <link rel="stylesheet" href="styles.css?v=2.0.27" />
+</head>
+<body>
+  <button class="skip-link" id="skipToContent" type="button">Vai al contenuto</button>
+  <div id="authRoot"></div>
+  <div id="blockingLoader" class="blocking-loader" role="status" aria-live="polite" aria-atomic="true" aria-hidden="true">
+    <div class="blocking-loader-card">
+      <div class="cinema-loader-art" aria-hidden="true">
+        <span class="loader-reel"><i></i><i></i><i></i><i></i><i></i></span>
+        <span class="loader-clapper"><i></i><i></i><i></i><i></i></span>
+        <span class="loader-film-strip"></span>
+      </div>
+      <div class="blocking-loader-copy">
+        <strong id="blockingLoaderTitle">Caricamento Watchverse</strong>
+        <p id="blockingLoaderDetail">Sto preparando i tuoi contenuti.</p>
+      </div>
+    </div>
+  </div>
+  <div id="app" class="app-shell hidden" aria-hidden="true">
+    <aside class="sidebar" aria-label="Navigazione principale">
+      <div class="sidebar-profile-area">
+        <button id="sidebarProfileButton" class="sidebar-profile-button" type="button" aria-label="Apri impostazioni profilo">
+          <span class="avatar">D</span>
+          <span class="sidebar-profile-copy"><strong>Profilo</strong><small>Apri impostazioni</small></span>
+        </button>
+        <button id="brandSwitchProfile" class="brand-profile-switch" type="button">Cambia profilo</button>
+      </div>
+      <nav id="desktopNav" class="side-nav"></nav>
+      <button id="sidebarToggle" class="sidebar-toggle" type="button" aria-expanded="true" aria-label="Comprimi menu" title="Comprimi menu">
+        <svg class="sidebar-toggle-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m14 7-5 5 5 5"/></svg>
+        <span class="sr-only sidebar-toggle-label">Comprimi menu</span>
+      </button>
+    </aside>
+
+    <div class="main-column">
+      <header class="topbar">
+        <div class="topbar-page-context">
+          <button id="mobileProfileButton" class="mobile-profile-button" type="button" aria-label="Apri impostazioni profilo"><span class="avatar">D</span></button>
+          <div><p class="eyebrow" id="pageEyebrow">La tua libreria</p><h1 id="pageTitle">Watchverse</h1></div>
+        </div>
+        <a class="topbar-brand" href="#/home" aria-label="Watchverse, torna alla Home">
+          <span class="brand-mark">W</span><span class="brand-copy"><span class="brand-name">Watchverse</span><small>Tutto ciò che hai visto.<br>Tutto ciò che vedrai.</small></span>
+        </a>
+        <div class="top-actions">
+          <button id="metadataStatusButton" class="metadata-status-button hidden" type="button" title="Stato aggiornamento metadati">
+            <span class="metadata-status-symbol" aria-hidden="true">↻</span>
+            <span class="metadata-status-copy"><strong id="metadataStatusLabel">Metadati</strong><small id="metadataStatusSummary">Aggiornamento libreria</small></span>
+            <span class="metadata-status-track" aria-hidden="true"><span id="metadataStatusBar"></span></span>
+          </button>
+          <button id="installButton" class="icon-button hidden" type="button" title="Installa app" aria-label="Installa Watchverse">⇩</button>
+          <button id="notificationButton" class="icon-button" type="button" title="Notifiche" aria-label="Apri notifiche">🔔<span id="notificationDot" class="notification-dot"></span></button>
+          <button id="quickAddButton" class="primary compact" type="button">＋ Aggiungi</button>
+        </div>
+      </header>
+
+      <main id="main" tabindex="-1"></main>
+      <footer class="app-footer" aria-label="Informazioni sull’applicazione">
+        <p>© <span id="footerYear"></span> Daniela · Watchverse · Versione <strong id="footerVersion"></strong></p>
+        <nav aria-label="Collegamenti informativi">
+          <a href="#/accessibility">Accessibilità</a>
+        </nav>
+      </footer>
+    </div>
+
+    <nav id="mobileNav" class="bottom-nav" aria-label="Navigazione principale"></nav>
+  </div>
+
+  <button id="aivengersButton" class="aivengers-launcher" type="button" aria-label="Apri assistente AIvengers" aria-expanded="false" aria-controls="aivengersPanel"><svg class="aivengers-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7.2h8a4 4 0 0 1 4 4v5.3a3.5 3.5 0 0 1-3.5 3.5h-9A3.5 3.5 0 0 1 4 16.5v-5.3a4 4 0 0 1 4-4Z"/><path d="M12 3.5v3.7M9 14h.01M15 14h.01M9.2 17h5.6"/><circle cx="12" cy="3" r="1"/><path d="M19.2 4.1c.18 1.05.75 1.62 1.8 1.8-1.05.18-1.62.75-1.8 1.8-.18-1.05-.75-1.62-1.8-1.8 1.05-.18 1.62-.75 1.8-1.8Z"/></svg><span class="sr-only">AIvengers</span></button>
+  <section id="aivengersPanel" class="aivengers-panel" aria-label="Chat con AIvengers" aria-hidden="true">
+    <header class="aivengers-head"><div class="aivengers-title"><span class="aivengers-head-icon"><svg class="aivengers-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7.2h8a4 4 0 0 1 4 4v5.3a3.5 3.5 0 0 1-3.5 3.5h-9A3.5 3.5 0 0 1 4 16.5v-5.3a4 4 0 0 1 4-4Z"/><path d="M12 3.5v3.7M9 14h.01M15 14h.01M9.2 17h5.6"/><circle cx="12" cy="3" r="1"/><path d="M19.2 4.1c.18 1.05.75 1.62 1.8 1.8-1.05.18-1.62.75-1.8 1.8-.18-1.05-.75-1.62-1.8-1.8 1.05-.18 1.62-.75 1.8-1.8Z"/></svg></span><span><strong>AIvengers</strong><small>Assistente di Watchverse</small></span></div><button id="aivengersClose" type="button" aria-label="Chiudi AIvengers">×</button></header>
+    <div id="aivengersMessages" class="aivengers-messages" role="log" aria-live="polite" aria-relevant="additions"></div>
+    <div id="aivengersSuggestions" class="aivengers-suggestions" aria-label="Domande suggerite"></div>
+    <form id="aivengersForm" class="aivengers-form"><label class="sr-only" for="aivengersInput">Scrivi una domanda ad AIvengers</label><input id="aivengersInput" type="text" autocomplete="off" placeholder="Chiedi qualcosa…"><button type="submit" aria-label="Invia messaggio">➤</button></form>
+  </section>
+
+  <button id="backToTopButton" class="back-to-top" type="button" aria-label="Torna all’inizio della pagina" aria-hidden="true" tabindex="-1"><span aria-hidden="true">↑</span></button>
+
+  <div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+  <div id="modalRoot"></div>
+  <input id="importInput" type="file" accept=".csv,.json,.zip,application/json,text/csv,application/zip" hidden />
+  <input id="backupInput" type="file" accept=".json,.zip,application/json,application/zip" hidden />
+  <input id="avatarInput" type="file" accept="image/png,image/jpeg,image/webp" hidden />
+
+  <script src="config.js?v=2.0.27"></script>
+  <script src="auth.js?v=2.0.27"></script>
+  <script src="assets/vendor/pako_inflate.min.js"></script>
+  <script src="gdpr-import.js?v=2.0.27"></script>
+  <script src="public-metadata.js?v=2.0.27"></script>
+  <script src="accessibility-report.js?v=2.0.27"></script>
+  <script src="app.js?v=2.0.27"></script>
+</body>
+</html>

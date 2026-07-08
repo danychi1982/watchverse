@@ -1,0 +1,16 @@
+const fs=require('fs');
+const assert=require('assert');
+const app=fs.readFileSync('app.js','utf8');
+const css=fs.readFileSync('styles.css','utf8');
+const html=fs.readFileSync('index.html','utf8');
+assert(app.includes("const APP_VERSION = '2.0.27'"));
+assert(app.includes('function mainCastMembers(cast = [], limit = 10)'));
+assert(app.includes('castHtml(item.cast,10)'));
+assert(app.includes('const shown=Math.min(total,10)'));
+assert(app.includes('/fullcredits/'));
+assert(css.includes('grid-template-columns:repeat(5,minmax(0,1fr))'));
+assert(css.includes('white-space:normal'));
+assert(app.includes('data-rail tabindex="0" role="list" aria-label="Potrebbero piacerti anche"'));
+assert(app.includes("bindHorizontalRails($('#main'))"));
+assert(html.includes('styles.css?v=2.0.27'));
+console.log('✓ Watchverse 2.0.27: cast 10 interpreti e caroselli verificati');

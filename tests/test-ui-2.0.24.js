@@ -1,0 +1,15 @@
+const fs=require('fs');
+const assert=require('assert');
+const app=fs.readFileSync('app.js','utf8');
+const css=fs.readFileSync('styles.css','utf8');
+const html=fs.readFileSync('index.html','utf8');
+const sw=fs.readFileSync('sw.js','utf8');
+assert(app.includes("const APP_VERSION = '2.0.27'"));
+assert(app.includes("symbol:'🍄'"));
+assert(css.includes('last-of-us-proposal-3-wallpaper.jpg'));
+assert(css.includes('the-last-of-us-official-logo.png'));
+assert(css.includes('wv-tlou-spore-ring'));
+for(const token of ['M18 82c2-23','M46 17 18 5','M31 30v-7','M18 103C35 69','m29 18 18 18']) assert(app.includes(token),`icona TLOU mancante: ${token}`);
+assert(html.includes('styles.css?v=2.0.27'));
+assert(sw.includes('last-of-us-proposal-3-wallpaper.jpg'));
+console.log('✓ Watchverse 2.0.27: tema The Last of Us proposta 3 verificato');

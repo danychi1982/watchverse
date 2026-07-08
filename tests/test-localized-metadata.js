@@ -1,0 +1,14 @@
+'use strict';
+const fs = require('fs');
+const path = require('path');
+const assert = require('assert');
+const app = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
+const metadata = fs.readFileSync(path.join(__dirname, '..', 'public-metadata.js'), 'utf8');
+assert(app.includes('Titolo originale:'), 'Titolo originale non mostrato nel dettaglio');
+assert(app.includes('item.originalTitle'), 'Campo originalTitle non gestito');
+assert(app.includes('item.aliases'), 'Alias di ricerca non gestiti');
+assert(metadata.includes("language: 'it'"), 'Ricerca italiana Wikipedia mancante');
+assert(metadata.includes("language: 'en'"), 'Fallback inglese Wikipedia mancante');
+assert(metadata.includes('castComplete'), 'Cache cast una tantum mancante');
+assert(metadata.includes('originalTitle'), 'Titolo originale non restituito dai metadati');
+console.log('✓ Titoli italiani, titolo originale, ricerca alias e fallback metadati IT/EN');

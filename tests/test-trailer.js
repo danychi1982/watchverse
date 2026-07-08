@@ -1,0 +1,17 @@
+const fs = require('fs');
+const path = require('path');
+const assert = require('assert');
+const app = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
+const css = fs.readFileSync(path.join(__dirname, '..', 'styles.css'), 'utf8');
+const server = fs.readFileSync(path.join(__dirname, '..', 'avvia_server.py'), 'utf8');
+assert(app.includes('function trailerSectionHtml'), 'Sezione trailer mancante');
+assert(app.includes('/videos`') || app.includes('/videos'), 'Endpoint video TMDB mancante');
+assert(!app.includes('youtube.com/results?search_query='), 'Il browser non deve aprire ricerche YouTube generiche');
+assert(app.includes('<p>Informazione non disponibile</p>'), 'Fallback trasparente del trailer mancante');
+assert(app.includes('youtube.com/watch?v='), 'Collegamento diretto al trailer mancante');
+assert(app.includes("publicSourceFetch('/api/trailer'"), 'Fallback locale trailer mancante');
+assert(server.includes('def find_public_trailer'), 'Ricerca trailer filtrata lato server mancante');
+assert(server.includes('"official": score >= 95'), 'Riconoscimento trailer ufficiale mancante');
+assert(app.includes("trailer?.official?'Trailer ufficiale':'Trailer trovato'"), 'Etichetta trailer non trasparente');
+assert(css.includes('.trailer-thumb') && css.includes('.trailer-play'), 'Stili trailer mancanti');
+console.log('✓ Trailer TMDB + ricerca pubblica filtrata con etichetta trasparente');
