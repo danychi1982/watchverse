@@ -85,7 +85,7 @@ WATCHVERSE 2.0.18 — CINEMA, SPAZIATURA E AIVENGERS
 - Menu laterale comprimibile con stato persistente.
 - Header con identità Watchverse centrata e profilo attivo sempre riconoscibile.
 - Voce Profilo rimossa dalla navigazione: accesso tramite avatar/nome.
-- Footer fisso con copyright Daniela e versione 2.0.18.
+- Footer fisso con copyright Profilo 1 e versione 2.0.18.
 - Torna su compatto e non sovrapposto al footer.
 - Profilo a tab ridisegnati, con Statistiche e Importa/Esporta integrati.
 - Ricerca cinema per città, raggio o geolocalizzazione consensuale; aggiunta manuale sale.

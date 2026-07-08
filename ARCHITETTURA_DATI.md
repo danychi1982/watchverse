@@ -2,7 +2,7 @@
 
 ## Obiettivo
 
-Watchverse separa i dati pubblici comuni relativi a un titolo dai dati personali dei singoli profili. In questo modo descrizione, locandina, cast, stagioni ed episodi già recuperati per un film o una serie possono essere riutilizzati da Daniela, Elena e dagli altri profili senza ripetere lo stesso download.
+Watchverse separa i dati pubblici comuni relativi a un titolo dai dati personali dei singoli profili. In questo modo descrizione, locandina, cast, stagioni ed episodi già recuperati per un film o una serie possono essere riutilizzati da Profilo 1, Profilo 2 e dagli altri profili senza ripetere lo stesso download.
 
 ## 1. Catalogo condiviso sul dispositivo
 
@@ -31,7 +31,7 @@ Ogni profilo conserva soltanto le informazioni personali o le proprie copie di c
 - cinema, servizi streaming e canali preferiti;
 - tema, densità e altre impostazioni del profilo.
 
-Questi dati non vengono condivisi tra i profili. Elena può quindi aggiungere lo stesso titolo già presente nella libreria di Daniela, ricevendo i metadati comuni dal catalogo locale ma iniziando con avanzamento e valutazioni propri.
+Questi dati non vengono condivisi tra i profili. Profilo 2 può quindi aggiungere lo stesso titolo già presente nella libreria di Profilo 1, ricevendo i metadati comuni dal catalogo locale ma iniziando con avanzamento e valutazioni propri.
 
 ## 3. Identificazione e deduplicazione
 

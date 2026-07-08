@@ -5,21 +5,19 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Manuale utente Watchverse 2.0.27</title>
 <style>
-:root{--bg:#0a0a0b;--panel:#151517;--panel2:#1c1c20;--text:#f7f7f8;--muted:#b6b6be;--accent:#f4c400;--line:#33343b;--ok:#79d89d;--warn:#f5d76e}
-*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.62 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}a{color:var(--accent)}.layout{display:grid;grid-template-columns:270px minmax(0,1fr);min-height:100vh}.side{position:sticky;top:0;height:100vh;padding:28px 20px;border-right:1px solid var(--line);background:#0d0d0f}.brand{display:flex;gap:12px;align-items:center;margin-bottom:22px}.mark{display:grid;place-items:center;width:46px;height:46px;border-radius:12px;background:var(--accent);color:#090909;font-weight:900;font-size:26px}.brand h1{margin:0;font-size:25px}.slogan{color:var(--accent);font-size:12px;font-weight:750;line-height:1.35}.side nav a{display:block;padding:8px 10px;border-radius:8px;color:var(--muted);text-decoration:none}.side nav a:hover,.side nav a:focus{background:var(--panel2);color:white}.content{max-width:1120px;width:100%;padding:42px 48px 90px}.hero{padding:34px;border-radius:24px;background:linear-gradient(135deg,#292000,#151517 48%,#111);border:1px solid #5b4a00}.hero h1{font-size:46px;line-height:1.05;margin:8px 0 12px}.hero p{max-width:750px;color:#dedee3}.pill{display:inline-block;border-radius:999px;padding:5px 10px;background:var(--accent);color:#111;font-weight:800;font-size:12px}.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:24px;margin:25px 0}.card h2{margin-top:0}.note,.warning,.success{padding:14px 16px;border-radius:12px;margin:16px 0}.note{background:#182231;border:1px solid #36506f}.warning{background:#2b250d;border:1px solid #665800;color:#fff2ad}.success{background:#10251a;border:1px solid #2c6844;color:#c8f6d8}.steps{counter-reset:step;list-style:none;padding:0}.steps li{counter-increment:step;position:relative;padding:0 0 20px 48px}.steps li:before{content:counter(step);position:absolute;left:0;top:0;width:31px;height:31px;display:grid;place-items:center;border-radius:50%;background:var(--accent);color:#111;font-weight:900}.shot{margin:20px 0 5px}.shot img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:15px;background:#080809}.caption{color:var(--muted);font-size:14px;margin:7px 4px 20px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.mini{padding:18px;background:var(--panel2);border:1px solid var(--line);border-radius:14px}.mini h3{margin-top:0}.status{width:100%;border-collapse:collapse}.status th,.status td{text-align:left;padding:10px;border-bottom:1px solid var(--line)}code{background:#202027;padding:2px 6px;border-radius:5px}.footer{margin-top:60px;color:var(--muted);font-size:14px}.toplink{display:inline-block;margin-top:14px;text-decoration:none}.mobile-menu{display:none}.privacy{font-weight:750;color:var(--warn)}
-@media(max-width:850px){.layout{display:block}.side{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}.side nav{display:none}.content{padding:24px 18px 70px}.hero{padding:24px}.hero h1{font-size:34px}.grid{grid-template-columns:1fr}.shot img{border-radius:10px}}
-@media print{.side{display:none}.layout{display:block}.content{max-width:none;padding:0}.card,.hero{break-inside:avoid}.shot{break-inside:avoid}body{background:white;color:#111}.card,.mini{background:white}.caption,.hero p{color:#444}}
+:root{--bg:#0a0a0b;--panel:#151517;--panel2:#1c1c20;--text:#f7f7f8;--muted:#b6b6be;--accent:#f4c400;--line:#33343b;--warn:#f5d76e}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.62 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}a{color:var(--accent)}.layout{display:grid;grid-template-columns:270px minmax(0,1fr);min-height:100vh}.side{position:sticky;top:0;height:100vh;padding:28px 20px;border-right:1px solid var(--line);background:#0d0d0f}.brand{display:flex;gap:12px;align-items:center;margin-bottom:22px}.mark{display:grid;place-items:center;width:46px;height:46px;border-radius:12px;background:var(--accent);color:#090909;font-weight:900;font-size:26px}.brand h1{margin:0;font-size:25px}.slogan{color:var(--accent);font-size:12px;font-weight:750;line-height:1.35}.side nav a{display:block;padding:8px 10px;border-radius:8px;color:var(--muted);text-decoration:none}.content{max-width:1120px;width:100%;padding:42px 48px 90px}.hero{padding:34px;border-radius:24px;background:linear-gradient(135deg,#292000,#151517 48%,#111);border:1px solid #5b4a00}.hero h1{font-size:46px;line-height:1.05;margin:8px 0 12px}.pill{display:inline-block;border-radius:999px;padding:5px 10px;background:var(--accent);color:#111;font-weight:800;font-size:12px}.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:24px;margin:25px 0}.note,.warning{padding:14px 16px;border-radius:12px;margin:16px 0}.note{background:#182231;border:1px solid #36506f}.warning{background:#2b250d;border:1px solid #665800;color:#fff2ad}.steps{counter-reset:step;list-style:none;padding:0}.steps li{counter-increment:step;position:relative;padding:0 0 20px 48px}.steps li:before{content:counter(step);position:absolute;left:0;top:0;width:31px;height:31px;display:grid;place-items:center;border-radius:50%;background:var(--accent);color:#111;font-weight:900}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.mini{padding:18px;background:var(--panel2);border:1px solid var(--line);border-radius:14px}.status{width:100%;border-collapse:collapse}.status th,.status td{text-align:left;padding:10px;border-bottom:1px solid var(--line)}code{background:#202027;padding:2px 6px;border-radius:5px}.footer{margin-top:60px;color:var(--muted);font-size:14px}.privacy{font-weight:750;color:var(--warn)}
+@media(max-width:850px){.layout{display:block}.side{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}.side nav{display:none}.content{padding:24px 18px 70px}.hero{padding:24px}.hero h1{font-size:34px}.grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <div class="layout">
 <aside class="side">
-  <div class="brand"><span class="mark">W</span><div><h1>Watchverse</h1><div class="slogan">Tutto ciò che hai visto.<br>Tutto ciò che vedrai.</div></div></div>
+  <div class="brand"><span class="mark">W</span><div><h1>Watchverse</h1><div class="slogan">Tutto cio che hai visto.<br>Tutto cio che vedrai.</div></div></div>
   <nav>
     <a href="#stato">Stato della versione</a>
     <a href="#avvio">Primo avvio</a>
-    <a href="#profili">Profili Daniela ed Elena</a>
-    <a href="#pin">Nome, avatar e PIN</a>
+    <a href="#profili">Profili familiari</a>
     <a href="#import">Importare TV Time</a>
     <a href="#uso">Usare la libreria</a>
     <a href="#backup">Backup ed export</a>
@@ -29,9 +27,9 @@
 </aside>
 <main class="content">
 <section class="hero">
-  <span class="pill">MANUALE UTENTE · VERSIONE 2.0.27 BETA</span>
+  <span class="pill">MANUALE UTENTE - VERSIONE 2.0.27 BETA</span>
   <h1>Watchverse</h1>
-  <p><strong>Tutto ciò che hai visto. Tutto ciò che vedrai.</strong><br>Tracker privato e familiare per film, serie ed episodi, con profili separati, importazione TV Time e formati di backup trasferibili.</p>
+  <p><strong>Tutto cio che hai visto. Tutto cio che vedrai.</strong><br>Tracker privato e familiare per film, serie ed episodi, con profili separati, importazione TV Time e formati di backup trasferibili.</p>
 </section>
 
 <section id="stato" class="card">
@@ -39,141 +37,94 @@
 <table class="status">
 <tr><th>Funzione</th><th>Stato</th></tr>
 <tr><td>Account familiare e password sul dispositivo</td><td>Operativa</td></tr>
-<tr><td>Profili Daniela ed Elena separati</td><td>Operativa</td></tr>
+<tr><td>Profili familiari separati</td><td>Operativa</td></tr>
 <tr><td>PIN facoltativo, nome e avatar</td><td>Operativa</td></tr>
-<tr><td>Importazione diretta ZIP GDPR TV Time</td><td>Operativa, con anteprima, barra di avanzamento e report finale</td></tr>
+<tr><td>Importazione diretta ZIP GDPR TV Time</td><td>Operativa</td></tr>
 <tr><td>Film, serie, episodi, preferiti, rating e statistiche</td><td>Operativa</td></tr>
-<tr><td>Temi per profilo e densità Comoda/Compatta</td><td>Operativa, inclusi The Last of Us con checkpoint, orologio rotto, torcia e cordyceps e Buffy con cimitero/paletto, con palette predefinite verificate</td></tr>
-<tr><td>Dichiarazione e Assessment AI WCAG 2.2</td><td>Disponibili nella pagina Accessibilità, con esiti e problemi noti</td></tr>
-<tr><td>Backup ZIP, CSV e JSON per Trakt</td><td>Operativa</td></tr>
 <tr><td>Locandine, descrizioni, episodi e cast</td><td>Recupero pubblico automatico da TVmaze e fonti Wikimedia</td></tr>
-<tr><td>Cast nei dettagli</td><td>8 interpreti principali leggibili su più righe, con link al cast completo su fonte esterna</td></tr>
-<tr><td>Caroselli orizzontali</td><td>Navigazione tramite pulsanti ‹ ›, touch, trackpad e tastiera; scrollbar visibili rimosse</td></tr>
-<tr><td>Provider streaming italiani</td><td>Disponibili configurando TMDB/JustWatch; vengono mostrati solo risultati effettivi per l’Italia</td></tr>
-<tr><td>Trailer</td><td>Ricerca TMDB e, con avvia_server.py, ricerca pubblica YouTube filtrata</td></tr>
-<tr><td>Programmazione cinema</td><td>Solo orari trovati sui siti ufficiali delle sale preferite, usando avvia_server.py</td></tr>
+<tr><td>Trailer e programmazione cinema</td><td>Disponibili con il server locale <code>avvia_server.py</code></td></tr>
 <tr><td>Login online e recupero password tramite email</td><td>Predisposti; richiedono Supabase</td></tr>
-<tr><td>Sincronizzazione automatica telefono ↔ PC</td><td>Fase successiva</td></tr>
-<tr><td>Notifiche a browser completamente chiuso</td><td>Fase successiva</td></tr>
+<tr><td>Sincronizzazione automatica telefono/PC</td><td>Fase successiva</td></tr>
 </table>
-<div class="warning"><strong>Importante:</strong> pubblicare i file online non rende automaticamente cloud la libreria. Finché non completiamo la sincronizzazione Supabase, i dati restano nel browser del singolo dispositivo. Usa il backup ZIP per spostarli.</div>
+<div class="warning"><strong>Importante:</strong> pubblicare i file online non rende automaticamente cloud la libreria. Finche non viene completata la sincronizzazione Supabase, i dati restano nel browser del singolo dispositivo.</div>
 </section>
 
 <section id="avvio" class="card">
 <h2>2. Primo avvio</h2>
 <ol class="steps">
-<li>Per una prova immediata apri <code>watchverse_offline.html</code> con Chrome. Per attivare anche la ricerca automatica dei trailer, la programmazione dei cinema ufficiali, la PWA e il service worker, avvia <code>avvia_server.py</code> e apri l’indirizzo indicato.</li>
-<li>Al primo accesso trovi già proposti il nome utente <strong>daniela</strong> e l’email di recupero. Scegli una password di almeno 6 caratteri; non sono richiesti maiuscole, numeri o simboli.</li>
-<li>Non usare la password indicata in precedenza in chat: va considerata esposta e non è adatta alla pubblicazione.</li>
-<li>Dopo la creazione dell’account, scegli il profilo Daniela o Elena.</li>
+<li>Apri il sito pubblicato oppure avvia <code>npm run serve</code> in locale e visita l'indirizzo indicato.</li>
+<li>Al primo accesso trovi un nome utente generico e puoi inserire la tua email di recupero.</li>
+<li>Scegli una password di almeno 6 caratteri. La password non viene salvata in chiaro.</li>
+<li>Dopo la creazione dell'account, scegli uno dei profili disponibili.</li>
 </ol>
-<div class="shot"><img src="assets/screens_watchverse/01-primo-accesso-watchverse.png" alt="Schermata Watchverse per il primo accesso"></div>
-<p class="caption">Primo accesso: account familiare unico, password scelta dall’utente e recupero associato all’email principale.</p>
+<p>La password e i dati dell'account locale restano nel browser del dispositivo, dentro lo storage del sito.</p>
 </section>
 
 <section id="profili" class="card">
-<h2>3. Profili Daniela ed Elena</h2>
-<p>L’account è unico, ma i dati dei due profili sono distinti. Ogni profilo ha una propria cronologia, watchlist, preferiti, rating, statistiche e preferenze di visualizzazione.</p>
-<div class="shot"><img src="assets/screens_watchverse/02-scelta-profili-watchverse.png" alt="Selezione dei profili Daniela ed Elena"></div>
-<p class="caption">Di default entrambi i profili si aprono senza PIN. Il PIN può essere attivato in seguito.</p>
+<h2>3. Profili familiari</h2>
+<p>L'account e unico, ma i dati dei profili sono distinti. Ogni profilo ha cronologia, watchlist, preferiti, rating, statistiche e preferenze separate.</p>
 <div class="grid">
-<div class="mini"><h3>Profilo Daniela</h3><p>Destinazione della libreria importata da TV Time. È il profilo proprietario e può gestire account, importazioni e profili familiari.</p></div>
-<div class="mini"><h3>Profili vuoti</h3><p>Daniela ed Elena partono senza dati demo. La Home propone subito l’importazione della libreria oppure l’aggiunta manuale del primo titolo.</p></div>
+<div class="mini"><h3>Profilo principale</h3><p>Destinazione consigliata per importare la libreria TV Time.</p></div>
+<div class="mini"><h3>Profili aggiuntivi</h3><p>Partono senza dati demo e possono essere rinominati dalle impostazioni.</p></div>
 </div>
-</section>
-
-<section id="pin" class="card">
-<h2>4. Modificare nome, avatar e PIN</h2>
-<ol class="steps">
-<li>Entra nel profilo interessato e apri <strong>Profilo</strong>.</li>
-<li>Nella sezione <strong>Identità del profilo</strong> modifica il nome, scegli un avatar oppure carica una foto.</li>
-<li>Nella sezione <strong>Sicurezza del profilo</strong> premi <strong>Crea PIN</strong>. Sono ammessi PIN numerici da 4 a 6 cifre.</li>
-<li>Quando un PIN esiste, puoi modificarlo, eliminarlo o recuperarlo verificando la password dell’account familiare.</li>
-</ol>
-<div class="shot"><img src="assets/screens_watchverse/04-impostazioni-profilo-watchverse.png" alt="Impostazioni del profilo Watchverse"></div>
-<p class="caption">Le impostazioni del profilo includono identità, PIN facoltativo, vista locandine/elenco e notifiche.</p>
-<div class="note">Il PIN protegge il passaggio informale tra profili, ma non sostituisce la password dell’account. Per eliminare profili o cambiare impostazioni sensibili viene richiesta la password principale.</div>
 </section>
 
 <section id="import" class="card">
-<h2>5. Importare lo ZIP GDPR di TV Time</h2>
+<h2>4. Importare lo ZIP GDPR di TV Time</h2>
 <ol class="steps">
-<li>Accedi al profilo <strong>Daniela</strong>.</li>
-<li>Apri <strong>Profilo → Importa ed esporta</strong>.</li>
-<li>Premi <strong>Scegli file</strong> e seleziona direttamente <code>gdpr-data.zip</code>. Non serve estrarlo.</li>
-<li>Durante l’analisi resta visibile una barra di avanzamento con il nome del file elaborato.</li>
-<li>Prima di importare, Watchverse mostra quanti elementi ha riconosciuto: serie, serie da iniziare, episodi visti, film visti, film in watchlist, preferiti e voti storici.</li>
-<li>Controlla l’anteprima, lascia selezionata l’opzione per sostituire eventuali dati già presenti, poi premi il pulsante che indica il numero totale di elementi da importare.</li>
-<li>Durante il salvataggio una seconda barra mostra l’avanzamento separato per serie, film ed episodi.</li>
-<li>Al termine compare un report completo e una notifica chiudibile. Apri la libreria e controlla qualche serie lunga, alcuni film, preferiti e statistiche.</li>
+<li>Accedi al profilo in cui vuoi importare la libreria.</li>
+<li>Apri <strong>Profilo - Importa ed esporta</strong>.</li>
+<li>Seleziona direttamente <code>gdpr-data.zip</code>. Non serve estrarlo.</li>
+<li>Controlla l'anteprima, poi avvia l'importazione.</li>
+<li>Al termine verifica serie, film, preferiti, rating e statistiche.</li>
 </ol>
-<div class="shot"><img src="assets/screens_watchverse/05-import-gdpr-anteprima-watchverse.png" alt="Anteprima importazione GDPR TV Time"></div>
-<p class="caption">Anteprima dell’importazione: i file sensibili vengono esclusi automaticamente e i dati sono destinati al profilo attivo.</p>
-<div class="shot"><img src="assets/screens_watchverse/06-import-gdpr-completato-watchverse.png" alt="Importazione GDPR completata"></div>
-<p class="caption">Riepilogo finale con elementi importati, duplicati, privacy e voti storici convertiti in stelle.</p>
-<div class="success">Il pacchetto condivisibile non incorpora alcuna cronologia. Lo ZIP viene letto localmente nel profilo selezionato e i file tecnici sensibili vengono esclusi.</div>
-<div class="success"><strong>Voti TV Time:</strong> Watchverse riconosce i cinque codici presenti nell’esportazione e li converte nella scala da 1 a 5 stelle: 1, 27, 28, 29 e 3 corrispondono progressivamente da 1★ a 5★. La conversione viene applicata anche alle librerie importate con versioni precedenti.</div>
+<div class="note">Lo ZIP GDPR viene letto localmente nel browser. I file tecnici sensibili vengono esclusi dall'importatore.</div>
 </section>
 
 <section id="uso" class="card">
-<h2>6. Usare la libreria</h2>
-<div class="shot"><img src="assets/screens_watchverse/03-home-daniela-watchverse.png" alt="Home di Watchverse con prossimi episodi e film da vedere"></div>
-<p class="caption">Home: prossimo episodio, avanzamento, riepiloghi e film in watchlist.</p>
+<h2>5. Usare la libreria</h2>
 <div class="grid">
-<div class="mini"><h3>Home compatta</h3><p>“Continua a guardare” e “Nuovi episodi da recuperare” mostrano card verticali in una sola riga. Su schermi piccoli puoi scorrere orizzontalmente con touch o pulsanti; i collegamenti “Tutte le serie” aprono il catalogo completo.</p></div>
-<div class="mini"><h3>Serie</h3><p>Di default si apre <strong>Da vedere</strong>. In cima trovi la serie con l’episodio non visto uscito più di recente. I filtri sono Da vedere, In corso, Da iniziare, Completate, Preferite e, per ultimo, Tutte.</p></div>
-<div class="mini"><h3>Film</h3><p>Di default si apre <strong>Visti</strong>, ordinata dalla data di visione più recente. I filtri terminano con Tutti; sono disponibili anche gli ordini per Voto e Titolo.</p></div>
-<div class="mini"><h3>Catalogo condiviso</h3><p>TVmaze e le fonti Wikimedia recuperano gradualmente locandine, descrizioni, episodi, date e cast. I dati comuni vengono salvati una sola volta sul dispositivo e riutilizzati da tutti i profili; visioni, voti e preferenze restano separati.</p></div>
-<div class="mini"><h3>Prestazioni</h3><p>Le librerie mostrano 60 titoli per volta; le immagini sono caricate solo quando servono e i progressi vengono indicizzati in memoria.</p></div>
-<div class="mini"><h3>Provider italiani</h3><p>Per streaming, noleggio e acquisto in Italia resta necessaria la configurazione facoltativa TMDB/JustWatch. La scheda mostra soltanto provider realmente restituiti; senza dati compare “Informazione non disponibile”.</p></div>
-<div class="mini"><h3>Statistiche</h3><p>Le schede <strong>Riepilogo</strong>, <strong>Film</strong> e <strong>Serie TV</strong> separano conteggi, tempi, generi e distribuzione dei voti. Il filtro periodo aggiorna realmente i dati basati sulle date di visione.</p></div>
-<div class="mini"><h3>Calendario uscite</h3><p>Gli episodi sono raggruppati per giorno. Le intestazioni indicano Oggi, Domani oppure il giorno della settimana e la data. Quando è nota, la disponibilità italiana è separata dall’uscita originale.</p></div>
-<div class="mini"><h3>Aspetto e densità</h3><p>Nel Profilo puoi scegliere uno dei temi predefiniti e confrontare la densità Comoda con quella Compatta. Colori e contrasto non sono modificabili liberamente.</p></div>
-<div class="mini"><h3>Accessibilità</h3><p>Il footer mostra versione, dichiarazione di accessibilità e report WCAG 2.2 completo. Nelle pagine lunghe compare anche il comando flottante “Torna su”.</p></div>
-<div class="mini"><h3>Dettagli più leggibili</h3><p>Banner, locandina, foto del cast, miniature episodi, trailer e suggerimenti restano dentro la propria cornice. Titolo, testo e azioni non possono essere coperti dalle immagini.</p></div>
-<div class="mini"><h3>Trailer e cinema</h3><p>Con <code>avvia_server.py</code>, Watchverse cerca un trailer pertinente e controlla i siti ufficiali delle sale preferite. Non vengono create tabelle cinema vuote: senza un risultato compare soltanto “Informazione non disponibile”.</p></div>
+<div class="mini"><h3>Home</h3><p>Mostra prossimo episodio, riepiloghi e film in watchlist.</p></div>
+<div class="mini"><h3>Serie</h3><p>Filtri per da vedere, in corso, da iniziare, completate, preferite e tutte.</p></div>
+<div class="mini"><h3>Film</h3><p>Filtri per visti, da vedere, preferiti e tutti, con ordinamenti dedicati.</p></div>
+<div class="mini"><h3>Catalogo condiviso</h3><p>I metadati comuni vengono salvati una sola volta e riutilizzati dai profili dello stesso dispositivo.</p></div>
+<div class="mini"><h3>Statistiche</h3><p>Riepiloghi separati per film e serie TV.</p></div>
+<div class="mini"><h3>Trailer e cinema</h3><p>Con <code>avvia_server.py</code> Watchverse controlla fonti pubbliche e siti ufficiali configurati.</p></div>
 </div>
-<div class="note"><strong>Programmazione italiana:</strong> quando le fonti non indicano una data italiana, Watchverse mostra l’uscita originale senza inventare ritardi. Nel dettaglio della serie puoi impostare facoltativamente piattaforma, differenza di giorni e orario per il calendario personale.</div>
-<div class="note"><strong>Aggiornamento delle schede:</strong> dopo l’importazione resta connessa a Internet. Watchverse controlla prima il catalogo condiviso: se Daniela ha già scaricato i dati di un titolo, Elena può riutilizzarli senza una nuova richiesta. Il pulsante “Aggiorna” forza comunque un controllo più recente.</div>
 </section>
 
 <section id="backup" class="card">
-<h2>7. Backup ed esportazioni</h2>
-<p>Dopo l’importazione crea subito un backup completo. I file sono salvati nella cartella Download del dispositivo.</p>
+<h2>6. Backup ed esportazioni</h2>
+<p>Dopo l'importazione crea subito un backup completo. I file sono salvati nella cartella Download del dispositivo.</p>
 <ul>
-<li><strong>Backup ZIP:</strong> contiene JSON completo e CSV leggibile; è il formato migliore per ripristinare Watchverse.</li>
-<li><strong>CSV interoperabile:</strong> cronologia con film, episodi, date, rating e identificativi.</li>
-<li><strong>JSON pronto per Trakt:</strong> separa gli elementi con ID da quelli ancora da riconciliare.</li>
-<li><strong>Preferiti:</strong> esportazione separata di film e serie preferiti.</li>
+<li><strong>Backup ZIP:</strong> formato migliore per ripristinare Watchverse.</li>
+<li><strong>CSV interoperabile:</strong> cronologia leggibile con film, episodi, date e rating.</li>
+<li><strong>JSON pronto per Trakt:</strong> export dedicato alla riconciliazione esterna.</li>
 </ul>
-<div class="note">I vecchi backup denominati “Vistoria” restano accettati per compatibilità, ma i nuovi file vengono esportati con prefisso <code>watchverse-</code>.</div>
 </section>
 
 <section id="online" class="card">
-<h2>8. Pubblicazione online: cosa è già pronto</h2>
-<p>Il pacchetto include manifest PWA, service worker, configurazione Netlify e cartella Supabase. Per una pubblicazione privata di prova puoi caricare la cartella shareable su Netlify.</p>
+<h2>7. Pubblicazione online</h2>
+<p>La pubblicazione GitHub Pages usa la build generata da <code>npm run build</code>. La sincronizzazione cloud richiede una configurazione Supabase separata.</p>
 <ol class="steps">
-<li>Pubblica soltanto il pacchetto <strong>shareable</strong>. Non pubblicare la cartella <code>private_import</code> né lo ZIP GDPR.</li>
-<li>Configura Supabase seguendo <code>supabase/README.md</code>.</li>
-<li>Inserisci in <code>config.js</code> soltanto URL Supabase, chiave publishable e URL del proxy TMDB.</li>
+<li>Inserisci in <code>config.js</code> solo URL Supabase, chiave publishable e URL del proxy TMDB.</li>
 <li>Non inserire mai nel client la chiave <code>service_role</code> o il token TMDB.</li>
+<li>Non pubblicare backup personali o ZIP GDPR originali.</li>
 </ol>
-<div class="warning">La versione 2.0 include il login Supabase e lo schema RLS, ma la sincronizzazione automatica dell’intera libreria è ancora la fase successiva. Prima di usarla quotidianamente su più dispositivi, continueremo l’implementazione cloud.</div>
 </section>
 
 <section id="privacy" class="card">
-<h2>9. Privacy e file da non pubblicare</h2>
-<p class="privacy">Lo ZIP GDPR originale è sensibile.</p>
-<p>Può contenere token, identificativi del dispositivo, indirizzi IP e dati dell’account. L’importatore Watchverse ignora automaticamente questi file e usa solo le informazioni utili alla libreria. Nonostante ciò:</p>
+<h2>8. Privacy e file da non pubblicare</h2>
+<p class="privacy">Lo ZIP GDPR originale e sensibile.</p>
 <ul>
-<li>conserva lo ZIP originale in una cartella privata;</li>
-<li>non caricarlo su repository GitHub o hosting;</li>
-<li>non condividere il pacchetto personale Daniela;</li>
-<li>per Elena usa il pacchetto shareable privo di cronologia personale.</li>
+<li>Conservalo in una cartella privata.</li>
+<li>Non caricarlo su repository GitHub o hosting pubblico.</li>
+<li>Non condividere pacchetti personali con cronologia o backup privati.</li>
+<li>Usa soltanto il pacchetto pubblico privo di cronologia personale.</li>
 </ul>
 </section>
 
-<p class="footer">Watchverse 2.0 è una beta privata e non è affiliata a TV Time, Trakt, TVmaze, Wikimedia Foundation, TMDB o JustWatch. I cataloghi e i metadati pubblici possono cambiare. Manuale aggiornato al 5 luglio 2026 · versione 2.0.27.</p>
+<p class="footer">Watchverse 2.0 e una beta privata e non e affiliata a TV Time, Trakt, TVmaze, Wikimedia Foundation, TMDB o JustWatch. Manuale aggiornato per la pubblicazione pubblica.</p>
 </main>
 </div>
 </body>

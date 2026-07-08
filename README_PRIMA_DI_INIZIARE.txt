@@ -51,7 +51,7 @@ Questa versione non contiene dati demo né librerie personali.
 
 AVVIO RAPIDO
 1. Per una prova immediata apri watchverse_offline.html con Chrome.
-2. Crea l’account familiare locale e scegli il profilo Daniela o Elena.
+2. Crea l’account familiare locale e scegli uno dei profili disponibili.
 3. Se la libreria è vuota, importa lo ZIP GDPR di TV Time dalla Home.
 4. Resta connessa a Internet: Watchverse aggiorna la libreria in background. Premi l’indicatore “Metadati” nell’header per vedere avanzamento e dati mancanti.
 

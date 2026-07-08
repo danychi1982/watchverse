@@ -5,8 +5,8 @@
  */
 window.WATCHVERSE_CONFIG = Object.freeze({
   appName: 'Watchverse',
-  accountUsername: 'daniela',
-  recoveryEmail: 'configured-privately-not-versioned',
+  accountUsername: 'utente',
+  recoveryEmail: '',
 
   // Autenticazione cloud opzionale. La chiave anon/publishable può stare nel client;
   // la sicurezza dei dati dipende dalle policy RLS incluse nel pacchetto.
