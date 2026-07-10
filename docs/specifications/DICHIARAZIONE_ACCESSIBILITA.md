@@ -26,4 +26,4 @@ La valutazione riguarda Watchverse 2.0.27, applicazione web locale/PWA: autentic
 - I contenuti e i siti esterni aperti da Watchverse non rientrano nell’ambito.
 - I dati importati dagli utenti e i metadati di terze parti possono introdurre lingue o testi non prevedibili.
 
-Il report completo, con tutti gli 86 criteri raggruppati per principio e linea guida, è disponibile nell'app dal footer e nel file `REPORT_WCAG_2.2.json`.
+Il report completo, con tutti gli 86 criteri raggruppati per principio e linea guida, è disponibile nell'app dal footer e nel file `docs/reference/REPORT_WCAG_2.2.json`.

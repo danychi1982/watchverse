@@ -67,7 +67,7 @@ DATE ITALIANE
 Le fonti pubbliche gratuite usate da Watchverse non forniscono sempre l’orario italiano di pubblicazione. Quando una data italiana esplicita non è disponibile, Watchverse mostra chiaramente l’uscita originale e non applica ritardi presunti. Nel dettaglio della serie puoi impostare una regola personale, per esempio “NOW · giorno successivo · ore 03:00”.
 
 ARCHITETTURA DATI
-I metadati comuni sono salvati una sola volta nell’archivio locale “catalog” e riutilizzati da tutti i profili. I dati personali restano separati. La descrizione completa è in ARCHITETTURA_DATI.md.
+I metadati comuni sono salvati una sola volta nell’archivio locale “catalog” e riutilizzati da tutti i profili. I dati personali restano separati. La descrizione completa è in docs/specifications/ARCHITETTURA_DATI.md.
 
 PUBBLICAZIONE
-Per pubblicare online carica l’intera cartella su un hosting HTTPS come Netlify. La sincronizzazione cloud tramite Supabase richiede la configurazione descritta in ROADMAP_CLOUD.md.
+Per pubblicare online carica l’intera cartella su un hosting HTTPS come Netlify. La sincronizzazione cloud tramite Supabase richiede la configurazione descritta in docs/specifications/ROADMAP_CLOUD.md.
