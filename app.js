@@ -279,7 +279,7 @@
   }
   function avatarHtml(profile, className = 'avatar') { return `<span class="${className}" aria-hidden="true">${avatarContent(profile)}</span>`; }
   const APPEARANCE_THEMES = [
-    { id:'watchverse-black', name:'Watchverse black', symbol:'W', description:'Nero profondo, bianco nitido e rosso cinematografico.', colors:['#070707','#151515','#e23b52'] },
+    { id:'watchverse-black', name:'Watchverse black', symbol:'W', description:'Nero profondo, bianco nitido e rosso vermiglio cinematografico.', colors:['#070707','#151515','#d94b3e'] },
     { id:'original', name:'Watchverse Original', symbol:'W', description:'Il tema scuro giallo e nero attuale.', colors:['#0a0a0b','#141416','#f4c400'] },
     { id:'cinematic', name:'Cinematic Adaptive', symbol:'▶', description:'Blu antracite e oro, con atmosfera cinematografica controllata.', colors:['#090d13','#192331','#e9bd55'] },
     { id:'classic', name:'Cinema Classico', symbol:'✦', description:'Nero caldo, crema e oro ispirati alle sale tradizionali.', colors:['#120b0b','#281919','#e0b461'] },
@@ -299,7 +299,7 @@
     document.documentElement.dataset.theme = theme;
     document.documentElement.dataset.density = density;
     const themeMeta = document.querySelector('meta[name="theme-color"]');
-    const themeColor = {'watchverse-black':'#e23b52',original:'#f4c400',cinematic:'#e9bd55',classic:'#e0b461',neon:'#73e8e5','last-of-us':'#b98a52',buffy:'#d59a43','editorial-light':'#6f4300',system:'#f4c400'}[theme] || '#e23b52';
+    const themeColor = {'watchverse-black':'#d94b3e',original:'#f4c400',cinematic:'#e9bd55',classic:'#e0b461',neon:'#73e8e5','last-of-us':'#b98a52',buffy:'#d59a43','editorial-light':'#6f4300',system:'#f4c400'}[theme] || '#d94b3e';
     if (themeMeta) themeMeta.setAttribute('content', themeColor);
     const version = $('#footerVersion'); if (version) version.textContent = APP_VERSION;
     const year = $('#footerYear'); if (year) year.textContent = String(new Date().getFullYear());
