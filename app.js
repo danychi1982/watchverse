@@ -332,8 +332,14 @@
     }
     applyAppearanceSettings();
   }
-  function saveSettings() { localStorage.setItem(profileKey('settings'), JSON.stringify(state.settings)); applyAppearanceSettings(); }
-  function saveProfiles() { localStorage.setItem('watchverse.profiles', JSON.stringify(state.profiles)); }
+  function saveSettings(syncCloud = true) {
+    localStorage.setItem(profileKey('settings'), JSON.stringify(state.settings)); applyAppearanceSettings();
+    if (syncCloud) void window.WatchverseCloudSync?.saveSettings(currentProfile(), state.settings).catch(error => console.warn('Watchverse cloud settings sync:', error));
+  }
+  function saveProfiles(syncCloud = true) {
+    localStorage.setItem('watchverse.profiles', JSON.stringify(state.profiles));
+    if (syncCloud) void window.WatchverseCloudSync?.saveProfiles(state.profiles).catch(error => console.warn('Watchverse cloud profile sync:', error));
+  }
 
   const memoryStores = Object.fromEntries(STORES.map(name => [name, new Map()]));
   function openDB() {
@@ -361,14 +367,16 @@
     return new Promise((resolve, reject) => { const r = dbTx(store).getAll(); r.onsuccess = () => resolve(r.result); r.onerror = () => reject(r.error); });
   }
   function dbPut(store, value) {
-    if (state.db?.memory) { memoryStores[store].set(value.id, structuredClone(value)); return Promise.resolve(value); }
-    return new Promise((resolve, reject) => { const r = dbTx(store, 'readwrite').put(value); r.onsuccess = () => resolve(value); r.onerror = () => reject(r.error); });
+    const finish = () => { void window.WatchverseCloudSync?.pushRecord(currentProfile(), store, value).catch(error => console.warn('Watchverse cloud record sync:', error)); return value; };
+    if (state.db?.memory) { memoryStores[store].set(value.id, structuredClone(value)); return Promise.resolve(finish()); }
+    return new Promise((resolve, reject) => { const r = dbTx(store, 'readwrite').put(value); r.onsuccess = () => resolve(finish()); r.onerror = () => reject(r.error); });
   }
   function dbBulkPut(store, values) {
-    if (state.db?.memory) { values.forEach(v => memoryStores[store].set(v.id, structuredClone(v))); return Promise.resolve(values.length); }
+    const finish = () => { void window.WatchverseCloudSync?.pushRecords(currentProfile(), store, values).catch(error => console.warn('Watchverse cloud bulk sync:', error)); return values.length; };
+    if (state.db?.memory) { values.forEach(v => memoryStores[store].set(v.id, structuredClone(v))); return Promise.resolve(finish()); }
     return new Promise((resolve, reject) => {
       const tx = state.db.transaction(store, 'readwrite'); const os = tx.objectStore(store); values.forEach(v => os.put(v));
-      tx.oncomplete = () => resolve(values.length); tx.onerror = () => reject(tx.error);
+      tx.oncomplete = () => resolve(finish()); tx.onerror = () => reject(tx.error);
     });
   }
   async function dbBulkPutBatched(store, values, batchSize = 600, onProgress = null) {
@@ -381,8 +389,10 @@
     return done;
   }
   function dbDelete(store, id) {
-    if (state.db?.memory) { memoryStores[store].delete(id); return Promise.resolve(); }
-    return new Promise((resolve, reject) => { const r = dbTx(store, 'readwrite').delete(id); r.onsuccess = () => resolve(); r.onerror = () => reject(r.error); });
+    const valuePromise = dbGetAll(store).then(values => values.find(value => value.id === id));
+    const finish = value => { void window.WatchverseCloudSync?.deleteRecord(currentProfile(), store, value).catch(error => console.warn('Watchverse cloud delete sync:', error)); };
+    if (state.db?.memory) { const value = memoryStores[store].get(id); memoryStores[store].delete(id); finish(value); return Promise.resolve(); }
+    return valuePromise.then(value => new Promise((resolve, reject) => { const r = dbTx(store, 'readwrite').delete(id); r.onsuccess = () => { finish(value); resolve(); }; r.onerror = () => reject(r.error); }));
   }
   function dbClearProfile(store) {
     if (state.db?.memory) { for (const [id, value] of memoryStores[store]) if (value.profileId === state.profileId) memoryStores[store].delete(id); return Promise.resolve(); }
@@ -393,6 +403,34 @@
         tx.oncomplete = resolve; tx.onerror = () => reject(tx.error);
       } catch (e) { reject(e); }
     });
+  }
+
+  async function syncCloudProfile(profile) {
+    const sync = window.WatchverseCloudSync;
+    if (!sync?.isEnabled() || !profile?.cloudId) return;
+    let cloud;
+    try { cloud = await sync.pullProfile(profile); } catch (error) { console.warn('Watchverse cloud profile pull:', error); return; }
+    if (!cloud) return;
+    for (const store of ['series', 'movies', 'progress']) {
+      const local = (await dbGetAll(store)).filter(value => value.profileId === profile.id);
+      const localById = new Map(local.map(value => [value.id, value]));
+      const winners = [];
+      for (const value of cloud[store] || []) {
+        const current = localById.get(value.id);
+        if (!current || dateMs(value.updatedAt) >= dateMs(current.updatedAt)) winners.push(value);
+        else { winners.push(current); void sync.pushRecord(profile, store, current).catch(error => console.warn('Watchverse cloud merge push:', error)); }
+        localById.delete(value.id);
+      }
+      for (const value of localById.values()) {
+        winners.push(value);
+        void sync.pushRecord(profile, store, value).catch(error => console.warn('Watchverse cloud migration push:', error));
+      }
+      if (winners.length) await dbBulkPut(store, winners);
+    }
+    const settingsKey = `watchverse.${profile.id}.settings`;
+    const localSettings = safeJson(localStorage.getItem(settingsKey), null);
+    if (cloud.settings && Object.keys(cloud.settings).length) localStorage.setItem(settingsKey, JSON.stringify(cloud.settings));
+    else if (localSettings) void sync.saveSettings(profile, localSettings).catch(error => console.warn('Watchverse cloud settings migration:', error));
   }
 
   // Catalogo condiviso: i dati provenienti dalle fonti pubbliche sono salvati una volta sola
@@ -3514,7 +3552,10 @@
     const loaderToken = showBlockingLoader(`Apro il profilo di ${profile?.name || 'Watchverse'}`, 'Carico libreria, preferenze e catalogo condiviso.');
     await nextPaint();
     try {
-      state.profileId=id;state.profileSelected=true;localStorage.setItem('watchverse.currentProfile',id);loadSettings();loadDefaultSourceStatus();
+      state.profileId=id;state.profileSelected=true;localStorage.setItem('watchverse.currentProfile',id);
+      await syncCloudProfile(profile);
+      loadSettings();loadDefaultSourceStatus();
+      void window.WatchverseCloudSync?.saveSettings(profile, state.settings).catch(error => console.warn('Watchverse cloud settings sync:', error));
       state.seriesFilter=state.settings.seriesFilter||'unwatched';state.movieFilter=state.settings.movieFilter||'watched';
       state.seriesSort=state.settings.seriesSort||'latestEpisode';state.movieSort=state.settings.movieSort||'recent';
       state.seriesVisible=60;state.movieVisible=60;state.metadataAutoBudget=36;state.metadataQueue=[];state.metadataQueuedIds.clear();state.metadataBackgroundStarted=false;state.metadataCompletedThisSession=0;state.metadataFailedThisSession=0;state.metadataRecoveryScheduled=false;state.metadataRecoveryDone=false;
@@ -3572,6 +3613,10 @@
       if('serviceWorker'in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
       if(!WatchverseAuth.readAccount()){showSetupScreen();return;}
       if(!(await WatchverseAuth.restoreSession())){showLoginScreen();return;}
+      try {
+        const cloudProfiles = await window.WatchverseCloudSync?.bootstrapProfiles(state.profiles);
+        if (Array.isArray(cloudProfiles) && cloudProfiles.length) { state.profiles = cloudProfiles; saveProfiles(false); }
+      } catch (error) { console.warn('Watchverse cloud profile bootstrap:', error); }
       state.authenticated=true;showProfileGate();
     }catch(e){console.error(e);document.body.innerHTML=`<main style="padding:40px;font-family:system-ui;color:white;background:#111;min-height:100vh"><h1>Watchverse non è riuscita ad avviarsi</h1><p>${esc(e.message)}</p><button onclick="location.reload()">Riprova</button></main>`;}
   }

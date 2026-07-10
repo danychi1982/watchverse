@@ -13,7 +13,7 @@ Questo file traccia le attivita ancora aperte. Una voce si considera chiusa solo
 | Area | Stato | Priorita | Note |
 | --- | --- | --- | --- |
 | Autenticazione familiare cloud | In corso | Alta | Login cloud verificato; restano recupero password e profili persistenti |
-| Dati condivisi su cloud | Da fare | Alta | Serve per usare PC, mobile e profili condivisi |
+| Dati condivisi su cloud | In corso | Alta | Prima sincronizzazione attiva per profili, librerie, progressi e impostazioni |
 | Fonti dati complete | Da fare | Alta | Trailer, streaming, cinema e dati variabili |
 | Filtri e organizzazione libreria | Da analizzare | Media | Da confrontare con Showly |
 | Mobile web e app Android | Da fare | Alta | Prima responsive/PWA, poi wrapper/app Android |
