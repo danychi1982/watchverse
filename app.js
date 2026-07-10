@@ -965,11 +965,11 @@
       programming:'<svg viewBox="0 0 96 96" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m29 18 18 18-8 8-18-18zM44 37l34 34-13 13-34-34zM56 54l10-10 18 18-10 10"/><path class="theme-detail" d="M24 22 13 11M14 30 3 29M31 13 30 2"/></g></svg>'
     },
     buffy: {
-      home:'<svg viewBox="0 0 24 24"><path d="M4 20h16M6 20V10l6-6 6 6v10M10 20v-6h4v6"/><path class="theme-detail" d="M12 6v5M9.5 8.5h5"/></svg>',
-      series:'<svg viewBox="0 0 24 24"><path d="m14 3-2 8 3 2-7 8 2-8-3-2Z"/><path class="theme-detail" d="M17 5v6M14 8h6"/></svg>',
-      movies:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 5v14M17 5v14M3 9h4M17 9h4M3 15h4M17 15h4"/><path class="theme-detail" d="M12 8v7M9.5 10.5h5"/></svg>',
-      search:'<svg viewBox="0 0 24 24"><path d="m15 15 5 5M10.5 17a6.5 6.5 0 1 1 0-13 6.5 6.5 0 0 1 0 13Z"/><path class="theme-detail" d="M10.5 7v7M8 9.5h5"/></svg>',
-      programming:'<svg viewBox="0 0 24 24"><path d="M6 4h12v17H6zM9 2v4M15 2v4M6 9h12"/><path class="theme-detail" d="M12 11v7M9.5 13.5h5"/></svg>'
+      home:'<svg viewBox="0 0 24 24"><path d="M5 21h14M7 21V9h10v12M5 9h14M12 3v8M8.5 6.5h7"/><path class="theme-detail" d="M9 14h2M13 14h2M9 17h2M13 17h2"/></svg>',
+      series:'<svg viewBox="0 0 24 24"><path d="M12 2v20M8 7h8M9 4h6M7 20h10"/><path class="theme-detail" d="m9 7 3 4 3-4"/></svg>',
+      movies:'<svg viewBox="0 0 24 24"><path d="M6 21V8a6 6 0 0 1 12 0v13M4 21h16M8 12h8M8 16h8"/><path class="theme-detail" d="M12 4v4"/></svg>',
+      search:'<svg viewBox="0 0 24 24"><path d="M12 3v18M7 8h10M8 5h8M5 21h14"/><path class="theme-detail" d="m8 12 4 4 4-4"/></svg>',
+      programming:'<svg viewBox="0 0 24 24"><path d="M5 21h14M7 21V9h10v12M5 9h14M12 3v6M8.5 6h7"/><path class="theme-detail" d="M18 4v7M15 7.5h6"/></svg>'
     }
   };
   function themeNavIcon(id, fallback = '') {
