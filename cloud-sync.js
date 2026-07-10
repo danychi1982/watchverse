@@ -117,14 +117,31 @@
 
   async function pullProfile(profile) {
     if (!isEnabled() || !profileId(profile)) return null;
-    const id = encodeURIComponent(profile.cloudId);
-    const [libraryResult, progressResult, settingsResult] = await Promise.allSettled([
-      requestAll(`/library_records?select=local_id,kind,payload,updated_at&profile_id=eq.${id}&deleted_at=is.null`),
-      requestAll(`/episode_progress?select=local_id,series_local_id,season,episode,watched,watched_at,rating,payload,updated_at&profile_id=eq.${id}&deleted_at=is.null`),
-      request(`/profile_settings?select=payload,updated_at&profile_id=eq.${id}`)
+    let cloudId = profile.cloudId;
+    const id = () => encodeURIComponent(cloudId);
+    let libraryResult = await Promise.allSettled([
+      requestAll(`/library_records?select=local_id,kind,payload,updated_at&profile_id=eq.${id()}&deleted_at=is.null`)
     ]);
-    if (libraryResult.status === 'rejected') throw libraryResult.reason;
-    const library = libraryResult.value;
+    if (libraryResult[0].status === 'fulfilled' && libraryResult[0].value.length === 0) {
+      // Compatibilita per importazioni create prima del riallineamento degli UUID
+      // cloud: il prefisso local_id identifica ancora senza ambiguita il profilo.
+      const prefix = encodeURIComponent(`${profile.id}|%`);
+      const legacyRows = await request(`/library_records?select=profile_id,local_id&local_id=like.${prefix}&deleted_at=is.null&limit=1`);
+      if (legacyRows?.[0]?.profile_id && legacyRows[0].profile_id !== cloudId) {
+        cloudId = legacyRows[0].profile_id;
+        profile.cloudId = cloudId;
+        libraryResult = await Promise.allSettled([
+          requestAll(`/library_records?select=local_id,kind,payload,updated_at&profile_id=eq.${id()}&deleted_at=is.null`)
+        ]);
+      }
+    }
+    const [progressResult, settingsResult] = await Promise.allSettled([
+      requestAll(`/episode_progress?select=local_id,series_local_id,season,episode,watched,watched_at,rating,payload,updated_at&profile_id=eq.${id()}&deleted_at=is.null`),
+      request(`/profile_settings?select=payload,updated_at&profile_id=eq.${id()}`)
+    ]);
+    const libraryResultValue = libraryResult[0];
+    if (libraryResultValue.status === 'rejected') throw libraryResultValue.reason;
+    const library = libraryResultValue.value;
     const progress = progressResult.status === 'fulfilled' ? progressResult.value : [];
     const settings = settingsResult.status === 'fulfilled' ? settingsResult.value : [];
     const records = { series: [], movies: [], progress: [] };
