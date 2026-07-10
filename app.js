@@ -1497,6 +1497,7 @@
           ${isSeries ? `<button data-action="next">${nextEpisode(item) ? 'Prossimo' : 'Completata'}</button>` : `<button class="${item.watched ? 'watched' : ''}" data-action="watched">${item.watched ? '✓ Visto' : 'Segna visto'}</button>`}
           <a class="secondary" href="${href}" style="display:grid;place-items:center;padding:0 10px">Dettagli</a>
         </div>
+        ${(!isSeries && !item.watched) || (isSeries && !['completed','dropped'].includes(item.status)) ? `<button class="card-remove ghost" data-action="remove" aria-label="Rimuovi ${esc(item.title)} dalla libreria">Rimuovi dalla libreria</button>` : ''}
       </div>
     </article>`;
   }
@@ -1672,6 +1673,24 @@
     item.watched = !item.watched; item.state = item.watched ? 'watched' : 'watchlist'; item.watchedAt = item.watched ? new Date().toISOString() : null;
     await dbPut('movies', item); showToast(item.watched ? 'Film segnato come visto' : 'Film rimesso da vedere', item.title, '🎬'); route();
   }
+  async function removeFromLibrary(kind, id) {
+    const store = kind === 'series' ? 'series' : 'movies';
+    const list = kind === 'series' ? state.series : state.movies;
+    const item = list.find(x => x.id === id);
+    if (!item || !window.confirm(`Rimuovere “${item.title}” dalla libreria?`)) return;
+    await dbDelete(store, id);
+    if (kind === 'series') {
+      const related = state.progress.filter(x => x.seriesId === id);
+      for (const record of related) await dbDelete('progress', record.id);
+      state.series = state.series.filter(x => x.id !== id);
+      state.progress = state.progress.filter(x => x.seriesId !== id);
+    } else {
+      state.movies = state.movies.filter(x => x.id !== id);
+    }
+    rebuildIndexes();
+    showToast('Titolo rimosso dalla libreria', item.title, '×');
+    route();
+  }
   async function toggleEpisode(seriesId, season, episode, episodeTitle = '') {
     const existing = progressRecord(seriesId, season, episode);
     if (existing) {
@@ -1693,6 +1712,9 @@
     }));
     $$('[data-action="watched"]', root).forEach(btn => btn.addEventListener('click', e => {
       e.preventDefault(); e.stopPropagation(); const card = btn.closest('[data-id]'); if (card.dataset.kind === 'movie') toggleMovieWatched(card.dataset.id);
+    }));
+    $$('[data-action="remove"]', root).forEach(btn => btn.addEventListener('click', e => {
+      e.preventDefault(); e.stopPropagation(); const card = btn.closest('[data-id]'); removeFromLibrary(card.dataset.kind, card.dataset.id);
     }));
     $$('[data-action="next"]', root).forEach(btn => btn.addEventListener('click', e => {
       e.preventDefault(); const card = btn.closest('[data-id]'); const s = state.series.find(x => x.id === card.dataset.id); const ep = s && nextEpisode(s);

@@ -170,6 +170,7 @@ select { min-height:44px; }
 .card-actions { display:flex; gap:7px; margin-top:11px; }
 .card-actions button { flex:1; min-height:36px; border-radius:10px; border:1px solid var(--line); background:var(--surface-2); color:var(--text); font-weight:750; }
 .card-actions button.watched { color:#111; background:var(--success); border-color:var(--success); }
+.card-remove { width:100%; min-height:34px; margin-top:8px; padding:0 8px; font-size:11px; }
 
 .media-list { display:grid; gap:12px; }
 .media-row { display:grid; grid-template-columns:82px 1fr auto; gap:16px; align-items:center; padding:10px; border-radius:16px; border:1px solid var(--line); background:var(--surface); }
@@ -3639,6 +3640,25 @@ html[data-theme="buffy"] .mini-reel i { display:none; }
   .detail-poster { max-width:78px; }
   .detail-info .chip-row { margin-bottom:10px; }
   .detail-info h2 { font-size:27px; }
+}
+@media (max-width:560px) {
+  .content-card { padding:16px; }
+  .detail-content { grid-template-columns:1fr; gap:16px; align-items:start; padding:18px 16px 22px; }
+  .detail-poster { width:min(150px,42vw); max-width:150px; padding:8px; }
+  .detail-info { width:100%; }
+  .detail-info h2 { font-size:clamp(28px,9vw,38px); line-height:1.08; overflow-wrap:anywhere; }
+  .detail-info p { display:block; max-width:none; overflow:visible; font-size:15px; line-height:1.5; }
+  .detail-actions { display:grid; grid-template-columns:1fr; width:100%; gap:8px; }
+  .detail-actions > * { width:100%; min-height:44px; }
+  .info-row { flex-direction:column; gap:4px; }
+  .info-row strong { overflow-wrap:anywhere; }
+  .provider { width:100%; min-width:0; }
+  .provider-copy strong,.provider-copy small { white-space:normal; overflow-wrap:anywhere; }
+  .episode-row { grid-template-columns:56px minmax(0,1fr) 42px; gap:10px; padding:10px; }
+  .episode-thumb { width:56px; }
+  .episode-row h4,.episode-row p,.episode-row small { overflow-wrap:anywhere; }
+  .trailer-link { grid-template-columns:1fr; }
+  .trailer-copy { min-width:0; }
 }
 @media (prefers-reduced-motion:reduce) {
   html[data-theme="last-of-us"] .cinema-loader-art::before,
