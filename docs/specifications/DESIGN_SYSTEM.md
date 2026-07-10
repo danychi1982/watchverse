@@ -1,10 +1,10 @@
 # Watchverse Design System
 
-Versione: 1.0.0 · Build 16
+Versione: 1.0.0 · Build 18
 
 ## Preview visuale
 
-La pagina [Design System Preview](docs/design-system-preview.html) mostra i token e i componenti in forma grafica: logo, palette, pulsanti, link con hover/focus, card con badge, barra di avanzamento e stati di sincronizzazione/errori/successo. Può essere aperta direttamente dal repository o dalla copia pubblicata insieme al sito.
+La pagina [Design System Preview](../design-system-preview.html) mostra i token e i componenti in forma grafica: logo, palette, pulsanti, link con hover/focus, card con badge, barra di avanzamento e stati di sincronizzazione/errori/successo. Può essere aperta direttamente dal repository o dalla copia pubblicata insieme al sito.
 
 La documentazione segue una struttura a fondazioni e componenti, ispirata ai pattern di documentazione di [Apple Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/), [Material Design](https://m3.material.io/) e [Atlassian Design System](https://atlassian.design/).
 

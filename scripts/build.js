@@ -7,9 +7,6 @@ const dist = path.join(root, "dist");
 const entries = [
   "index.html",
   "version.js",
-  "detail-preview.html",
-  "layout-preview.html",
-  "manuale_watchverse.html",
   "manifest.webmanifest",
   "sw.js",
   "app.js",
