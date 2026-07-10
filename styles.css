@@ -1060,6 +1060,32 @@ main:focus { outline: none; }
 .skip-link:focus { transform: translateY(0); }
 
 html[data-theme="original"] { color-scheme: dark; }
+html[data-theme="watchverse-black"] {
+  color-scheme: dark;
+  --bg:#070707; --surface:#111112; --surface-2:#18181a; --surface-3:#242427;
+  --text:#fafafa; --muted:#a9a9af; --line:#343438;
+  --accent:#e23b52; --accent-2:#ff7183; --accent-rgb:226,59,82; --on-accent:#ffffff;
+  --success:#77d66c; --danger:#ff6478; --info:#80bfff; --warning-text:#ffd27a;
+  --sidebar-bg:rgba(7,7,8,.98); --topbar-start:rgba(7,7,8,.99); --topbar-end:rgba(7,7,8,.94);
+  --calendar-bg:rgba(17,17,18,.98); --auth-card-bg:rgba(17,17,18,.98); --auth-base:#050505; --hover-surface:#2a2023;
+}
+html[data-theme="watchverse-black"] .hero-card .hero-bg { background:radial-gradient(circle at 75% 30%,rgba(var(--accent-rgb),.24),transparent 32%),linear-gradient(135deg,#281419,#101011 62%); }
+html[data-theme="watchverse-black"] .favorite-button.active { background:var(--accent); border-color:var(--accent-2); }
+html[data-theme="watchverse-black"] .tabbar { background:#101011; border-color:#303034; }
+html[data-theme="watchverse-black"] .tab-button.active { background:var(--accent); color:#fff; }
+html[data-theme="watchverse-black"] .media-card,
+html[data-theme="watchverse-black"] .media-row { border-color:#303034; }
+html[data-theme="watchverse-black"] .media-card:hover,
+html[data-theme="watchverse-black"] .media-row:hover { border-color:rgba(var(--accent-rgb),.75); }
+.tabbar { display:flex; gap:6px; align-items:center; overflow-x:auto; padding:5px; border:1px solid var(--line); border-radius:14px; background:var(--surface); scrollbar-width:thin; }
+.tab-button { display:inline-flex; align-items:center; gap:7px; flex:0 0 auto; min-height:38px; padding:0 12px; border:1px solid transparent; border-radius:10px; color:var(--muted); background:transparent; font-weight:850; white-space:nowrap; }
+.tab-button:hover { color:var(--text); background:var(--surface-2); }
+.tab-button.active { color:var(--on-accent); background:var(--accent); }
+.filter-count { min-width:20px; padding:2px 6px; border-radius:999px; background:rgba(0,0,0,.18); font-size:11px; line-height:1.2; text-align:center; font-variant-numeric:tabular-nums; }
+.tab-button:not(.active) .filter-count { background:var(--surface-3); color:var(--text); }
+.toolbar { padding:10px; border:1px solid var(--line); border-radius:14px; background:var(--surface); }
+.media-card { border-radius:12px; }
+.media-row { border-radius:12px; }
 html[data-theme="cinematic"] {
   color-scheme: dark;
   --bg:#090d13; --surface:#121923; --surface-2:#192331; --surface-3:#243246;
