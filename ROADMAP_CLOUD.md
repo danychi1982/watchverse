@@ -15,9 +15,9 @@ Questo file traccia le attivita ancora aperte. Una voce si considera chiusa solo
 | Autenticazione familiare cloud | In corso | Alta | Login cloud verificato; restano recupero password e profili persistenti |
 | Dati condivisi su cloud | In corso | Alta | Prima sincronizzazione attiva per profili, librerie, progressi e impostazioni |
 | Fonti dati complete | Da fare | Alta | Trailer, streaming, cinema e dati variabili |
-| Filtri e organizzazione libreria | Da analizzare | Media | Da confrontare con Showly |
-| Mobile web e app Android | Da fare | Alta | Prima responsive/PWA, poi wrapper/app Android |
-| Identita visiva e favicon | Da fare | Bassa | Rapida, ma non bloccante |
+| Filtri e organizzazione libreria | In corso | Media | Prima uniformazione applicata; restano filtri avanzati e viste |
+| Mobile web e app Android | In corso | Alta | Responsive/PWA migliorati; resta audit su smartphone e decisione wrapper |
+| Identita visiva e favicon | In corso | Bassa | Tema Watchverse black e prime proposte di marchio aggiunti |
 | Backup, export e sicurezza | Da aggiungere | Alta | Necessario prima di migrare dati in cloud |
 | Monitoraggio errori e qualita deploy | Da aggiungere | Media | Utile dopo il passaggio cloud |
 
@@ -124,11 +124,32 @@ Obiettivo:
 
 Attivita:
 
-- [ ] raccogliere screenshot o descrizione dei filtri Showly da replicare;
-- [ ] mappare gli stati attuali Watchverse contro stati Showly;
+- [x] raccogliere screenshot o descrizione dei filtri Showly da replicare;
+- [x] mappare gli stati attuali Watchverse contro stati Showly;
+- [x] applicare una prima gerarchia coerente per tab, contatori, toolbar e card;
 - [ ] ridisegnare filtri per serie, film, watchlist, completati, in corso, sospesi;
 - [ ] aggiungere ordinamenti utili: ultimo visto, ultimo aggiornamento, rating, piattaforma, genere;
 - [ ] testare filtri su libreria piccola e libreria importata grande.
+
+### Backlog Showly da valutare
+
+Le seguenti migliorie sono state aggiunte come backlog funzionale, da affrontare una per volta dopo la verifica della nuova UI:
+
+- [ ] vista libreria con tab di stato persistenti e contatori sempre visibili;
+- [ ] filtri combinabili per stato, genere, piattaforma, anno e rating;
+- [ ] ordinamento configurabile e memorizzato per ogni sezione;
+- [ ] vista griglia/lista con scelta persistente e densita regolabile;
+- [ ] schede compatte con poster, stato, progresso episodio e azioni rapide;
+- [ ] pagina dettaglio piu strutturata: hero, riepilogo, cast, episodi, dove vederlo e titoli correlati;
+- [ ] sezioni orizzontali con scorrimento da tastiera, touch e pulsanti freccia accessibili;
+- [ ] calendario/programmazione con filtri per giorno, piattaforma e tipo di contenuto;
+- [ ] watchlist separata dalla libreria vista, con stato “da iniziare” esplicito;
+- [ ] ricerca globale con risultati raggruppati per film, serie, persone e piattaforme;
+- [ ] azioni rapide da card: visto, preferito, watchlist e apertura dettaglio;
+- [ ] gestione piu chiara degli episodi: stagione, progresso, ultimo episodio e prossimo episodio;
+- [ ] stati vuoti contestuali con suggerimenti realmente azionabili;
+- [ ] accessibilita completa di tab, filtri, rail e dialoghi, inclusa navigazione da tastiera;
+- [ ] test e2e dedicati a filtri, ordinamenti, cambio vista e rail orizzontali su desktop/mobile.
 
 Criteri di chiusura:
 
