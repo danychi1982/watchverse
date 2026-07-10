@@ -1,10 +1,12 @@
 # Watchverse Design System
 
-Versione: 1.0.0 · Build 14
+Versione: 1.0.0 · Build 15
 
 ## Preview visuale
 
 La pagina [Design System Preview](docs/design-system-preview.html) mostra i token e i componenti in forma grafica: logo, palette, pulsanti, link con hover/focus, card con badge, barra di avanzamento e stati di sincronizzazione/errori/successo. Può essere aperta direttamente dal repository o dalla copia pubblicata insieme al sito.
+
+La documentazione segue una struttura a fondazioni e componenti, ispirata ai pattern di documentazione di [Apple Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/), [Material Design](https://m3.material.io/) e [Atlassian Design System](https://atlassian.design/).
 
 Questo documento descrive le regole visive e interattive condivise da Watchverse. I componenti devono usare i token semantici del tema attivo; i valori colore hardcoded sono ammessi solo per immagini, poster, loghi di emittenti o fondali tematici chiaramente circoscritti.
 
@@ -82,10 +84,62 @@ Il focus visibile usa un outline di almeno 3px con offset. I controlli circolari
 
 ## Tipografia e spaziatura
 
-- Famiglia principale: `Inter`, system UI fallback.
-- Titoli: peso alto, dimensione coerente con il contesto; niente testo hero dentro card compatte.
-- Corpo: altezza di riga leggibile e colore `--text` o `--muted` secondo gerarchia.
-- Spaziatura basata su multipli regolari di 4px, con scale locali per card, toolbar e sezioni.
+### Famiglie
+
+- UI e contenuti: `Inter`, `ui-sans-serif`, system UI fallback.
+- Wordmark e titoli del brand: `Palatino Linotype`, `Palatino`, `Georgia`, serif.
+- Codice e identificativi tecnici: `ui-monospace`, `SFMono-Regular`, `Menlo`, monospace.
+- Il numero di famiglie è volutamente limitato per non indebolire la gerarchia visiva.
+
+### Scala tipografica
+
+| Stile | Dimensione | Peso | Line-height | Uso |
+| --- | ---: | ---: | ---: | --- |
+| Display | `clamp(2.4rem, 5vw, 4.5rem)` | 800-900 | 1.02 | Hero della home vuota |
+| Page title | `2.5rem` | 800 | 1.05 | Titolo pagina |
+| Section title | `1.5rem` | 800 | 1.15 | Sezioni e card principali |
+| Card title | `1rem` | 800 | 1.25 | Titoli di film e serie |
+| Body | `1rem` | 400-600 | 1.5 | Descrizioni e contenuti |
+| Small/meta | `0.75rem` | 700-850 | 1.35 | Badge, date, stato e supporto |
+
+Le dimensioni non vengono scalate liberamente con la viewport: si usano solo clamp e breakpoint con limiti stabili. I testi compatti non usano pesi sottili e non vengono mai troncati senza tooltip o alternativa accessibile.
+
+### Spaziatura
+
+La scala base è di 4px: `4, 8, 12, 16, 20, 24, 32, 40, 48`. Le sezioni usano normalmente 24-32px tra blocchi; i controlli affini usano 8-12px; il testo lungo mantiene 16-20px tra paragrafi.
+
+## Layout di pagina
+
+### Anatomia dell’app
+
+1. **App shell**: sfondo globale, sidebar, topbar, contenuto e footer.
+2. **Sidebar**: navigazione primaria e cambio profilo; larghezza stabile in modalità espansa e ridotta in modalità compatta.
+3. **Topbar**: contesto della pagina a sinistra, brand centrato, stato metadati e azioni globali a destra.
+4. **Main content**: massimo uso dello spazio disponibile, con contenitore leggibile e sezioni non annidate in card decorative.
+5. **Footer**: versione/build e link informativi sempre raggiungibili.
+
+### Griglia e contenitori
+
+- Il contenuto usa una griglia fluida con `minmax(0, 1fr)` per evitare overflow.
+- Le card ripetute usano griglie responsive; gli elementi con formato fisso definiscono sempre `min-width`, `aspect-ratio` o dimensioni stabili.
+- Il testo lungo resta in una colonna leggibile e non viene allargato fino ai bordi dello schermo.
+- Le sezioni di pagina occupano bande/layout completi; le card sono riservate a elementi ripetuti, strumenti e dialoghi.
+- I carousel usano una rail orizzontale con scroll nativo, snap, frecce e drag/swipe.
+
+### Responsive e safe areas
+
+- **Desktop**: sidebar espansa, topbar completa, griglie a 3 o più colonne quando il contenuto lo consente.
+- **Tablet**: sidebar riducibile, griglie a 2 colonne, azioni che vanno a capo senza sovrapporsi.
+- **Mobile**: navigazione inferiore o sidebar compatta, una colonna, controlli con almeno 44px di area attiva, contenuti orizzontali scrollabili.
+- Il contenuto rispetta `env(safe-area-inset-*)` e non viene coperto da footer, bottom navigation o notch.
+- Il layout passa alla modalità compatta quando il contenuto non entra più, non in base a una singola dimensione estetica.
+
+### Profondità ed elevazione
+
+- Sfondo: nessuna ombra.
+- Surface: bordo `--line` e ombra minima solo quando serve separare dal fondo.
+- Dialoghi e toast: ombra più profonda, z-index esplicito e focus confinato.
+- Non si usano card dentro card né ombre decorative per simulare gerarchie che possono essere espresse con spazio e bordo.
 
 ## Icone e logo
 
