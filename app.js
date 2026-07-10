@@ -3711,17 +3711,17 @@
     $('#avatarInput')?.addEventListener('change',handleAvatarUpload);
   }
 
-  async function bootstrapCloudProfilesWithRetry() {
+  async function bootstrapCloudProfilesWithRetry(maxAttempts = 4) {
     const sync = window.WatchverseCloudSync;
     if (!sync?.isEnabled()) return null;
-    for (let attempt = 0; attempt < 4; attempt += 1) {
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
       try {
         const profiles = await sync.bootstrapProfiles(state.profiles);
         if (Array.isArray(profiles) && profiles.length && profiles.every(profile => profile.cloudId)) return profiles;
       } catch (error) {
         console.warn(`Watchverse cloud profile bootstrap attempt ${attempt + 1}:`, error);
       }
-      if (attempt < 3) await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+      if (attempt < maxAttempts - 1) await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
     }
     return null;
   }
@@ -3739,7 +3739,9 @@
       if(!WatchverseAuth.readAccount()){showSetupScreen();return;}
       if(!(await WatchverseAuth.restoreSession())){showLoginScreen();return;}
       try {
-        const cloudProfiles = await bootstrapCloudProfilesWithRetry();
+        // Mostra presto la scelta profilo; il recupero completo viene atteso
+        // quando l'utente apre il profilo, con loader e retry dedicati.
+        const cloudProfiles = await bootstrapCloudProfilesWithRetry(1);
         if (Array.isArray(cloudProfiles) && cloudProfiles.length) { state.profiles = cloudProfiles; saveProfiles(false); }
       } catch (error) { console.warn('Watchverse cloud profile bootstrap:', error); }
       state.authenticated=true;showProfileGate();
