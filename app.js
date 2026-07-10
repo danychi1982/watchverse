@@ -1704,6 +1704,8 @@
   async function route(options = {}) {
     const r = parseRoute();
     const routeKey = `${r.page}/${r.id || ''}`;
+    const preserveScroll = options.preserveScroll === true;
+    const preservedScrollY = preserveScroll ? window.scrollY : 0;
     const shouldShowLoader = options.loader !== false && state.profileSelected && state.lastRenderedRoute !== routeKey;
     let loaderToken = 0;
     if (shouldShowLoader) {
@@ -1712,7 +1714,8 @@
       await nextPaint();
     }
     try {
-      window.scrollTo({ top: 0, behavior: 'instant' }); updateBackToTopButton();
+      if (!preserveScroll) window.scrollTo({ top: 0, behavior: 'instant' });
+      updateBackToTopButton();
       if (r.page === 'home') renderHome();
       else if (r.page === 'series' && r.id) renderSeriesDetail(r.id);
       else if (r.page === 'series') renderSeriesLibrary();
@@ -1727,6 +1730,7 @@
       else if (r.page === 'accessibility-report') renderAccessibilityReport();
       else renderSettings();
       state.lastRenderedRoute = routeKey;
+      if (preserveScroll) requestAnimationFrame(() => window.scrollTo({ top: preservedScrollY, behavior: 'instant' }));
     } finally {
       if (loaderToken) hideBlockingLoader(loaderToken);
     }
@@ -2439,7 +2443,7 @@
     state.metadataRenderPending = true;
     state.metadataRerenderTimer = setTimeout(() => {
       state.metadataRenderPending = false;
-      if (state.profileSelected && ['home', 'series', 'movies', 'movie'].includes(parseRoute().page)) route();
+      if (state.profileSelected && ['home', 'series', 'movies', 'movie'].includes(parseRoute().page)) route({ loader:false, preserveScroll:true });
     }, isCurrentDetail ? 260 : 5000);
   }
   function scheduleMetadataRecoveryPass() {
