@@ -3,6 +3,7 @@
   'use strict';
 
   const APP_VERSION = window.WATCHVERSE_VERSION || '1.0.0';
+  const APP_BUILD = window.WATCHVERSE_BUILD || '0';
   const AIVENGERS_ICON_SVG = '<svg class="aivengers-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7.2h8a4 4 0 0 1 4 4v5.3a3.5 3.5 0 0 1-3.5 3.5h-9A3.5 3.5 0 0 1 4 16.5v-5.3a4 4 0 0 1 4-4Z"/><path d="M12 3.5v3.7M9 14h.01M15 14h.01M9.2 17h5.6"/><circle cx="12" cy="3" r="1"/><path d="M19.2 4.1c.18 1.05.75 1.62 1.8 1.8-1.05.18-1.62.75-1.8 1.8-.18-1.05-.75-1.62-1.8-1.8 1.05-.18 1.62-.75 1.8-1.8Z"/></svg>';
   const DB_NAME = 'watchverse-db';
   const DB_VERSION = 4;
@@ -302,6 +303,7 @@
     const themeColor = {'watchverse-black':'#d94b3e',original:'#f4c400',cinematic:'#e9bd55',classic:'#e0b461',neon:'#73e8e5','last-of-us':'#b98a52',buffy:'#d59a43','editorial-light':'#6f4300',system:'#f4c400'}[theme] || '#d94b3e';
     if (themeMeta) themeMeta.setAttribute('content', themeColor);
     const version = $('#footerVersion'); if (version) version.textContent = APP_VERSION;
+    const build = $('#footerBuild'); if (build) build.textContent = APP_BUILD;
     const year = $('#footerYear'); if (year) year.textContent = String(new Date().getFullYear());
     refreshThemeDecorations();
   }
