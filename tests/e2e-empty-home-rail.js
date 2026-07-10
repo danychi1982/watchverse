@@ -79,6 +79,22 @@ async function ensureEmptyAccount(page) {
   await page.waitForSelector('#emptyPopularSeriesRail', { timeout: 10000 });
 }
 
+function useLocalTestConfig(page, baseUrl) {
+  return page.route(`${baseUrl}config.js**`, route => route.fulfill({
+    contentType: 'text/javascript; charset=utf-8',
+    body: `window.WATCHVERSE_CONFIG = Object.freeze({
+      appName: 'Watchverse', accountUsername: '', recoveryEmail: '',
+      supabaseUrl: '', supabaseAnonKey: '', allowCloudSignup: false,
+      tmdbProxyUrl: '', publicSourcesProxyUrl: '',
+      defaultSources: Object.freeze({
+        streamingLookup: Object.freeze({ enabled: false }),
+        tvSchedule: Object.freeze({ enabled: false }),
+        cinema: Object.freeze({ enabled: false })
+      })
+    });`
+  }));
+}
+
 async function expectScrollable(locator) {
   const metrics = await locator.evaluate(node => ({
     scrollWidth: node.scrollWidth,
@@ -98,6 +114,7 @@ async function expectScrollable(locator) {
   try {
     const browser = await chromium.launch({ executablePath, headless: true });
     const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    await useLocalTestConfig(page, url);
     await page.goto(url, { waitUntil: 'domcontentloaded' });
     await ensureEmptyAccount(page);
 
