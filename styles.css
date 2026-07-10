@@ -4027,8 +4027,8 @@ html[data-theme="buffy"] .brand-mark {
 }
 /* Wordmark coerente con la proposta approvata: serif ad alto contrasto, senza dipendenze esterne. */
 :is(.brand-name,.auth-brand h1,.profile-gate h1) {
-  font-family:"Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
+  font-family:"Old English Text MT","UnifrakturCook","Cloister Black","Goudy Old Style",Georgia,"Times New Roman",serif;
   font-weight:800;
-  letter-spacing:.015em;
+  letter-spacing:.01em;
 }
 .brand-name { text-rendering:geometricPrecision; }
