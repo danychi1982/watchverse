@@ -410,8 +410,16 @@
     const sync = window.WatchverseCloudSync;
     if (!sync?.isEnabled() || !profile?.cloudId) return;
     let cloud;
-    try { cloud = await sync.pullProfile(profile); } catch (error) { console.warn('Watchverse cloud profile pull:', error); return; }
+    try { cloud = await sync.pullProfile(profile); } catch (error) {
+      console.warn('Watchverse cloud profile pull:', error);
+      showToast('Libreria cloud non caricata', 'Controlla la connessione e riprova. I dati online non sono stati cancellati.', '!', 7000, { kind: 'error' });
+      return;
+    }
     if (!cloud) return;
+    if (cloud.warnings?.progress) {
+      console.warn('Watchverse cloud episode progress pull:', cloud.warnings.progress);
+      showToast('Catalogo cloud caricato', 'Il progresso degli episodi verrà riprovato al prossimo accesso.', '!', 7000, { kind: 'error' });
+    }
     for (const store of ['series', 'movies', 'progress']) {
       const local = (await dbGetAll(store)).filter(value => value.profileId === profile.id);
       const localById = new Map(local.map(value => [value.id, value]));

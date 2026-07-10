@@ -124,9 +124,8 @@
       request(`/profile_settings?select=payload,updated_at&profile_id=eq.${id}`)
     ]);
     if (libraryResult.status === 'rejected') throw libraryResult.reason;
-    if (progressResult.status === 'rejected') throw progressResult.reason;
     const library = libraryResult.value;
-    const progress = progressResult.value;
+    const progress = progressResult.status === 'fulfilled' ? progressResult.value : [];
     const settings = settingsResult.status === 'fulfilled' ? settingsResult.value : [];
     const records = { series: [], movies: [], progress: [] };
     for (const row of library || []) {
@@ -134,7 +133,14 @@
       records[row.kind === 'series' ? 'series' : 'movies'].push(value);
     }
     for (const row of progress || []) records.progress.push({ ...(row.payload || {}), id: row.local_id, profileId: profile.id, seriesId: row.series_local_id, season: row.season, episode: row.episode, watched: row.watched, watchedAt: row.watched_at, rating: row.rating, updatedAt: row.updated_at });
-    return { ...records, settings: settings?.[0]?.payload || null };
+    return {
+      ...records,
+      settings: settings?.[0]?.payload || null,
+      warnings: {
+        progress: progressResult.status === 'rejected' ? progressResult.reason?.message || 'Progresso episodi non disponibile.' : null,
+        settings: settingsResult.status === 'rejected' ? settingsResult.reason?.message || 'Impostazioni cloud non disponibili.' : null
+      }
+    };
   }
 
   async function saveSettings(profile, settings) {
