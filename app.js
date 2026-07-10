@@ -1051,6 +1051,7 @@
   }
   function applyAivengerBranding() {
     $('#aivengersButton')?.setAttribute('aria-label', 'Apri assistente AIvenger');
+    $('#aivengersButton')?.setAttribute('title', 'Apri assistente AIvenger');
     $('#aivengersPanel')?.setAttribute('aria-label', 'Chat con AIvenger');
     $('#aivengersClose')?.setAttribute('aria-label', 'Chiudi AIvenger');
     $('.aivengers-title strong')?.replaceChildren(document.createTextNode('AIvenger'));
@@ -1955,7 +1956,7 @@
         rail.classList.remove('is-dragging');
         if (dragging) {
           rail._watchverseSuppressClick = true;
-          setTimeout(() => { rail._watchverseSuppressClick = false; }, 0);
+          setTimeout(() => { rail._watchverseSuppressClick = false; }, 120);
         }
         dragging = false;
       };
@@ -2046,7 +2047,7 @@
 
     const railSection = ({ id, title, description, items, kicker, linkHref = '#/series', linkLabel = 'Tutte le serie →' }) => {
       if (!items.length) return `<section class="section"><div class="section-head"><div><h2>${esc(title)}</h2><p>${esc(description)}</p></div><a class="section-link" href="${linkHref}">${esc(linkLabel)}</a></div><div class="empty-state"><div class="empty-icon">▶</div><h3>Nessun elemento da mostrare</h3><p>La sezione si aggiornerà quando segnerai nuovi episodi o saranno disponibili nuove uscite.</p></div></section>`;
-      return `<section class="section home-rail-section"><div class="section-head"><div><h2>${esc(title)}</h2><p>${esc(description)}</p></div><div class="section-head-actions"><a class="section-link" href="${linkHref}">${esc(linkLabel)}</a><div class="rail-controls" aria-label="Navigazione ${esc(title)}"><button class="rail-button" type="button" data-rail-prev="${id}" aria-label="Scorri indietro ${esc(title)}">‹</button><button class="rail-button" type="button" data-rail-next="${id}" aria-label="Scorri avanti ${esc(title)}">›</button></div></div></div><div class="home-media-rail" id="${id}" data-rail tabindex="0" role="region" aria-label="${esc(title)}">${items.map(x => episodeMediaCard(x, kicker)).join('')}</div></section>`;
+      return `<section class="section home-rail-section"><div class="section-head"><div><h2>${esc(title)}</h2><p>${esc(description)}</p></div><div class="section-head-actions"><a class="section-link" href="${linkHref}">${esc(linkLabel)}</a><div class="rail-controls" aria-label="Navigazione ${esc(title)}"><button class="rail-button" type="button" data-rail-prev="${id}" aria-label="Scorri indietro ${esc(title)}"><svg class="rail-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button><button class="rail-button" type="button" data-rail-next="${id}" aria-label="Scorri avanti ${esc(title)}"><svg class="rail-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button></div></div></div><div class="home-media-rail" id="${id}" data-rail tabindex="0" role="region" aria-label="${esc(title)}">${items.map(x => episodeMediaCard(x, kicker)).join('')}</div></section>`;
     };
 
     const listContent = state.homeTab === 'watch' ? `
