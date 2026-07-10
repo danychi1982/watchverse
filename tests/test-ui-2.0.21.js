@@ -3,7 +3,7 @@ const assert = require('assert');
 const css = fs.readFileSync('styles.css','utf8');
 const html = fs.readFileSync('index.html','utf8');
 const app = fs.readFileSync('app.js','utf8');
-assert(app.includes("const APP_VERSION = '2.0.27'"), 'Versione 2.0.21 non impostata');
+assert(app.includes("const APP_VERSION = root.WATCHVERSE_VERSION || '1.0.0'"), 'Versione 2.0.21 non impostata');
 assert(html.includes('id="aivengersButton"'), 'Launcher AIvengers mancante');
 assert(html.includes('id="aivengersPanel"'), 'Pannello AIvengers mancante');
 assert(css.includes('--aivengers-anchor-x'), 'Punto di ancoraggio AIvengers mancante');

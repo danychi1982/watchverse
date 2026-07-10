@@ -2,7 +2,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '2.0.27';
+  const APP_VERSION = root.WATCHVERSE_VERSION || '1.0.0';
   const AIVENGERS_ICON_SVG = '<svg class="aivengers-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7.2h8a4 4 0 0 1 4 4v5.3a3.5 3.5 0 0 1-3.5 3.5h-9A3.5 3.5 0 0 1 4 16.5v-5.3a4 4 0 0 1 4-4Z"/><path d="M12 3.5v3.7M9 14h.01M15 14h.01M9.2 17h5.6"/><circle cx="12" cy="3" r="1"/><path d="M19.2 4.1c.18 1.05.75 1.62 1.8 1.8-1.05.18-1.62.75-1.8 1.8-.18-1.05-.75-1.62-1.8-1.8 1.05-.18 1.62-.75 1.8-1.8Z"/></svg>';
   const DB_NAME = 'watchverse-db';
   const DB_VERSION = 4;

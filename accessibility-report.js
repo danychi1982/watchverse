@@ -2,7 +2,7 @@
   root.WATCHVERSE_WCAG_REPORT = {
   "standard": "WCAG 2.2",
   "targetLevel": "AA",
-  "version": "2.0.27",
+  "version": "1.0.0",
   "evaluationDate": "2026-07-05",
   "scope": "Watchverse 2.0.27, applicazione web locale/PWA: autenticazione, selezione profilo, home, librerie, ricerca, programmazione, dettagli, profilo a tab, statistiche, importazione, assistente AIvengers, navigazione comprimibile, accessibilità e modali principali.",
   "methods": [
