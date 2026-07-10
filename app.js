@@ -1825,7 +1825,7 @@
           <button class="secondary" id="emptyHomeManual">＋ Aggiungi manualmente</button>
         </div>
       </div>
-      <div class="empty-library-orbit" aria-hidden="true"><span>🎬</span><span>📺</span><span>⭐</span><strong>W</strong></div>
+      <div class="empty-library-orbit" aria-hidden="true"><span>🎬</span><span>📺</span><span>⭐</span><span class="brand-mark empty-library-logo">W</span></div>
     </section>
     ${emptyPopularSeriesSection()}
     <section class="empty-library-grid" aria-label="Modi per iniziare">
