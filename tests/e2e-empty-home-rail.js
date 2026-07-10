@@ -75,6 +75,18 @@ async function ensureEmptyAccount(page) {
   await page.fill('#setupPassword2', 'abcdef');
   await page.click('#setupForm button[type="submit"]');
   await page.waitForSelector('[data-profile-choice]', { timeout: 10000 });
+  await page.click('#logoutFromGate');
+  await page.waitForSelector('#loginForm', { timeout: 10000 });
+  assert(await page.inputValue('#loginUser') === '', 'Il nome utente non deve essere precompilato.');
+  assert(await page.getAttribute('#loginPassword', 'type') === 'password', 'La password deve partire oscurata.');
+  await page.click('#toggleLoginPassword');
+  assert(await page.getAttribute('#loginPassword', 'type') === 'text', 'Il pulsante deve mostrare la password.');
+  await page.click('#toggleLoginPassword');
+  assert(await page.getAttribute('#loginPassword', 'type') === 'password', 'Il pulsante deve poter nascondere la password.');
+  await page.fill('#loginUser', 'utente');
+  await page.fill('#loginPassword', 'abcdef');
+  await page.click('#loginForm button[type="submit"]');
+  await page.waitForSelector('[data-profile-choice]', { timeout: 10000 });
   await page.locator('[data-profile-choice]').filter({ hasText: 'Daniela' }).click();
   await page.waitForSelector('#emptyPopularSeriesRail', { timeout: 10000 });
 }

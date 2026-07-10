@@ -3564,13 +3564,14 @@
     $('#authRoot').innerHTML = `<section class="auth-shell"><div class="auth-card">${authBrand('La tua libreria privata')}
       <h2>Accedi</h2><p>Un solo account familiare, con librerie separate per ogni profilo.</p>
       <form id="loginForm" class="auth-form">
-        <div class="form-field"><label for="loginUser">Nome utente</label><input id="loginUser" autocomplete="username" value="${esc(account.username)}" required></div>
-        <div class="form-field"><label for="loginPassword">Password</label><input id="loginPassword" type="password" autocomplete="current-password" required autofocus></div>
+        <div class="form-field"><label for="loginUser">Nome utente</label><input id="loginUser" autocomplete="username" placeholder="Inserisci il nome utente" value="" required></div>
+        <div class="form-field"><label for="loginPassword">Password</label><div class="password-field"><input id="loginPassword" type="password" autocomplete="current-password" required autofocus><button id="toggleLoginPassword" class="password-toggle" type="button" aria-label="Mostra password" title="Mostra password">Mostra</button></div></div>
         <div class="auth-row"><label class="auth-check"><input id="rememberLogin" type="checkbox" checked> Ricordami su questo dispositivo</label><button id="forgotPassword" class="auth-link" type="button">Password dimenticata?</button></div>
         <button class="primary" type="submit">Accedi</button><div id="authMessage" class="auth-message" role="alert">${esc(message)}</div>
       </form><p class="auth-footnote"><span class="account-chip local">● Modalità locale protetta</span><br>Quando configurerai Supabase, lo stesso accesso potrà sincronizzare telefono e PC e inviare vere email di recupero.</p>
     </div></section>`;
     $('#forgotPassword').addEventListener('click',showForgotPasswordScreen);
+    $('#toggleLoginPassword').addEventListener('click',()=>{const input=$('#loginPassword');const button=$('#toggleLoginPassword');const visible=input.type==='text';input.type=visible?'password':'text';button.textContent=visible?'Mostra':'Nascondi';button.setAttribute('aria-label',visible?'Mostra password':'Nascondi password');button.title=visible?'Mostra password':'Nascondi password';input.focus();});
     $('#loginForm').addEventListener('submit',async e=>{e.preventDefault();const msg=$('#authMessage');msg.textContent='';try{await WatchverseAuth.signIn($('#loginUser').value,$('#loginPassword').value,$('#rememberLogin').checked);state.authenticated=true;showProfileGate();}catch(err){msg.textContent=err.message;}});
   }
   function showForgotPasswordScreen() {
