@@ -3643,6 +3643,16 @@
     try {
       state.profileId=id;state.profileSelected=true;localStorage.setItem('watchverse.currentProfile',id);
       await syncCloudProfile(profile);
+      // Il primo accesso dopo la pulizia del browser puo' incontrare una risposta
+      // transitoria del servizio cloud. Ritenta prima di mostrare una Home vuota.
+      if (window.WatchverseCloudSync?.isEnabled() && profile?.cloudId) {
+        const [loadedSeries, loadedMovies] = await Promise.all([dbGetAll('series'), dbGetAll('movies')]);
+        const hasCloudLibrary = loadedSeries.some(item => item.profileId === id) || loadedMovies.some(item => item.profileId === id);
+        if (!hasCloudLibrary) {
+          await new Promise(resolve => setTimeout(resolve, 1200));
+          await syncCloudProfile(profile);
+        }
+      }
       loadSettings();loadDefaultSourceStatus();
       void window.WatchverseCloudSync?.saveSettings(profile, state.settings).catch(error => console.warn('Watchverse cloud settings sync:', error));
       state.seriesFilter=state.settings.seriesFilter||'unwatched';state.movieFilter=state.settings.movieFilter||'watched';
