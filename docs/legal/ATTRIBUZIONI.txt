@@ -24,6 +24,9 @@ COMPONENTE TECNICO INCLUSO
 - Pako Inflate, libreria JavaScript per decompressione DEFLATE/ZIP.
 - Licenza MIT, copyright 2014-2017 Vitaly Puzrin e Andrei Tuputcyn.
 - Testo completo della licenza: PAKO_LICENSE.txt.
+- UnifrakturCook Bold, font blackletter per il wordmark Watchverse.
+  Copyright 2010 j. 'mach' wust e 2009 Peter Wiegel, licenza SIL Open Font License 1.1.
+  Testo completo della licenza: assets/fonts/UnifrakturCook-OFL.txt.
 
 GRAFICA TEMATICA
 - Sfondo, icone e loader dei temi The Last of Us e Buffy: illustrazioni originali di Watchverse.

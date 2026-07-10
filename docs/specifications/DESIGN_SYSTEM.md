@@ -1,6 +1,6 @@
 # Watchverse Design System
 
-Versione: 1.0.0 · Build 19
+Versione: 1.0.0 · Build 21
 
 ## Preview visuale
 
@@ -87,7 +87,8 @@ Il focus visibile usa un outline di almeno 3px con offset. I controlli circolari
 ### Famiglie
 
 - UI e contenuti: `Inter`, `ui-sans-serif`, system UI fallback.
-- Wordmark e titoli del brand: `Palatino Linotype`, `Palatino`, `Georgia`, serif.
+- Wordmark del brand: `WatchverseFraktur`, UnifrakturCook Bold incorporato con licenza SIL OFL 1.1.
+- Titoli di supporto del brand: Georgia/serif di sistema.
 - Codice e identificativi tecnici: `ui-monospace`, `SFMono-Regular`, `Menlo`, monospace.
 - Il numero di famiglie è volutamente limitato per non indebolire la gerarchia visiva.
 
