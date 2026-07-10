@@ -12,7 +12,7 @@ Questo file traccia le attivita ancora aperte. Una voce si considera chiusa solo
 
 | Area | Stato | Priorita | Note |
 | --- | --- | --- | --- |
-| Autenticazione familiare cloud | In definizione | Alta | Account unico Daniela, profili Daniela ed Elena, signup pubblico disattivato |
+| Autenticazione familiare cloud | In corso | Alta | Login cloud verificato; restano recupero password e profili persistenti |
 | Dati condivisi su cloud | Da fare | Alta | Serve per usare PC, mobile e profili condivisi |
 | Fonti dati complete | Da fare | Alta | Trailer, streaming, cinema e dati variabili |
 | Filtri e organizzazione libreria | Da analizzare | Media | Da confrontare con Showly |
@@ -46,11 +46,11 @@ Decisioni confermate:
 
 Attivita:
 
-- [ ] creare il progetto Supabase gratuito e configurare URL/chiave pubblica;
-- [ ] creare l'utente proprietario Daniela senza signup pubblico;
+- [x] creare il progetto Supabase gratuito e configurare URL/chiave pubblica;
+- [x] creare l'utente proprietario Daniela senza signup pubblico;
 - [ ] definire il flusso di primo accesso e cambio password;
 - [ ] collegare recupero password via email Supabase;
-- [ ] rendere persistente la presenza dell'account cloud tra build e dispositivi;
+- [x] rendere persistente la presenza dell'account cloud tra build e dispositivi;
 - [ ] creare o migrare automaticamente i profili Daniela ed Elena;
 - [ ] verificare che il PIN profilo resti opzionale e separato dalla password account.
 
