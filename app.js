@@ -2028,13 +2028,13 @@
       return `<article class="media-card episode-media-card" data-id="${esc(s.id)}" data-kind="series">
         <a href="${href}" class="poster episode-card-poster" style="background:${s.posterGradient || gradient(s.title)}" aria-label="Apri ${esc(s.title)}, ${esc(episodeCode)}">
           ${posterInner(s)}
-          <span class="episode-card-kicker">${esc(kicker)}</span>
         </a>
         <div class="card-body">
-          <div class="episode-card-heading">
-            <p class="card-title"><a href="${href}">${esc(s.title)}</a></p>
+          <div class="episode-card-meta-line">
+            <span class="episode-card-kicker">${esc(kicker)}</span>
             <span class="episode-code">${esc(episodeCode)}</span>
           </div>
+          <p class="card-title"><a href="${href}" title="${esc(s.title)}">${esc(s.title)}</a></p>
           <p class="episode-card-title">${esc(ep.title || 'Titolo episodio non disponibile')}</p>
           <div class="card-meta"><span>${ep.runtime || 50} min</span><span>${prog.percent}%</span></div>
           <div class="progress-track" aria-label="Avanzamento ${prog.percent}%"><div class="progress-fill" style="width:${prog.percent}%"></div></div>

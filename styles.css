@@ -1,3 +1,11 @@
+@font-face {
+  font-family: "WatchverseFraktur";
+  src: url("assets/fonts/UnifrakturCook-Bold.ttf") format("truetype");
+  font-display: swap;
+  font-weight: 700;
+  font-style: normal;
+}
+
 :root {
   color-scheme: dark;
   --bg: #0a0a0b;
@@ -1424,18 +1432,13 @@ html[data-density="compact"] .profile-card { padding:15px; }
 .episode-media-card .card-title a:hover {
   color:var(--accent);
 }
-.episode-card-heading {
+.episode-card-meta-line {
   display:flex;
   align-items:flex-start;
   justify-content:space-between;
   gap:8px;
   min-width:0;
   margin-top:6px;
-}
-.episode-card-heading .card-title {
-  min-width:0;
-  flex:1 1 auto;
-  margin:0;
 }
 .episode-code {
   flex:0 0 auto;
@@ -1452,20 +1455,26 @@ html[data-density="compact"] .profile-card { padding:15px; }
   white-space:nowrap;
 }
 .episode-card-kicker {
-  position:absolute;
-  z-index:2;
-  left:10px;
-  right:10px;
-  bottom:10px;
+  min-width:0;
+  flex:1 1 auto;
   overflow:hidden;
-  color:#fff;
+  color:var(--accent-2);
   font-size:10px;
   font-weight:950;
   letter-spacing:.055em;
   text-overflow:ellipsis;
   text-transform:uppercase;
   white-space:nowrap;
-  text-shadow:0 2px 7px rgba(0,0,0,.95);
+}
+.episode-media-card .card-title {
+  min-height:36px;
+  margin-top:7px;
+  white-space:normal;
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+  overflow:hidden;
+  line-height:1.2;
 }
 .episode-card-title {
   min-height:38px;
@@ -4027,8 +4036,8 @@ html[data-theme="buffy"] .brand-mark {
 }
 /* Wordmark coerente con la proposta approvata: serif ad alto contrasto, senza dipendenze esterne. */
 :is(.brand-name,.auth-brand h1,.profile-gate h1) {
-  font-family:"Old English Text MT","UnifrakturCook","Cloister Black","Goudy Old Style",Georgia,"Times New Roman",serif;
-  font-weight:800;
-  letter-spacing:.01em;
+  font-family:"WatchverseFraktur","Old English Text MT","UnifrakturCook","Cloister Black",Georgia,"Times New Roman",serif;
+  font-weight:700;
+  letter-spacing:0;
 }
 .brand-name { text-rendering:geometricPrecision; }
