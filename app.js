@@ -1009,6 +1009,16 @@
   function aivengersMessageHtml(role, html) {
     return `<article class="aivengers-message ${role}"><span class="aivengers-message-avatar" aria-hidden="true">${role === 'assistant' ? AIVENGERS_ICON_SVG : avatarContent(currentProfile())}</span><div>${html}</div></article>`;
   }
+  function applyAivengerBranding() {
+    $('#aivengersButton')?.setAttribute('aria-label', 'Apri assistente AIvenger');
+    $('#aivengersPanel')?.setAttribute('aria-label', 'Chat con AIvenger');
+    $('#aivengersClose')?.setAttribute('aria-label', 'Chiudi AIvenger');
+    $('.aivengers-title strong')?.replaceChildren(document.createTextNode('AIvenger'));
+    $('.aivengers-title small')?.replaceChildren(document.createTextNode('Assistente di Watchverse'));
+    $('#aivengersInput')?.setAttribute('aria-label', 'Scrivi una domanda ad AIvenger');
+    $('#aivengersInput')?.setAttribute('placeholder', 'Chiedi qualcosa ad AIvenger');
+    $('#aivengersButton .sr-only')?.replaceChildren(document.createTextNode('AIvenger'));
+  }
   function appendAivengersMessage(role, html) {
     const messages = $('#aivengersMessages');
     if (!messages) return;
@@ -1027,8 +1037,9 @@
   function initializeAivengers() {
     if (state.aivengersInitialized) return;
     state.aivengersInitialized = true;
+    applyAivengerBranding();
     const messages = $('#aivengersMessages');
-    if (messages) messages.innerHTML = aivengersMessageHtml('assistant', '<p>Ciao, sono il tuo assistente <strong>AIvengers</strong>. Come posso aiutarti?</p>');
+    if (messages) messages.innerHTML = aivengersMessageHtml('assistant', '<p>Ciao, sono il tuo assistente <strong>AIvenger</strong>. Come posso aiutarti?</p>');
     const suggestions = $('#aivengersSuggestions');
     if (suggestions) suggestions.innerHTML = aivengersSuggestionsHtml();
     $$('[data-aivengers-suggestion]').forEach(button => button.addEventListener('click', () => {
@@ -1074,13 +1085,53 @@
     const reasons = (selected.genres || []).filter(genre => genreWeights.has(genre)).slice(0, 3);
     return `<p>Ti suggerisco <a href="#/movie/${encodeURIComponent(selected.id)}"><strong>${esc(selected.title)}</strong></a>${selected.year ? ` (${esc(selected.year)})` : ''}.</p><p>${reasons.length ? `È vicino ai tuoi gusti per i generi ${esc(reasons.join(', '))}.` : 'È tra i titoli da vedere più pertinenti presenti nella tua libreria.'}</p><a class="aivengers-action" href="#/movie/${encodeURIComponent(selected.id)}">Apri il film →</a>`;
   }
-  function submitAivengersQuestion(rawQuestion) {
+  function aivengersFindLibraryTitle(items, query) {
+    const normalized = normalizeSearch(query);
+    return items.filter(item => {
+      const title = normalizeSearch(item.title);
+      return title && (normalized.includes(title) || title.includes(normalized));
+    }).sort((a, b) => normalizeSearch(b.title).length - normalizeSearch(a.title).length)[0] || null;
+  }
+  function aivengersSeasonNumber(query) {
+    const ordinals = { prima:1, primo:1, seconda:2, secondo:2, terza:3, terzo:3, quarta:4, quarto:4, quinta:5, quinto:5, sesta:6, sesto:6, settima:7, settimo:7, ottava:8, ottavo:8, nona:9, nono:9, decima:10, decimo:10 };
+    const ordinal = query.match(/\b(prima|primo|seconda|secondo|terza|terzo|quarta|quarto|quinta|quinto|sesta|sesto|settima|settimo|ottava|ottavo|nona|nono|decima|decimo)\s+stagion/);
+    if (ordinal) return ordinals[ordinal[1]];
+    const numeric = query.match(/\bstagion(?:e|i)?\s*(?:numero\s*)?(\d+)\b/);
+    return numeric ? Number(numeric[1]) : null;
+  }
+  async function aivengersMarkWatched(rawQuestion) {
+    const query = normalizeSearch(rawQuestion);
+    if (!query.includes('segna') || !query.includes('vist')) return null;
+    const episodeMatch = query.match(/\bepisod(?:io|e)?\s*(\d+)\b/);
+    if (episodeMatch) {
+      const season = aivengersSeasonNumber(query);
+      if (!season) return '<p>Indica anche la stagione, per esempio: <strong>segna come visto episodio 3 stagione 1 di From</strong>.</p>';
+      const series = aivengersFindLibraryTitle(state.series, query);
+      if (!series) return '<p>Non trovo questa serie nel profilo attivo. Aggiungila alla libreria e riprova.</p>';
+      const episode = Number(episodeMatch[1]);
+      const metadata = allEpisodes(series).find(item => Number(item.season) === season && Number(item.episode) === episode);
+      const existing = progressRecord(series.id, season, episode);
+      const record = existing || { id: `${state.profileId}|${String(series.id).split('|').pop()}:s${season}:e${episode}`, profileId: state.profileId, seriesId: series.id, season, episode, title: metadata?.title || `Episodio ${episode}`, runtime: metadata?.runtime || 50 };
+      record.watched = true; record.watchedAt = new Date().toISOString();
+      if (!existing) state.progress.push(record);
+      await dbPut('progress', record); rebuildIndexes(); route();
+      return `<p>Fatto: ho segnato come visto <a href="#/series/${encodeURIComponent(series.id)}"><strong>${esc(series.title)}</strong></a>, stagione ${season}, episodio ${episode}.</p>`;
+    }
+    const movie = aivengersFindLibraryTitle(state.movies, query);
+    if (!movie) return '<p>Non trovo questo film nella libreria del profilo attivo. Aggiungilo e riprova.</p>';
+    movie.watched = true; movie.state = 'watched'; movie.watchedAt = new Date().toISOString();
+    await dbPut('movies', movie); route();
+    return `<p>Fatto: ho segnato come visto <a href="#/movie/${encodeURIComponent(movie.id)}"><strong>${esc(movie.title)}</strong></a>.</p>`;
+  }
+  async function submitAivengersQuestion(rawQuestion) {
     const question = String(rawQuestion || '').trim();
     if (!question) return;
     appendAivengersMessage('user', `<p>${esc(question)}</p>`);
     const q = normalizeSearch(question);
     let answer = '';
-    if ((q.includes('prossima settimana') || q.includes('prossimi sette') || q.includes('prossimi 7')) && (q.includes('episod') || q.includes('serie'))) answer = aivengersUpcomingAnswer(7, false);
+    const watchedAnswer = await aivengersMarkWatched(question);
+    if (watchedAnswer) answer = watchedAnswer;
+    else if ((q.includes('prossima settimana') || q.includes('prossimi sette') || q.includes('prossimi 7')) && (q.includes('episod') || q.includes('serie'))) answer = aivengersUpcomingAnswer(7, false);
     else if ((q.includes('oggi') || q.includes('odierno')) && q.includes('episod')) answer = aivengersUpcomingAnswer(1, true);
     else if ((q.includes('sugger') || q.includes('consigl')) && q.includes('film')) answer = aivengersMovieSuggestion();
     else if ((q.includes('vai') || q.includes('apri')) && q.includes('film')) {
@@ -1096,7 +1147,7 @@
       answer = '<p>Apro le impostazioni del profilo attivo.</p>';
       setTimeout(() => { location.hash = '#/settings'; closeAivengers(); }, 450);
     } else {
-      answer = '<p>Per ora posso riassumere le uscite degli episodi, suggerire un film dalla tua libreria e aprire le principali sezioni di Watchverse.</p><p class="aivengers-note">Prova una delle domande suggerite qui sotto.</p>';
+      answer = '<p>Posso riassumere le uscite degli episodi, suggerire un film, segnare film ed episodi come visti e aprire le principali sezioni di Watchverse.</p><p class="aivengers-note">Prova una delle domande suggerite qui sotto.</p>';
     }
     appendAivengersMessage('assistant', answer);
     const input = $('#aivengersInput');
