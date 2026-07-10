@@ -416,16 +416,18 @@
       const local = (await dbGetAll(store)).filter(value => value.profileId === profile.id);
       const localById = new Map(local.map(value => [value.id, value]));
       const winners = [];
+      const pendingUpload = [];
       for (const value of cloud[store] || []) {
         const current = localById.get(value.id);
         if (!current || dateMs(value.updatedAt) >= dateMs(current.updatedAt)) winners.push(value);
-        else { winners.push(current); void sync.pushRecord(profile, store, current).catch(error => console.warn('Watchverse cloud merge push:', error)); }
+        else { winners.push(current); pendingUpload.push(current); }
         localById.delete(value.id);
       }
       for (const value of localById.values()) {
         winners.push(value);
-        void sync.pushRecord(profile, store, value).catch(error => console.warn('Watchverse cloud migration push:', error));
+        pendingUpload.push(value);
       }
+      if (pendingUpload.length) await sync.pushRecords(profile, store, pendingUpload);
       if (winners.length) await dbBulkPut(store, winners, false);
     }
     const settingsKey = `watchverse.${profile.id}.settings`;
