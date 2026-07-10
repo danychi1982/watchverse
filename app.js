@@ -286,7 +286,7 @@
     { id:'classic', name:'Cinema Classico', symbol:'✦', description:'Nero caldo, crema e oro ispirati alle sale tradizionali.', colors:['#120b0b','#281919','#e0b461'] },
     { id:'neon', name:'Midnight Neon', symbol:'◇', description:'Blu notte e accenti ciano, moderno ma ad alto contrasto.', colors:['#080a14','#181d34','#73e8e5'] },
     { id:'last-of-us', name:'The Last of Us', symbol:'🍄', description:'Proposta 3: parete infetta, colonia di Cordyceps, finestra al tramonto, Firefly, zaino di Ellie e tatuaggio con falena.', colors:['#070908','#283126','#b98a52'] },
-    { id:'buffy', name:'Buffy the Vampire Slayer', symbol:'B', description:'Horror anni Novanta: rosso sangue, pergamena, cimitero, croce e paletto.', colors:['#0b0809','#2a1114','#d59a43'] },
+    { id:'buffy', name:'Buffy the Vampire Slayer', symbol:'B', description:'The Gentlemen: silenzio, completi scuri, luna, bocca cucita e atmosfera gotica.', colors:['#071018','#182430','#7f313b'] },
     { id:'editorial-light', name:'Editorial Light', symbol:'Aa', description:'Tema chiaro da rivista, pensato per ambienti luminosi.', colors:['#f5f1e8','#fffdf8','#6f4300'] },
     { id:'system', name:'Sistema', symbol:'◐', description:'Segue automaticamente il tema chiaro o scuro del dispositivo.', colors:['#0a0a0b','#f5f1e8','#f4c400'] }
   ];
@@ -2021,9 +2021,9 @@
 
     const profile = currentProfile();
     setMain(`<section class="home-welcome" aria-label="Messaggio di benvenuto"><div><span class="kicker">Profilo attivo · ${esc(profile?.name || 'spettatore')}</span><h2>Bentornata, ${esc(profile?.name || 'spettatore')} 👋</h2><p>Stai consultando la libreria personale di <strong>${esc(profile?.name || 'questo profilo')}</strong>. Riprendi da dove avevi lasciato oppure scegli qualcosa di nuovo.</p></div></section><section class="home-summary-grid" aria-label="Riepilogo libreria">
-      <article class="metric-card"><div class="metric-row"><span class="metric-icon">▣</span><span>Episodi visti</span></div><strong>${totalProgress.toLocaleString('it-IT')}</strong></article>
-      <article class="metric-card"><div class="metric-row"><span class="metric-icon">▶</span><span>Serie da continuare</span></div><strong>${seriesInProgress.toLocaleString('it-IT')}</strong></article>
-      <article class="metric-card"><div class="metric-row"><span class="metric-icon">🎬</span><span>Film visti</span></div><strong>${watchedMovies.toLocaleString('it-IT')}</strong></article>
+      <article class="metric-card"><div class="metric-row"><span class="metric-icon metric-icon-episodes" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 4v16M16 4v16M4 9h4M16 9h4M4 15h4M16 15h4"/><path d="m10 12 2 2 4-4"/></svg></span><span>Episodi visti</span></div><strong>${totalProgress.toLocaleString('it-IT')}</strong></article>
+      <article class="metric-card"><div class="metric-row"><span class="metric-icon metric-icon-series" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="m10 8 5 4-5 4Z"/><path d="M5 20h14"/></svg></span><span>Serie da continuare</span></div><strong>${seriesInProgress.toLocaleString('it-IT')}</strong></article>
+      <article class="metric-card"><div class="metric-row"><span class="metric-icon metric-icon-movies" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16v13H4zM4 10h16M8 6v4M16 6v4"/><path d="m9 15 2 2 4-4"/></svg></span><span>Film visti</span></div><strong>${watchedMovies.toLocaleString('it-IT')}</strong></article>
     </section>
       <div class="tabbar"><button class="tab-button ${state.homeTab === 'watch' ? 'active' : ''}" data-home-tab="watch">Da vedere</button><button class="tab-button ${state.homeTab === 'upcoming' ? 'active' : ''}" data-home-tab="upcoming">In arrivo</button></div>${listContent}`);
 
@@ -3595,7 +3595,7 @@
     $('#authRoot').innerHTML = ''; $('#aivengersButton')?.classList.remove('hidden'); applyAppearanceSettings(); applySidebarState(); updateProfileEntryPoints(); updateBackToTopButton();
   }
   function authBrand(subtitle) {
-    return `<div class="auth-brand"><span class="brand-mark">W</span><div><h1>Watchverse</h1><p class="brand-slogan">Tutto ciò che hai visto. Tutto ciò che vedrai.</p><p style="margin:6px 0 0">${esc(subtitle)}</p></div></div>`;
+    return `<div class="auth-brand"><span class="brand-mark">W</span><div><h1>Watchverse</h1><p class="brand-slogan">Scegli cosa guardare. Ricorda cosa hai visto.</p><p style="margin:6px 0 0">${esc(subtitle)}</p></div></div>`;
   }
   function showSetupScreen() {
     hideAppShell();

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 900" role="img" aria-label="Motivo originale con tre figure in completo, luna e corridoio gotico">
+  <defs><linearGradient id="night" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#071018"/><stop offset=".62" stop-color="#101a25"/><stop offset="1" stop-color="#08090d"/></linearGradient><radialGradient id="moon"><stop stop-color="#e8dfd0"/><stop offset="1" stop-color="#7f8791"/></radialGradient></defs>
+  <rect width="1400" height="900" fill="url(#night)"/><circle cx="1040" cy="160" r="94" fill="url(#moon)" opacity=".9"/>
+  <path d="M0 710 320 500h760l320 210v190H0Z" fill="#080b10" stroke="#3b4650" stroke-width="4"/><path d="M420 900 700 540l280 360M560 900l140-360 140 360" fill="none" stroke="#263544" stroke-width="6"/>
+  <g fill="#0a0d12" stroke="#b7a995" stroke-width="4"><path d="M250 760V355h210v405Z"/><path d="M595 760V315h210v445Z"/><path d="M940 760V355h210v405Z"/></g>
+  <g fill="#08090c" stroke="#b7a995" stroke-width="3"><path d="M284 420h142l-16 54H300Z"/><path d="M629 380h142l-16 54H645Z"/><path d="M974 420h142l-16 54H990Z"/><path d="M285 454h140l-18 210H303Z"/><path d="M630 414h140l-18 220H648Z"/><path d="M975 454h140l-18 210H993Z"/></g>
+  <g fill="none" stroke="#a6b0b8" stroke-width="5"><path d="M355 565v75M330 602h50M700 535v78M675 573h50M1045 565v75M1020 602h50"/></g>
+  <g fill="none" stroke="#7f313b" stroke-width="6" opacity=".8"><path d="M180 240h1040M180 240v520M1220 240v520"/><path d="M180 240c160 115 210 115 350 0M870 240c140 115 190 115 350 0"/></g>
+  <g fill="#d5c7b5"><circle cx="120" cy="190" r="3"/><circle cx="290" cy="130" r="4"/><circle cx="1240" cy="210" r="3"/><circle cx="1310" cy="100" r="4"/></g>
+</svg>
