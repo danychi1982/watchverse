@@ -21,11 +21,14 @@
 
   async function requestAll(path, pageSize = 1000) {
     const rows = [];
-    for (let offset = 0; ; offset += pageSize) {
-      const separator = path.includes('?') ? '&' : '?';
-      const page = await request(`${path}${separator}limit=${pageSize}&offset=${offset}`);
-      rows.push(...(Array.isArray(page) ? page : []));
-      if (!Array.isArray(page) || page.length < pageSize) return rows;
+    const parallelPages = 4;
+    for (let offset = 0; ; offset += pageSize * parallelPages) {
+      const pages = await Promise.all(Array.from({ length: parallelPages }, (_, index) => {
+        const separator = path.includes('?') ? '&' : '?';
+        return request(`${path}${separator}limit=${pageSize}&offset=${offset + index * pageSize}`);
+      }));
+      for (const page of pages) rows.push(...(Array.isArray(page) ? page : []));
+      if (pages.some(page => !Array.isArray(page) || page.length < pageSize)) return rows;
     }
   }
 
