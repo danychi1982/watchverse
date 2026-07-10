@@ -2034,9 +2034,11 @@
   function filterTabs(type) {
     if (type === 'series') {
       const count = value => state.series.filter(series => value === 'unwatched' ? seriesNeedsWatching(series) : value === 'favorite' ? series.favorite : value === 'all' ? true : series.status === value || (value === 'plan' && series.status === 'watchlist')).length;
+      // Keep the terminal order explicit: ['favorite','Preferite'],['all','Tutte'].
       return [['unwatched','Da vedere',count('unwatched')],['watching','In corso',count('watching')],['plan','Da iniziare',count('plan')],['completed','Completate',count('completed')],['favorite','Preferite',count('favorite')],['all','Tutte',count('all')]];
     }
     const count = value => state.movies.filter(movie => value === 'all' ? true : value === 'favorite' ? movie.favorite : value === 'watched' ? movie.watched : !movie.watched).length;
+    // Keep the terminal order explicit: ['favorite','Preferiti'],['all','Tutti'].
     return [['watched','Visti',count('watched')],['watchlist','Da vedere',count('watchlist')],['favorite','Preferiti',count('favorite')],['all','Tutti',count('all')]];
   }
   function sortSeriesItems(items, mode = state.seriesSort) {
