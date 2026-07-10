@@ -12,7 +12,17 @@
   };
 
   async function request(path, options = {}) {
-    const response = await fetch(`${base()}${path}`, { ...options, headers: headers(options.headers) });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    let response;
+    try {
+      response = await fetch(`${base()}${path}`, { ...options, signal: controller.signal, headers: headers(options.headers) });
+    } catch (error) {
+      if (error?.name === 'AbortError') throw new Error('Timeout durante la sincronizzazione cloud.');
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
     let data = null;
     try { data = await response.json(); } catch { /* empty response */ }
     if (!response.ok) throw new Error(data?.message || data?.hint || 'Sincronizzazione cloud non riuscita.');
