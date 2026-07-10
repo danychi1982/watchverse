@@ -5,7 +5,7 @@ const css=fs.readFileSync('styles.css','utf8');
 const html=fs.readFileSync('index.html','utf8');
 const server=fs.readFileSync('avvia_server.py','utf8');
 
-assert(app.includes("const APP_VERSION = '2.0.27'"));
+assert(app.includes("const APP_VERSION = root.WATCHVERSE_VERSION || '1.0.0'"));
 assert(app.includes('detail-banner media-frame media-frame-backdrop'),'backdrop non confinato');
 assert(app.includes('detail-poster media-frame media-frame-poster'),'poster non confinato');
 assert(css.includes(':is(.poster,.row-poster,.search-result .thumb,.continue-poster,.cast-photo,.suggestion-poster,.person-credit-poster) > img'),'regola condivisa immagini mancante');
@@ -21,5 +21,5 @@ assert(app.includes("publicSourceFetch('/api/cinema'"),'ricerca cinema locale ma
 assert(!app.includes('Nessun orario disponibile'),'tabella cinema vuota ancora presente');
 assert(app.includes('Solo orari trovati sui siti ufficiali delle sale preferite.'),'vincolo fonti ufficiali non esplicitato');
 assert(server.includes('Gli endpoint accettano solo fonti predefinite'),'server non limitato a fonti note');
-assert(html.includes('styles.css?v=2.0.27'),'cache bust CSS errato');
-console.log('✓ Watchverse 2.0.27: dettagli, temi e fonti effettive verificati');
+assert(html.includes('styles.css?v=1.0.0'),'cache bust CSS errato');
+console.log('✓ Watchverse 1.0.0: dettagli, temi e fonti effettive verificati');

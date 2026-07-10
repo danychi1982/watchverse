@@ -6,6 +6,7 @@ const dist = path.join(root, "dist");
 
 const entries = [
   "index.html",
+  "version.js",
   "detail-preview.html",
   "layout-preview.html",
   "manuale_watchverse.html",
@@ -76,6 +77,20 @@ function writeBuildInfo() {
   );
 }
 
+function writeVersionAsset() {
+  fs.writeFileSync(
+    path.join(dist, "version.js"),
+    `window.WATCHVERSE_VERSION = ${JSON.stringify(readVersion())};\n`,
+    "utf8"
+  );
+  const serviceWorker = path.join(dist, "sw.js");
+  fs.writeFileSync(
+    serviceWorker,
+    fs.readFileSync(serviceWorker, "utf8").replaceAll("__VERSION__", readVersion()),
+    "utf8"
+  );
+}
+
 function writePagesFiles() {
   fs.writeFileSync(path.join(dist, ".nojekyll"), "", "utf8");
   fs.copyFileSync(path.join(dist, "index.html"), path.join(dist, "404.html"));
@@ -97,6 +112,7 @@ for (const entry of entries) {
 }
 
 writeBuildInfo();
+writeVersionAsset();
 writePagesFiles();
 
 console.log(`Build completata in ${path.relative(root, dist)}`);
