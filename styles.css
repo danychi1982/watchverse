@@ -1422,6 +1422,33 @@ html[data-density="compact"] .profile-card { padding:15px; }
 .episode-media-card .card-title a:hover {
   color:var(--accent);
 }
+.episode-card-heading {
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:8px;
+  min-width:0;
+  margin-top:6px;
+}
+.episode-card-heading .card-title {
+  min-width:0;
+  flex:1 1 auto;
+  margin:0;
+}
+.episode-code {
+  flex:0 0 auto;
+  margin-top:1px;
+  padding:4px 7px;
+  border:1px solid var(--line);
+  border-radius:6px;
+  background:var(--surface-3);
+  color:var(--text);
+  font-size:10px;
+  font-weight:900;
+  line-height:1.1;
+  letter-spacing:.03em;
+  white-space:nowrap;
+}
 .episode-card-kicker {
   position:absolute;
   z-index:2;
@@ -1526,6 +1553,13 @@ html[data-density="compact"] .episode-card-title {
   .back-to-top {
     bottom:calc(82px + env(safe-area-inset-bottom));
     right:max(14px, env(safe-area-inset-right));
+  }
+  .episode-card-heading {
+    gap:6px;
+  }
+  .episode-code {
+    padding-inline:6px;
+    font-size:9px;
   }
 }
 @media (max-width:620px) {
