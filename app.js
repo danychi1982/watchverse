@@ -2028,11 +2028,13 @@
       return `<article class="media-card episode-media-card" data-id="${esc(s.id)}" data-kind="series">
         <a href="${href}" class="poster episode-card-poster" style="background:${s.posterGradient || gradient(s.title)}" aria-label="Apri ${esc(s.title)}, ${esc(episodeCode)}">
           ${posterInner(s)}
-          <span class="poster-badge">${esc(episodeCode)}</span>
           <span class="episode-card-kicker">${esc(kicker)}</span>
         </a>
         <div class="card-body">
-          <p class="card-title"><a href="${href}">${esc(s.title)}</a></p>
+          <div class="episode-card-heading">
+            <p class="card-title"><a href="${href}">${esc(s.title)}</a></p>
+            <span class="episode-code">${esc(episodeCode)}</span>
+          </div>
           <p class="episode-card-title">${esc(ep.title || 'Titolo episodio non disponibile')}</p>
           <div class="card-meta"><span>${ep.runtime || 50} min</span><span>${prog.percent}%</span></div>
           <div class="progress-track" aria-label="Avanzamento ${prog.percent}%"><div class="progress-fill" style="width:${prog.percent}%"></div></div>
@@ -3621,7 +3623,7 @@
     if(!('Notification'in window)){showToast('Notifiche non supportate','Il browser non espone questa funzione.','!');return;}
     const permission=await Notification.requestPermission();state.settings.browserNotifications=permission==='granted';saveSettings();showToast(permission==='granted'?'Notifiche attivate':'Notifiche non attivate',permission==='granted'?'Riceverai avvisi quando Watchverse rileva nuove uscite.':'Puoi cambiare il permesso nelle impostazioni del browser.',permission==='granted'?'🔔':'!');if(permission==='granted')notifyUpcoming();
   }
-  async function notifyUpcoming(){if(Notification.permission!=='granted'||!state.settings.notifyNewEpisodes)return;const n=state.notifications[0];if(!n)return;const icon=n.poster||'assets/icons/icon-192.png';try{const reg=await navigator.serviceWorker?.ready;if(reg)await reg.showNotification(n.title,{body:`${n.episodeLine || ''}\n${n.body || ''}`,icon,badge:'assets/icons/icon-192.png',tag:n.id,data:{url:n.route}});else new Notification(n.title,{body:`${n.episodeLine || ''}\n${n.body || ''}`,icon});}catch{new Notification(n.title,{body:n.body});}}
+    async function notifyUpcoming(){if(Notification.permission!=='granted'||!state.settings.notifyNewEpisodes)return;const n=state.notifications[0];if(!n)return;const icon=n.poster||'assets/brand/watchverse-dragon-w.svg';try{const reg=await navigator.serviceWorker?.ready;if(reg)await reg.showNotification(n.title,{body:`${n.episodeLine || ''}\n${n.body || ''}`,icon,badge:'assets/brand/watchverse-dragon-w.svg',tag:n.id,data:{url:n.route}});else new Notification(n.title,{body:`${n.episodeLine || ''}\n${n.body || ''}`,icon});}catch{new Notification(n.title,{body:n.body});}}
   function showNotifications(){openModal('Notifiche',state.notifications.length?`<div class="notification-list">${state.notifications.map(n=>`<a class="notification-item" href="${n.route}"><div class="notification-poster" style="background:${n.posterGradient||gradient(n.seriesTitle||n.title)}">${n.poster?`<img src="${esc(n.poster)}" alt="Locandina di ${esc(n.seriesTitle||'serie')}" loading="lazy" decoding="async">`:`<span>${esc((n.seriesTitle||'TV').slice(0,2))}</span>`}</div><div class="notification-copy"><span class="result-kicker">Calendario serie</span><h3>${esc(n.title)}</h3><p class="notification-episode">${esc(n.episodeLine||n.seriesTitle||'')}</p><p class="notification-schedule-line">${esc(n.originalLine||'')}</p><p class="notification-schedule-line italy">${esc(n.italyLine||'')}</p></div><span class="notification-arrow">→</span></a>`).join('')}</div>`:'<div class="empty-state"><div class="empty-icon">🔕</div><h3>Nessun nuovo avviso</h3><p>Il calendario è aggiornato.</p></div>');}
   async function installApp(){if(state.deferredInstall){state.deferredInstall.prompt();await state.deferredInstall.userChoice;state.deferredInstall=null;$('#installButton')?.classList.add('hidden');}else showToast('Installazione PWA','Apri il menu del browser e scegli “Installa app” o “Aggiungi a schermata Home”.','⇩');}
   function showQuickAdd(){openModal('Aggiungi rapidamente',`<div class="settings-grid"><a class="settings-card" href="#/search" onclick="document.querySelector('#modalRoot').innerHTML=''"><h3>⌕ Cerca online</h3><p>Film, serie e persone con metadati italiani.</p></a><a class="settings-card" href="#/import" onclick="document.querySelector('#modalRoot').innerHTML=''"><h3>⇧ Importa file</h3><p>CSV, JSON o ZIP della tua vecchia libreria.</p></a></div>`);}
