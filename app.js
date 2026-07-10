@@ -279,6 +279,7 @@
   }
   function avatarHtml(profile, className = 'avatar') { return `<span class="${className}" aria-hidden="true">${avatarContent(profile)}</span>`; }
   const APPEARANCE_THEMES = [
+    { id:'watchverse-black', name:'Watchverse black', symbol:'W', description:'Nero profondo, bianco nitido e rosso cinematografico.', colors:['#070707','#151515','#e23b52'] },
     { id:'original', name:'Watchverse Original', symbol:'W', description:'Il tema scuro giallo e nero attuale.', colors:['#0a0a0b','#141416','#f4c400'] },
     { id:'cinematic', name:'Cinematic Adaptive', symbol:'▶', description:'Blu antracite e oro, con atmosfera cinematografica controllata.', colors:['#090d13','#192331','#e9bd55'] },
     { id:'classic', name:'Cinema Classico', symbol:'✦', description:'Nero caldo, crema e oro ispirati alle sale tradizionali.', colors:['#120b0b','#281919','#e0b461'] },
@@ -293,12 +294,12 @@
     { id:'compact', name:'Compatta', description:'Riduce spazi e altezza delle card per mostrare più contenuti.' }
   ];
   function applyAppearanceSettings() {
-    const theme = APPEARANCE_THEMES.some(x=>x.id===state.settings.appearanceTheme) ? state.settings.appearanceTheme : 'original';
+    const theme = APPEARANCE_THEMES.some(x=>x.id===state.settings.appearanceTheme) ? state.settings.appearanceTheme : 'watchverse-black';
     const density = INTERFACE_DENSITIES.some(x=>x.id===state.settings.interfaceDensity) ? state.settings.interfaceDensity : 'comfortable';
     document.documentElement.dataset.theme = theme;
     document.documentElement.dataset.density = density;
     const themeMeta = document.querySelector('meta[name="theme-color"]');
-    const themeColor = {original:'#f4c400',cinematic:'#e9bd55',classic:'#e0b461',neon:'#73e8e5','last-of-us':'#b98a52',buffy:'#d59a43','editorial-light':'#6f4300',system:'#f4c400'}[theme] || '#f4c400';
+    const themeColor = {'watchverse-black':'#e23b52',original:'#f4c400',cinematic:'#e9bd55',classic:'#e0b461',neon:'#73e8e5','last-of-us':'#b98a52',buffy:'#d59a43','editorial-light':'#6f4300',system:'#f4c400'}[theme] || '#e23b52';
     if (themeMeta) themeMeta.setAttribute('content', themeColor);
     const version = $('#footerVersion'); if (version) version.textContent = APP_VERSION;
     const year = $('#footerYear'); if (year) year.textContent = String(new Date().getFullYear());
@@ -306,15 +307,20 @@
   }
   function loadSettings() {
     state.settings = Object.assign({
-      seriesView: 'grid', movieView: 'grid', theme: 'dark', appearanceTheme: 'original', interfaceDensity: 'comfortable', language: 'it-IT', region: 'IT',
+      seriesView: 'grid', movieView: 'grid', theme: 'dark', appearanceTheme: 'watchverse-black', interfaceDensity: 'comfortable', language: 'it-IT', region: 'IT',
       seriesFilter: 'unwatched', movieFilter: 'watched', seriesSort: 'latestEpisode', movieSort: 'recent',
       tmdbToken: '', publicMetadataEnabled: true, autoEnrichVisible: true,
       notifyNewEpisodes: true, notifyTomorrow: true, notifyNewSeasons: true,
       browserNotifications: false, demoSeeded: false, reducedMotion: false,
       programmingCity: 'Lecce', cinemaRadiusKm: 25, programmingLanguage: 'any', preferOriginalVersion: false,
       preferredFormats: ['2D'], preferredStreamingServices: [...DEFAULT_STREAMING_SERVICES], preferredTvChannels: [...DEFAULT_TV_CHANNELS], preferredCinemas: structuredClone(DEFAULT_CINEMAS),
-      dataSourcesLastReviewedAt: null, libraryUiVersion: 0
+      dataSourcesLastReviewedAt: null, libraryUiVersion: 0, themeDefaultsVersion: 0
     }, safeJson(localStorage.getItem(profileKey('settings')), {}));
+    if (Number(state.settings.themeDefaultsVersion || 0) < 1) {
+      if (!state.settings.appearanceTheme || state.settings.appearanceTheme === 'original') state.settings.appearanceTheme = 'watchverse-black';
+      state.settings.themeDefaultsVersion = 1;
+      localStorage.setItem(profileKey('settings'), JSON.stringify(state.settings));
+    }
     if (!Array.isArray(state.settings.preferredCinemas) || !state.settings.preferredCinemas.length) state.settings.preferredCinemas = structuredClone(DEFAULT_CINEMAS);
     if (!Array.isArray(state.settings.preferredFormats)) state.settings.preferredFormats = ['2D'];
     if (!Array.isArray(state.settings.preferredStreamingServices)) state.settings.preferredStreamingServices = [...DEFAULT_STREAMING_SERVICES];
@@ -2026,10 +2032,12 @@
   }
 
   function filterTabs(type) {
-    if (type === 'series') return [
-      ['unwatched','Da vedere'],['watching','In corso'],['plan','Da iniziare'],['completed','Completate'],['favorite','Preferite'],['all','Tutte']
-    ];
-    return [['watched','Visti'],['watchlist','Da vedere'],['favorite','Preferiti'],['all','Tutti']];
+    if (type === 'series') {
+      const count = value => state.series.filter(series => value === 'unwatched' ? seriesNeedsWatching(series) : value === 'favorite' ? series.favorite : value === 'all' ? true : series.status === value || (value === 'plan' && series.status === 'watchlist')).length;
+      return [['unwatched','Da vedere',count('unwatched')],['watching','In corso',count('watching')],['plan','Da iniziare',count('plan')],['completed','Completate',count('completed')],['favorite','Preferite',count('favorite')],['all','Tutte',count('all')]];
+    }
+    const count = value => state.movies.filter(movie => value === 'all' ? true : value === 'favorite' ? movie.favorite : value === 'watched' ? movie.watched : !movie.watched).length;
+    return [['watched','Visti',count('watched')],['watchlist','Da vedere',count('watchlist')],['favorite','Preferiti',count('favorite')],['all','Tutti',count('all')]];
   }
   function sortSeriesItems(items, mode = state.seriesSort) {
     const result = [...items];
@@ -2078,7 +2086,7 @@
     const visible = items.slice(0, state.seriesVisible);
     setMain(`<div class="section-head"><div><h2>Le tue serie</h2><p>${state.series.length} serie · ${Number(state.indexes.watchedProgressCount||0).toLocaleString('it-IT')} episodi visti</p></div><button class="primary" id="addSeries">＋ Aggiungi serie</button></div>
       ${metadataLibraryBanner('series', state.series)}
-      <div class="tabbar">${filterTabs('series').map(([v,l]) => `<button class="tab-button ${state.seriesFilter===v?'active':''}" data-filter="${v}">${l}</button>`).join('')}</div>
+      <div class="tabbar" role="tablist" aria-label="Filtri serie">${filterTabs('series').map(([v,l,count]) => `<button class="tab-button ${state.seriesFilter===v?'active':''}" data-filter="${v}" role="tab" aria-selected="${state.seriesFilter===v}">${l}<span class="filter-count">${count}</span></button>`).join('')}</div>
       <div class="toolbar"><div class="toolbar-left"><label class="search-box"><span>⌕</span><input id="seriesSearch" type="search" placeholder="Cerca nelle tue serie" value="${esc(state.seriesSearch)}" aria-label="Cerca serie"></label>
       <select id="seriesSort" aria-label="Ordina serie"><option value="latestEpisode" ${state.seriesSort==='latestEpisode'?'selected':''}>Ultimo episodio uscito</option><option value="recent" ${state.seriesSort==='recent'?'selected':''}>Ultima visione</option><option value="progress" ${state.seriesSort==='progress'?'selected':''}>Avanzamento</option><option value="title" ${state.seriesSort==='title'?'selected':''}>Titolo</option></select></div>
       <div class="toolbar-right"><div class="view-toggle" aria-label="Vista serie"><button data-view="grid" class="${view==='grid'?'active':''}" aria-label="Vista locandine" aria-pressed="${view==='grid'}">▦</button><button data-view="list" class="${view==='list'?'active':''}" aria-label="Vista elenco" aria-pressed="${view==='list'}">☷</button></div></div></div>
@@ -2113,7 +2121,7 @@
     const visible=items.slice(0,state.movieVisible);
     setMain(`<div class="section-head"><div><h2>I tuoi film</h2><p>${state.movies.filter(m=>m.watched).length} visti · ${state.movies.filter(m=>!m.watched).length} da vedere</p></div><button class="primary" id="addMovie">＋ Aggiungi film</button></div>
       ${metadataLibraryBanner('movies', state.movies)}
-      <div class="tabbar">${filterTabs('movies').map(([v,l])=>`<button class="tab-button ${state.movieFilter===v?'active':''}" data-filter="${v}">${l}</button>`).join('')}</div>
+      <div class="tabbar" role="tablist" aria-label="Filtri film">${filterTabs('movies').map(([v,l,count])=>`<button class="tab-button ${state.movieFilter===v?'active':''}" data-filter="${v}" role="tab" aria-selected="${state.movieFilter===v}">${l}<span class="filter-count">${count}</span></button>`).join('')}</div>
       <div class="toolbar"><div class="toolbar-left"><label class="search-box"><span>⌕</span><input id="movieSearch" type="search" placeholder="Cerca nei tuoi film" value="${esc(state.movieSearch)}" aria-label="Cerca film"></label>
       <select id="movieSort" aria-label="Ordina film"><option value="recent" ${state.movieSort==='recent'?'selected':''}>Data visione</option><option value="rating" ${state.movieSort==='rating'?'selected':''}>Voto</option><option value="title" ${state.movieSort==='title'?'selected':''}>Titolo</option></select></div><div class="toolbar-right"><div class="view-toggle" aria-label="Vista film"><button data-view="grid" class="${view==='grid'?'active':''}" aria-label="Vista locandine" aria-pressed="${view==='grid'}">▦</button><button data-view="list" class="${view==='list'?'active':''}" aria-label="Vista elenco" aria-pressed="${view==='list'}">☷</button></div></div></div>
       ${items.length?`<div class="${view==='grid'?'media-grid':'media-list'}">${visible.map(m=>view==='grid'?mediaCard(m,'movie'):mediaRow(m,'movie')).join('')}</div>${visible.length<items.length?`<div class="load-more"><button class="secondary" id="loadMoreMovies">Mostra altri ${Math.min(60,items.length-visible.length)} film</button><span>${visible.length} di ${items.length}</span></div>`:''}`:`<div class="empty-state"><div class="empty-icon">🎬</div><h3>Nessun film trovato</h3><p>Aggiungi un titolo o cambia filtro.</p></div>`}`);
