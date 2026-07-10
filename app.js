@@ -280,7 +280,7 @@
   }
   function avatarHtml(profile, className = 'avatar') { return `<span class="${className}" aria-hidden="true">${avatarContent(profile)}</span>`; }
   const APPEARANCE_THEMES = [
-    { id:'watchverse-black', name:'Watchverse black', symbol:'W', description:'Nero profondo, bianco nitido e rosso vermiglio cinematografico.', colors:['#070707','#151515','#d94b3e'] },
+    { id:'watchverse-black', name:'Watchverse black', symbol:'W', description:'Nero profondo, bianco nitido e rosso Deep Crimson cinematografico.', colors:['#070707','#151515','#8e1624'] },
     { id:'original', name:'Watchverse Original', symbol:'W', description:'Il tema scuro giallo e nero attuale.', colors:['#0a0a0b','#141416','#f4c400'] },
     { id:'cinematic', name:'Cinematic Adaptive', symbol:'▶', description:'Blu antracite e oro, con atmosfera cinematografica controllata.', colors:['#090d13','#192331','#e9bd55'] },
     { id:'classic', name:'Cinema Classico', symbol:'✦', description:'Nero caldo, crema e oro ispirati alle sale tradizionali.', colors:['#120b0b','#281919','#e0b461'] },
@@ -300,7 +300,7 @@
     document.documentElement.dataset.theme = theme;
     document.documentElement.dataset.density = density;
     const themeMeta = document.querySelector('meta[name="theme-color"]');
-    const themeColor = {'watchverse-black':'#d94b3e',original:'#f4c400',cinematic:'#e9bd55',classic:'#e0b461',neon:'#73e8e5','last-of-us':'#b98a52',buffy:'#d59a43','editorial-light':'#6f4300',system:'#f4c400'}[theme] || '#d94b3e';
+    const themeColor = {'watchverse-black':'#8e1624',original:'#f4c400',cinematic:'#e9bd55',classic:'#e0b461',neon:'#73e8e5','last-of-us':'#b98a52',buffy:'#d59a43','editorial-light':'#6f4300',system:'#f4c400'}[theme] || '#8e1624';
     if (themeMeta) themeMeta.setAttribute('content', themeColor);
     const version = $('#footerVersion'); if (version) version.textContent = APP_VERSION;
     const build = $('#footerBuild'); if (build) build.textContent = APP_BUILD;
@@ -3407,7 +3407,7 @@
     <section class="content-card section" aria-labelledby="accessibility-status-title">
       <h2 id="accessibility-status-title">Stato di conformità</h2>
       <p>Il livello di riferimento è <strong>AA</strong>. Dei ${targetCriteria.length} criteri di livello A e AA, ${targetCounts.passed} risultano passati, ${targetCounts['not-applicable']} non applicabili e ${targetCounts.failed} falliti. ${targetCounts['not-verified']?`${targetCounts['not-verified']} criteri non sono stati verificati.`:'Non risultano criteri A o AA lasciati nello stato “non verificato”.'}</p>
-      ${wcagSummaryCards(report.criteria)}
+      ${wcagSummaryCards(targetCriteria)}
       <p class="notice warning"><strong>Interpretazione:</strong> i criteri AAA sono inclusi nell’Assessment AI per trasparenza, ma i loro eventuali fallimenti non determinano la conformità al livello AA.</p>
     </section>
     <section class="content-card section" aria-labelledby="non-accessible-title">
@@ -3428,16 +3428,19 @@
     const statusFilter=state.wcagStatusFilter||'all';
     const levelFilter=state.wcagLevelFilter||'all';
     const filtered=report.criteria.filter(c=>(statusFilter==='all'||c.status===statusFilter)&&(levelFilter==='all'||c.level===levelFilter));
-    const counts=wcagCounts(report.criteria), total=report.criteria.length||1;
+    const target=report.criteria.filter(c=>c.level==='A'||c.level==='AA');
+    const targetCounts=wcagCounts(target);
+    const aaa=report.criteria.filter(c=>c.level==='AAA');
+    const aaaCounts=wcagCounts(aaa);
+    const counts=targetCounts, total=target.length||1;
     const passedDeg=counts.passed/total*360;
     const failedDeg=passedDeg+counts.failed/total*360;
     const unverifiedDeg=failedDeg+counts['not-verified']/total*360;
     const pie=`conic-gradient(#56b94d 0deg ${passedDeg}deg,#e34d5e ${passedDeg}deg ${failedDeg}deg,#d59b2b ${failedDeg}deg ${unverifiedDeg}deg,#7b8492 ${unverifiedDeg}deg 360deg)`;
-    const target=report.criteria.filter(c=>c.level==='A'||c.level==='AA'), targetCounts=wcagCounts(target);
     return `<section class="assessment-ai-intro content-card section" aria-labelledby="assessment-ai-title"><span class="assessment-ai-icon" aria-hidden="true">✦</span><div><span class="kicker">Assessment AI · WCAG 2.2</span><h2 id="assessment-ai-title">Mappatura completa dei criteri</h2><p>Questo assessment è stato prodotto con supporto AI ed è basato sui criteri di successo delle <strong>WCAG 2.2</strong>. Mostra gli esiti tecnici rilevati, gli elementi non verificati e i limiti dichiarati; non sostituisce una certificazione indipendente né i test con persone e tecnologie assistive.</p><small>Versione ${esc(report.version)} · verifica del ${esc(new Date(report.evaluationDate+'T12:00:00').toLocaleDateString('it-IT'))} · obiettivo livello ${esc(report.targetLevel)}</small></div></section>
       <div class="wcag-overview">
-        <section class="wcag-chart-card" aria-labelledby="wcag-chart-title"><h3 id="wcag-chart-title">Ripartizione globale degli esiti</h3><div class="wcag-pie-wrap"><div class="wcag-pie" style="background:${pie}" role="img" aria-label="${counts.passed} passati, ${counts.failed} falliti, ${counts['not-verified']} non verificati, ${counts['not-applicable']} non applicabili"><div class="wcag-pie-label"><strong>${report.criteria.length}</strong><span>criteri totali</span></div></div></div><div class="wcag-legend">${Object.entries(WCAG_STATUS_META).map(([status,meta])=>`<div><i class="status-${status}" aria-hidden="true"></i><span>${esc(meta.label)}: <strong>${counts[status]}</strong></span></div>`).join('')}</div></section>
-        <section class="wcag-text-summary"><h3>Statistiche testuali</h3><p>Su ${report.criteria.length} criteri complessivi: <strong>${counts.passed} passati</strong> (${Math.round(counts.passed/report.criteria.length*100)}%), <strong>${counts.failed} falliti</strong> (${Math.round(counts.failed/report.criteria.length*100)}%), <strong>${counts['not-verified']} non verificati</strong> (${Math.round(counts['not-verified']/report.criteria.length*100)}%) e <strong>${counts['not-applicable']} non applicabili</strong> (${Math.round(counts['not-applicable']/report.criteria.length*100)}%).</p><p>Limitando il calcolo al livello AA, quindi criteri A e AA: ${target.length} criteri, di cui ${targetCounts.passed} passati, ${targetCounts.failed} falliti, ${targetCounts['not-verified']} non verificati e ${targetCounts['not-applicable']} non applicabili.</p><p>Un criterio “non verificato” richiede un collaudo manuale o assistivo ulteriore. “Non applicabile” indica che la funzione descritta dal criterio non è presente nell’ambito valutato.</p></section>
+        <section class="wcag-chart-card" aria-labelledby="wcag-chart-title"><h3 id="wcag-chart-title">Ripartizione degli esiti A e AA</h3><div class="wcag-pie-wrap"><div class="wcag-pie" style="background:${pie}" role="img" aria-label="${counts.passed} passati, ${counts.failed} falliti, ${counts['not-verified']} non verificati, ${counts['not-applicable']} non applicabili"><div class="wcag-pie-label"><strong>${target.length}</strong><span>criteri A e AA</span></div></div></div><div class="wcag-legend">${Object.entries(WCAG_STATUS_META).map(([status,meta])=>`<div><i class="status-${status}" aria-hidden="true"></i><span>${esc(meta.label)}: <strong>${counts[status]}</strong></span></div>`).join('')}</div></section>
+        <section class="wcag-text-summary"><h3>Statistiche testuali</h3><p>Su ${target.length} criteri complessivi di livello A e AA: <strong>${counts.passed} passati</strong> (${Math.round(counts.passed/total*100)}%), <strong>${counts.failed} falliti</strong> (${Math.round(counts.failed/total*100)}%), <strong>${counts["not-verified"]} non verificati</strong> (${Math.round(counts["not-verified"]/total*100)}%) e <strong>${counts["not-applicable"]} non applicabili</strong> (${Math.round(counts["not-applicable"]/total*100)}%).</p><p>Volendo estendere il calcolo al livello AAA, si aggiungono ${aaa.length} criteri: ${aaaCounts.passed} passati, ${aaaCounts.failed} falliti, ${aaaCounts["not-verified"]} non verificati e ${aaaCounts["not-applicable"]} non applicabili.</p><p>Un criterio "non verificato" richiede un collaudo manuale o assistivo ulteriore. "Non applicabile" indica che la funzione descritta dal criterio non è presente nell'ambito valutato.</p></section>
       </div>
       <section class="report-toolbar content-card" aria-label="Filtri e azioni dell’Assessment AI">
         <div class="form-field"><label for="wcagStatusFilter">Esito</label><select id="wcagStatusFilter"><option value="all">Tutti gli esiti</option>${Object.entries(WCAG_STATUS_META).map(([status,meta])=>`<option value="${status}" ${statusFilter===status?'selected':''}>${esc(meta.label)}</option>`).join('')}</select></div>

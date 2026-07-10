@@ -1,6 +1,6 @@
 const assert=require('assert');
 const themes={
-  watchverseBlack:{bg:'#070707',surface:'#111112',text:'#fafafa',muted:'#a9a9af',accent:'#75121a',on:'#ffffff'},
+  watchverseBlack:{bg:'#070707',surface:'#111112',text:'#fafafa',muted:'#a9a9af',accent:'#8e1624',on:'#ffffff'},
   original:{bg:'#0a0a0b',surface:'#141416',text:'#f7f7f8',muted:'#a9a9b2',accent:'#f4c400',on:'#0a0a0a'},
   cinematic:{bg:'#090d13',surface:'#121923',text:'#f6f8fb',muted:'#b3bfce',accent:'#e9bd55',on:'#11100c'},
   classic:{bg:'#120b0b',surface:'#1d1212',text:'#fff8e8',muted:'#cbbca8',accent:'#e0b461',on:'#171006'},
