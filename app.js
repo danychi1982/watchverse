@@ -3654,18 +3654,6 @@
     await nextPaint();
     try {
       state.profileId=id;state.profileSelected=true;localStorage.setItem('watchverse.currentProfile',id);
-      await syncCloudProfile(profile, { skipProgress: true });
-      // Il primo accesso dopo la pulizia del browser puo' incontrare una risposta
-      // transitoria del servizio cloud. Ritenta prima di mostrare una Home vuota.
-      const linkedProfile = state.profiles.find(item => item.id === id);
-      if (window.WatchverseCloudSync?.isEnabled() && linkedProfile?.cloudId) {
-        const [loadedSeries, loadedMovies] = await Promise.all([dbGetAll('series'), dbGetAll('movies')]);
-        const hasCloudLibrary = loadedSeries.some(item => item.profileId === id) || loadedMovies.some(item => item.profileId === id);
-        if (!hasCloudLibrary) {
-          await new Promise(resolve => setTimeout(resolve, 1200));
-          await syncCloudProfile(linkedProfile, { skipProgress: true });
-        }
-      }
       loadSettings();loadDefaultSourceStatus();
       void window.WatchverseCloudSync?.saveSettings(profile, state.settings).catch(error => console.warn('Watchverse cloud settings sync:', error));
       state.seriesFilter=state.settings.seriesFilter||'unwatched';state.movieFilter=state.settings.movieFilter||'watched';
@@ -3682,8 +3670,16 @@
       state.lastRenderedRoute = '';
       location.hash='#/home';
       await route({ loader:false });
+      if (window.WatchverseCloudSync?.isEnabled()) showToast('Sincronizzazione in corso', 'La Home è disponibile; la libreria cloud si aggiorna in background.', '↻', 5000);
       idle(async () => {
-        const backgroundProfile = state.profiles.find(item => item.id === id);
+        let backgroundProfile = state.profiles.find(item => item.id === id);
+        if (!backgroundProfile || state.profileId !== id) return;
+        await syncCloudProfile(backgroundProfile, { skipProgress: true });
+        backgroundProfile = state.profiles.find(item => item.id === id);
+        if (state.profileId === id) {
+          await reloadData();
+          await route({ loader:false });
+        }
         if (!backgroundProfile || state.profileId !== id) return;
         await syncCloudProfile(backgroundProfile, { onlyProgress: true });
         if (state.profileId === id) {
@@ -3749,12 +3745,9 @@
       if('serviceWorker'in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
       if(!WatchverseAuth.readAccount()){showSetupScreen();return;}
       if(!(await WatchverseAuth.restoreSession())){showLoginScreen();return;}
-      try {
-        // Mostra presto la scelta profilo; il recupero completo viene atteso
-        // quando l'utente apre il profilo, con loader e retry dedicati.
-        const cloudProfiles = await bootstrapCloudProfilesWithRetry(1);
-        if (Array.isArray(cloudProfiles) && cloudProfiles.length) { state.profiles = cloudProfiles; saveProfiles(false); }
-      } catch (error) { console.warn('Watchverse cloud profile bootstrap:', error); }
+      void bootstrapCloudProfilesWithRetry(1).then(cloudProfiles => {
+        if (Array.isArray(cloudProfiles) && cloudProfiles.length) { state.profiles = cloudProfiles; saveProfiles(false); if (!state.profileSelected) showProfileGate(); }
+      }).catch(error => console.warn('Watchverse cloud profile bootstrap:', error));
       state.authenticated=true;showProfileGate();
     }catch(e){console.error(e);document.body.innerHTML=`<main style="padding:40px;font-family:system-ui;color:white;background:#111;min-height:100vh"><h1>Watchverse non è riuscita ad avviarsi</h1><p>${esc(e.message)}</p><button onclick="location.reload()">Riprova</button></main>`;}
   }
