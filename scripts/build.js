@@ -66,6 +66,7 @@ function writeBuildInfo() {
   const info = {
     name: "watchverse",
     version: readVersion(),
+    build: readBuild(),
     builtAt: new Date().toISOString(),
     files: entries
   };
@@ -80,13 +81,13 @@ function writeBuildInfo() {
 function writeVersionAsset() {
   fs.writeFileSync(
     path.join(dist, "version.js"),
-    `window.WATCHVERSE_VERSION = ${JSON.stringify(readVersion())};\n`,
+    `window.WATCHVERSE_VERSION = ${JSON.stringify(readVersion())};\nwindow.WATCHVERSE_BUILD = ${JSON.stringify(readBuild())};\n`,
     "utf8"
   );
   const serviceWorker = path.join(dist, "sw.js");
   fs.writeFileSync(
     serviceWorker,
-    fs.readFileSync(serviceWorker, "utf8").replaceAll("__VERSION__", readVersion()),
+    fs.readFileSync(serviceWorker, "utf8").replaceAll("__VERSION__", readVersion()).replaceAll("__BUILD__", readBuild()),
     "utf8"
   );
 }
@@ -102,6 +103,12 @@ function readVersion() {
     return "unknown";
   }
   return fs.readFileSync(versionFile, "utf8").trim() || "unknown";
+}
+
+function readBuild() {
+  const buildFile = path.join(root, "BUILD.txt");
+  if (!fs.existsSync(buildFile)) return "0";
+  return fs.readFileSync(buildFile, "utf8").trim() || "0";
 }
 
 removeDist();
