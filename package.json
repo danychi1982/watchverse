@@ -1,6 +1,6 @@
 {
   "name": "watchverse",
-  "version": "2.0.27",
+  "version": "1.0.0",
   "private": true,
   "description": "Web app statica per libreria personale e familiare di film e serie TV.",
   "scripts": {
