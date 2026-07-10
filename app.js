@@ -3670,7 +3670,7 @@
       state.lastRenderedRoute = '';
       location.hash='#/home';
       await route({ loader:false });
-      if (window.WatchverseCloudSync?.isEnabled()) showToast('Sincronizzazione in corso', 'La Home è disponibile; la libreria cloud si aggiorna in background.', '↻', 5000);
+      if (window.WatchverseCloudSync?.isEnabled()) showToast('Sincronizzazione in corso', 'La libreria si aggiorna in background.', '↻', 7000, { kind:'sync' });
       idle(async () => {
         let backgroundProfile = state.profiles.find(item => item.id === id);
         if (!backgroundProfile || state.profileId !== id) return;
