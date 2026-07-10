@@ -3,8 +3,8 @@
   "standard": "WCAG 2.2",
   "targetLevel": "AA",
   "version": "1.0.0",
-  "evaluationDate": "2026-07-05",
-  "scope": "Watchverse 2.0.27, applicazione web locale/PWA: autenticazione, selezione profilo, home, librerie, ricerca, programmazione, dettagli, profilo a tab, statistiche, importazione, assistente AIvengers, navigazione comprimibile, accessibilità e modali principali.",
+  "evaluationDate": "2026-07-10",
+  "scope": "Watchverse 1.0.0 build 6, applicazione web locale/PWA: autenticazione, selezione profilo, home, librerie, ricerca, programmazione, dettagli, profilo a tab, statistiche, importazione, assistente AIvengers, navigazione comprimibile, temi personalizzati, logo tematizzato, rail con drag/swipe, accessibilità e modali principali.",
   "methods": [
     "Revisione del codice HTML, CSS e JavaScript",
     "Test automatici di sintassi, regressione e struttura DOM/CSS sui componenti principali",
@@ -12,7 +12,7 @@
     "Calcolo automatico del contrasto delle palette e revisione dei breakpoint responsive",
     "Mappatura manuale dei criteri WCAG 2.2",
     "Revisione strutturale dei nuovi componenti: menu comprimibile, footer fisso, profilo a tab, ricerca cinema e chat AIvengers",
-    "Verifica delle varianti tematiche The Last of Us e Buffy: contrasto delle palette, leggibilità di header/sidebar, icone e loader con movimento ridotto."
+    "Verifica delle varianti tematiche The Last of Us e Buffy/The Gentlemen: contrasto delle palette, leggibilità di header/sidebar, icone e loader con movimento ridotto."
   ],
   "limitations": [
     "Non è stato eseguito un collaudo end-to-end completo su browser e dispositivi reali né con più screen reader; i criteri che richiedono queste prove restano non verificati o sono indicati con una limitazione.",

@@ -1076,7 +1076,7 @@ html[data-theme="watchverse-black"] {
   color-scheme: dark;
   --bg:#070707; --surface:#111112; --surface-2:#18181a; --surface-3:#242427;
   --text:#fafafa; --muted:#a9a9af; --line:#343438;
-  --accent:#75121a; --accent-2:#b01622; --accent-text:#e4868c; --accent-rgb:117,18,26; --on-accent:#ffffff;
+  --accent:#8e1624; --accent-2:#c02a38; --accent-text:#d95a52; --accent-rgb:142,22,36; --on-accent:#ffffff;
   --success:#77d66c; --danger:#ff6478; --info:#80bfff; --warning-text:#ffd27a;
   --sidebar-bg:rgba(7,7,8,.98); --topbar-start:rgba(7,7,8,.99); --topbar-end:rgba(7,7,8,.94);
   --calendar-bg:rgba(17,17,18,.98); --auth-card-bg:rgba(17,17,18,.98); --auth-base:#050505; --hover-surface:#2a2023;
