@@ -452,6 +452,10 @@ main:focus { outline: none; }
 .toast-close:hover,.toast-close:focus-visible { background:rgba(255,255,255,.08); color:var(--text); }
 .toast-success { border-color:rgba(115,209,61,.45); background:#17231a; }
 .toast-error { border-color:rgba(255,92,105,.55); background:#2a1719; }
+.toast-sync { min-height:72px; border:2px solid var(--accent); background:#26200a; box-shadow:0 12px 36px rgba(0,0,0,.48),0 0 0 4px rgba(var(--accent-rgb),.14); }
+.toast-sync .toast-icon { color:var(--accent); font-size:25px; font-weight:900; }
+.toast-sync .toast-copy strong { color:var(--accent); font-size:15px; }
+.toast-sync .toast-copy p { color:#fff; font-size:14px; line-height:1.4; }
 .modal-working { color:var(--accent); font-weight:950; letter-spacing:3px; animation:workingPulse 1s ease-in-out infinite alternate; }
 @keyframes workingPulse { from{opacity:.35} to{opacity:1} }
 .operation-progress { display:grid; gap:14px; padding:4px 0 2px; }
