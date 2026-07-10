@@ -3637,11 +3637,11 @@
     $('#loginForm').addEventListener('submit',async e=>{e.preventDefault();const msg=$('#authMessage');msg.textContent='';try{await WatchverseAuth.signIn($('#loginUser').value,$('#loginPassword').value,$('#rememberLogin').checked);state.authenticated=true;showProfileGate();}catch(err){msg.textContent=err.message;}});
   }
   function showForgotPasswordScreen() {
-    hideAppShell(); const account=WatchverseAuth.readAccount(); const cloud=WatchverseAuth.cloudConfigured();
+    hideAppShell(); const cloud=WatchverseAuth.cloudConfigured();
     $('#authRoot').innerHTML = `<section class="auth-shell"><div class="auth-card">${authBrand('Recupero accesso')}
       <h2>Reimposta password</h2>${cloud?'<p>Riceverai un link monouso all’indirizzo email dell’account.</p>':'<p class="notice warning">Il recupero via email reale richiede la configurazione cloud. Finché l’app è locale puoi reimpostare la password solo da questo browser, confermando l’email registrata.</p>'}
       <form id="resetForm" class="auth-form">
-        <div class="form-field"><label for="resetEmail">Email di recupero</label><input id="resetEmail" type="email" value="${esc(account?.email||WatchverseAuth.defaults.email)}" required></div>
+        <div class="form-field"><label for="resetEmail">Email di recupero</label><input id="resetEmail" type="email" autocomplete="email" value="" required></div>
         ${cloud?'':`<div class="form-field"><label for="resetPassword">Nuova password</label><input id="resetPassword" type="password" minlength="6" required></div><div class="form-field"><label for="resetPassword2">Ripeti la password</label><input id="resetPassword2" type="password" minlength="6" required></div>`}
         <button class="primary" type="submit">${cloud?'Invia email di recupero':'Reimposta in locale'}</button><button id="backLogin" class="ghost" type="button">Torna al login</button><div id="authMessage" class="auth-message" role="alert"></div>
       </form></div></section>`;
