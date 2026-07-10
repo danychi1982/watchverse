@@ -418,7 +418,8 @@
       return;
     }
     if (!profile?.cloudId) {
-      showToast('Profilo cloud non collegato', 'Il profilo Daniela non è associato a un profilo Supabase.', '!', 9000, { kind: 'error' });
+      const userId = window.WatchverseAuth?.getSession()?.user?.id || 'non disponibile';
+      showToast('Profilo cloud non collegato', `Daniela non è visibile per l’utente Supabase ${userId}. Confronta questo ID con account_id nella tabella profiles.`, '!', 12000, { kind: 'error' });
       return;
     }
     let cloud;
