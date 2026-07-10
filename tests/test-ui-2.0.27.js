@@ -3,7 +3,7 @@ const assert=require('assert');
 const app=fs.readFileSync('app.js','utf8');
 const css=fs.readFileSync('styles.css','utf8');
 const sw=fs.readFileSync('sw.js','utf8');
-assert(app.includes("const APP_VERSION = root.WATCHVERSE_VERSION || '1.0.0'"));
+assert(app.includes("const APP_VERSION = window.WATCHVERSE_VERSION || '1.0.0'"));
 assert(css.includes('last-of-us-proposal-3-wallpaper.jpg'));
 assert(css.includes('min-width:286px'));
 assert(css.includes('display:block!important'));

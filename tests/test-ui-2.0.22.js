@@ -3,7 +3,7 @@ const assert=require('assert');
 const app=fs.readFileSync('app.js','utf8');
 const css=fs.readFileSync('styles.css','utf8');
 const html=fs.readFileSync('index.html','utf8');
-assert(app.includes("const APP_VERSION = root.WATCHVERSE_VERSION || '1.0.0'"),'Versione 1.0.0 non impostata');
+assert(app.includes("const APP_VERSION = window.WATCHVERSE_VERSION || '1.0.0'"),'Versione 1.0.0 non impostata');
 assert(app.includes('function showMetadataIssues('),'Dettaglio titoli metadati mancante');
 assert(app.includes('Titoli senza locandina o descrizione'),'Riepilogo metadati incompleti mancante');
 assert(app.includes('Copertura effettiva dei metadati'),'Copertura coerente mancante');
