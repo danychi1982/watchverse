@@ -1930,6 +1930,43 @@
       const escapedId = globalThis.CSS?.escape ? CSS.escape(id) : String(id).replaceAll('"', '\\"');
       const prev = $(`[data-rail-prev="${escapedId}"]`, root) || $$('[data-rail-prev]', root).find(button => button.dataset.railPrev === id);
       const next = $(`[data-rail-next="${escapedId}"]`, root) || $$('[data-rail-next]', root).find(button => button.dataset.railNext === id);
+      let dragStartX = 0;
+      let dragStartScroll = 0;
+      let dragging = false;
+      rail.addEventListener('pointerdown', event => {
+        if (event.pointerType !== 'mouse' || event.button !== 0) return;
+        dragStartX = event.clientX;
+        dragStartScroll = rail.scrollLeft;
+        dragging = false;
+        rail.setPointerCapture?.(event.pointerId);
+      });
+      rail.addEventListener('pointermove', event => {
+        if (event.pointerType !== 'mouse' || !rail.hasPointerCapture?.(event.pointerId)) return;
+        const delta = event.clientX - dragStartX;
+        if (!dragging && Math.abs(delta) < 6) return;
+        dragging = true;
+        rail.classList.add('is-dragging');
+        rail.scrollLeft = dragStartScroll - delta;
+        event.preventDefault();
+      });
+      const stopDrag = event => {
+        if (event.pointerType !== 'mouse') return;
+        rail.releasePointerCapture?.(event.pointerId);
+        rail.classList.remove('is-dragging');
+        if (dragging) {
+          rail._watchverseSuppressClick = true;
+          setTimeout(() => { rail._watchverseSuppressClick = false; }, 0);
+        }
+        dragging = false;
+      };
+      rail.addEventListener('pointerup', stopDrag);
+      rail.addEventListener('pointercancel', stopDrag);
+      rail.addEventListener('click', event => {
+        if (!rail._watchverseSuppressClick) return;
+        event.preventDefault();
+        event.stopPropagation();
+        rail._watchverseSuppressClick = false;
+      }, true);
       if (!prev || !next) return;
       const update = () => {
         const max = Math.max(0, rail.scrollWidth - rail.clientWidth);
