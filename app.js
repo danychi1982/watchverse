@@ -3564,7 +3564,7 @@
     $('#authRoot').innerHTML = `<section class="auth-shell"><div class="auth-card">${authBrand('La tua libreria privata')}
       <h2>Accedi</h2><p>Un solo account familiare, con librerie separate per ogni profilo.</p>
       <form id="loginForm" class="auth-form">
-        <div class="form-field"><label for="loginUser">Nome utente o email</label><input id="loginUser" autocomplete="username" value="${esc(account.username)}" required></div>
+        <div class="form-field"><label for="loginUser">Nome utente</label><input id="loginUser" autocomplete="username" value="${esc(account.username)}" required></div>
         <div class="form-field"><label for="loginPassword">Password</label><input id="loginPassword" type="password" autocomplete="current-password" required autofocus></div>
         <div class="auth-row"><label class="auth-check"><input id="rememberLogin" type="checkbox" checked> Ricordami su questo dispositivo</label><button id="forgotPassword" class="auth-link" type="button">Password dimenticata?</button></div>
         <button class="primary" type="submit">Accedi</button><div id="authMessage" class="auth-message" role="alert">${esc(message)}</div>

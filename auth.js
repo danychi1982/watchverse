@@ -25,13 +25,13 @@
     try { return JSON.parse(localStorage.getItem(ACCOUNT_KEY) || 'null'); } catch { return null; }
   }
   function readAccount() {
-    const local = readLocalAccount();
-    if (local) return local;
     if (cloudConfigured()) return {
       username: String(config.accountUsername || '').toLowerCase(),
       email: String(config.recoveryEmail || '').toLowerCase(),
       cloud: true
     };
+    const local = readLocalAccount();
+    if (local) return local;
     return null;
   }
   function writeAccount(account) { localStorage.setItem(ACCOUNT_KEY, JSON.stringify(account)); }
