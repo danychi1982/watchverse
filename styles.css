@@ -1358,12 +1358,14 @@ html[data-density="compact"] .profile-card { padding:15px; }
   height:42px;
   display:grid;
   place-items:center;
+  padding:0 0 3px;
   border:1px solid var(--line);
   border-radius:50%;
   background:var(--surface);
   color:var(--text);
   font-size:27px;
-  line-height:1;
+  line-height:.8;
+  font-family:Arial,sans-serif;
   font-weight:800;
 }
 .rail-button:hover:not(:disabled),
@@ -3592,7 +3594,13 @@ html[data-theme="buffy"] .mini-reel i { display:none; }
 [data-rail] {
   scrollbar-width:none;
   -ms-overflow-style:none;
+  cursor:grab;
+  user-select:none;
+  touch-action:pan-x pan-y;
 }
+[data-rail].is-dragging { cursor:grabbing; scroll-behavior:auto; }
+[data-rail] a,
+[data-rail] button { user-select:none; }
 [data-rail]::-webkit-scrollbar {
   width:0;
   height:0;
