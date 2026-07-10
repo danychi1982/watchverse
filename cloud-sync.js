@@ -64,28 +64,36 @@
     const copy = structuredClone(value); delete copy.cloudId; return copy;
   }
 
-  async function pushRecord(profile, store, value) {
-    if (!isEnabled() || !profileId(profile) || !value?.profileId || value.profileId !== profile.id) return;
+  function rowsForStore(profile, store, values = []) {
+    if (!profileId(profile)) return [];
     if (store === 'series' || store === 'movies') {
-      await request('/library_records?on_conflict=profile_id,kind,local_id', {
-        method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({
+      return values.filter(value => value?.profileId === profile.id).map(value => ({
           profile_id: profile.cloudId, kind: store === 'series' ? 'series' : 'movie', local_id: value.id,
           payload: libraryPayload(value), revision: Number(value.revision || 1), updated_at: value.updatedAt || new Date().toISOString()
-        })
-      });
+      }));
     } else if (store === 'progress') {
-      await request('/episode_progress?on_conflict=profile_id,series_local_id,season,episode', {
-        method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({
+      return values.filter(value => value?.profileId === profile.id).map(value => ({
           profile_id: profile.cloudId, local_id: value.id, series_local_id: value.seriesId || '', season: Number(value.season || 0),
           episode: Number(value.episode || 0), watched: value.watched !== false, watched_at: value.watchedAt || null,
           rating: value.rating || null, payload: libraryPayload(value), revision: Number(value.revision || 1), updated_at: value.updatedAt || new Date().toISOString()
-        })
-      });
+      }));
     }
+    return [];
+  }
+
+  async function pushRecord(profile, store, value) {
+    return pushRecords(profile, store, [value]);
   }
 
   async function pushRecords(profile, store, values = []) {
-    for (const value of values) await pushRecord(profile, store, value);
+    if (!isEnabled() || !profileId(profile)) return;
+    const rows = rowsForStore(profile, store, values);
+    if (!rows.length) return;
+    const path = store === 'progress' ? '/episode_progress?on_conflict=profile_id,series_local_id,season,episode' : '/library_records?on_conflict=profile_id,kind,local_id';
+    const chunkSize = store === 'progress' ? 300 : 80;
+    for (let i = 0; i < rows.length; i += chunkSize) {
+      await request(path, { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(rows.slice(i, i + chunkSize)) });
+    }
   }
 
   async function deleteRecord(profile, store, value) {

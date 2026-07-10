@@ -371,12 +371,13 @@
     if (state.db?.memory) { memoryStores[store].set(value.id, structuredClone(value)); return Promise.resolve(finish()); }
     return new Promise((resolve, reject) => { const r = dbTx(store, 'readwrite').put(value); r.onsuccess = () => resolve(finish()); r.onerror = () => reject(r.error); });
   }
-  function dbBulkPut(store, values) {
-    const finish = () => { void window.WatchverseCloudSync?.pushRecords(currentProfile(), store, values).catch(error => console.warn('Watchverse cloud bulk sync:', error)); return values.length; };
-    if (state.db?.memory) { values.forEach(v => memoryStores[store].set(v.id, structuredClone(v))); return Promise.resolve(finish()); }
+  function dbBulkPut(store, values, syncCloud = true) {
+    const sync = syncCloud ? Promise.resolve(window.WatchverseCloudSync?.pushRecords(currentProfile(), store, values)) : Promise.resolve();
+    const finish = () => values.length;
+    if (state.db?.memory) { values.forEach(v => memoryStores[store].set(v.id, structuredClone(v))); return sync.then(finish); }
     return new Promise((resolve, reject) => {
       const tx = state.db.transaction(store, 'readwrite'); const os = tx.objectStore(store); values.forEach(v => os.put(v));
-      tx.oncomplete = () => resolve(finish()); tx.onerror = () => reject(tx.error);
+      tx.oncomplete = () => sync.then(() => resolve(finish())).catch(reject); tx.onerror = () => reject(tx.error);
     });
   }
   async function dbBulkPutBatched(store, values, batchSize = 600, onProgress = null) {
@@ -425,7 +426,7 @@
         winners.push(value);
         void sync.pushRecord(profile, store, value).catch(error => console.warn('Watchverse cloud migration push:', error));
       }
-      if (winners.length) await dbBulkPut(store, winners);
+      if (winners.length) await dbBulkPut(store, winners, false);
     }
     const settingsKey = `watchverse.${profile.id}.settings`;
     const localSettings = safeJson(localStorage.getItem(settingsKey), null);
