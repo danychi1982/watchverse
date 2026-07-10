@@ -408,7 +408,19 @@
 
   async function syncCloudProfile(profile) {
     const sync = window.WatchverseCloudSync;
-    if (!sync?.isEnabled() || !profile?.cloudId) return;
+    if (!sync) {
+      showToast('Sincronizzazione non disponibile', 'Il modulo cloud non è stato caricato. Ricarica la pagina.', '!', 8000, { kind: 'error' });
+      return;
+    }
+    if (!sync.isEnabled()) {
+      const session = window.WatchverseAuth?.getSession();
+      showToast('Sincronizzazione cloud inattiva', session?.mode === 'cloud' ? 'La sessione Supabase non contiene un token valido.' : 'È attiva una sessione locale: esci e accedi di nuovo con daniela.', '!', 9000, { kind: 'error' });
+      return;
+    }
+    if (!profile?.cloudId) {
+      showToast('Profilo cloud non collegato', 'Il profilo Daniela non è associato a un profilo Supabase.', '!', 9000, { kind: 'error' });
+      return;
+    }
     let cloud;
     try { cloud = await sync.pullProfile(profile); } catch (error) {
       console.warn('Watchverse cloud profile pull:', error);
