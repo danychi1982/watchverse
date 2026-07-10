@@ -1,6 +1,10 @@
 # Watchverse Design System
 
-Versione: 1.0.0 · Build 11
+Versione: 1.0.0 · Build 12
+
+## Preview visuale
+
+La pagina [Design System Preview](docs/design-system-preview.html) mostra i token e i componenti in forma grafica: logo, palette, pulsanti, link con hover/focus, card con badge, barra di avanzamento e stati di sincronizzazione/errori/successo. Può essere aperta direttamente dal repository o dalla copia pubblicata insieme al sito.
 
 Questo documento descrive le regole visive e interattive condivise da Watchverse. I componenti devono usare i token semantici del tema attivo; i valori colore hardcoded sono ammessi solo per immagini, poster, loghi di emittenti o fondali tematici chiaramente circoscritti.
 
