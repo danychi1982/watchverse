@@ -107,6 +107,12 @@
 
   async function restoreSession() {
     const session = getSession();
+    // Dopo l'attivazione di Supabase non riutilizzare una vecchia sessione locale:
+    // consentirebbe l'accesso, ma disabiliterebbe di fatto la sincronizzazione cloud.
+    if (cloudConfigured() && session && session.mode !== 'cloud') {
+      signOut();
+      return null;
+    }
     if (!session || session.mode !== 'cloud') return session;
     const expiresAtMs = Number(session.expires_at || 0) * 1000;
     if (!expiresAtMs || expiresAtMs > Date.now() + 60_000) return session;
