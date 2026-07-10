@@ -140,6 +140,40 @@ async function expectScrollable(locator) {
     const afterPrev = await rail.evaluate(node => node.scrollLeft);
     assert(afterPrev < afterNext, 'Il pulsante indietro non ha spostato il rail.');
 
+    await page.evaluate(async () => {
+      const db = await new Promise((resolve, reject) => {
+        const request = indexedDB.open('watchverse-db', 4);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(['movies', 'series'], 'readwrite');
+        tx.objectStore('movies').put({ id:'profile-daniela|movie-supergirl', profileId:'profile-daniela', title:'Supergirl', mediaType:'movie', watched:false, state:'watchlist', favorite:false, rating:0, providerGroups:{streaming:[],rent:[],buy:[]}, cast:[] });
+        tx.objectStore('series').put({ id:'profile-daniela|series-from', profileId:'profile-daniela', title:'From', mediaType:'tv', status:'watching', favorite:false, rating:0, providerGroups:{streaming:[],rent:[],buy:[]}, cast:[], seasons:[{ number:1, name:'Stagione 1', episodes:[{ season:1, episode:3, title:'Episodio 3', runtime:50 }] }] });
+        tx.oncomplete = resolve; tx.onerror = () => reject(tx.error);
+      });
+      db.close();
+    });
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('[data-profile-choice]', { timeout: 10000 });
+    await page.locator('[data-profile-choice]').filter({ hasText: 'Daniela' }).click();
+    await page.waitForSelector('#aivengersButton:not(.hidden)', { timeout: 10000 });
+    await page.click('#aivengersButton');
+    await page.fill('#aivengersInput', 'segna come visto supergirl');
+    await page.press('#aivengersInput', 'Enter');
+    await page.waitForFunction(() => document.querySelector('#aivengersMessages')?.textContent.includes('Supergirl'));
+    await page.fill('#aivengersInput', 'segna come visto episodio 3 della prima stagione di from');
+    await page.press('#aivengersInput', 'Enter');
+    await page.waitForFunction(() => document.querySelector('#aivengersMessages')?.textContent.includes('stagione 1, episodio 3'));
+    const watched = await page.evaluate(async () => {
+      const db = await new Promise((resolve, reject) => { const request = indexedDB.open('watchverse-db', 4); request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error); });
+      const values = store => new Promise((resolve, reject) => { const request = db.transaction(store).objectStore(store).getAll(); request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error); });
+      const movies = await values('movies'); const progress = await values('progress'); db.close();
+      return { movie: movies.find(item => item.title === 'Supergirl'), episode: progress.find(item => item.seriesId?.includes('series-from') && item.season === 1 && item.episode === 3) };
+    });
+    assert(watched.movie?.watched === true, 'AIvenger non ha segnato il film come visto.');
+    assert(watched.episode?.watched === true, 'AIvenger non ha segnato l\'episodio come visto.');
+
     await browser.close();
     console.log('✓ E2E Home vuota: navigazione orizzontale serie popolari');
   } finally {

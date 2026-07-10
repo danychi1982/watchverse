@@ -13,6 +13,7 @@ const entries = [
   "sw.js",
   "app.js",
   "auth.js",
+  "cloud-sync.js",
   "config.js",
   "gdpr-import.js",
   "public-metadata.js",

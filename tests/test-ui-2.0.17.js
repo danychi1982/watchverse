@@ -10,7 +10,7 @@ assert(html.includes('id="sidebarProfileButton"'));
 assert(!html.includes('id="profileShortcut"'));
 assert(html.includes('© <span id="footerYear"></span> Watchverse'));
 assert(html.includes('id="aivengersButton"'));
-assert(app.includes('Ciao, sono il tuo assistente <strong>AIvengers</strong>. Come posso aiutarti?'));
+assert(app.includes('Ciao, sono il tuo assistente <strong>AIvenger</strong>. Come posso aiutarti?'));
 assert(app.includes("{ id:'stats', label:'Statistiche'"));
 assert(app.includes("{ id:'import', label:'Importa ed esporta'"));
 assert(app.includes('navigator.geolocation.getCurrentPosition'));
