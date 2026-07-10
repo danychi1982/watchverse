@@ -33,7 +33,8 @@ const checks = [
   ["node", ["tests/test-ui-2.0.22.js"]],
   ["node", ["tests/test-ui-2.0.24.js"]],
   ["node", ["tests/test-ui-2.0.25.js"]],
-  ["node", ["tests/test-ui-2.0.27.js"]]
+  ["node", ["tests/test-ui-2.0.27.js"]],
+  ["node", ["tests/e2e-empty-home-rail.js"]]
 ];
 
 for (const check of checks) {

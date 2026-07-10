@@ -1651,7 +1651,7 @@
       if (card) card.outerHTML = emptyPopularSeriesCard(seed);
     }));
     bindEmptyPopularSeriesActions();
-    setupRailControls(document);
+    bindHorizontalRails(document);
   }
 
   function bindEmptyPopularSeriesActions() {
@@ -1727,7 +1727,7 @@
     $('#emptyHomeSearch')?.addEventListener('click', () => { location.hash = '#/search'; });
     bindEmptyPopularSeriesActions();
     hydrateEmptyPopularSeries();
-    setupRailControls(document);
+    bindHorizontalRails(document);
     const dz = $('#emptyHomeDrop');
     ['dragenter','dragover'].forEach(type => dz?.addEventListener(type, e => { e.preventDefault(); dz.classList.add('drag'); }));
     ['dragleave','drop'].forEach(type => dz?.addEventListener(type, e => { e.preventDefault(); dz.classList.remove('drag'); }));
@@ -1791,8 +1791,9 @@
   function bindHorizontalRails(root = document) {
     $$('[data-rail]', root).forEach(rail => {
       const id = rail.id;
-      const prev = $(`[data-rail-prev="${id}"]`, root);
-      const next = $(`[data-rail-next="${id}"]`, root);
+      const escapedId = globalThis.CSS?.escape ? CSS.escape(id) : String(id).replaceAll('"', '\\"');
+      const prev = $(`[data-rail-prev="${escapedId}"]`, root) || $$('[data-rail-prev]', root).find(button => button.dataset.railPrev === id);
+      const next = $(`[data-rail-next="${escapedId}"]`, root) || $$('[data-rail-next]', root).find(button => button.dataset.railNext === id);
       if (!prev || !next) return;
       const update = () => {
         const max = Math.max(0, rail.scrollWidth - rail.clientWidth);
