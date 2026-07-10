@@ -3890,3 +3890,15 @@ html[data-theme="last-of-us"] .mini-reel {
   .cast-strip.cast-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .cast-strip.cast-grid .cast-photo { aspect-ratio:1 / 1.04; }
 }
+
+/* Marchio Watchverse: la favicon scelta resta coerente con login e navigazione. */
+.brand-mark {
+  color: transparent !important;
+  font-size: 0 !important;
+  background-color: transparent !important;
+  background-image: url("assets/icons/icon-192.png?v=2.0.28") !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-size: contain !important;
+  box-shadow: none !important;
+}
