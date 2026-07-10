@@ -2,7 +2,7 @@ const fs=require('fs');
 const assert=require('assert');
 const app=fs.readFileSync('app.js','utf8');
 const css=fs.readFileSync('styles.css','utf8');
-assert(app.includes("const APP_VERSION = root.WATCHVERSE_VERSION || '1.0.0'"));
+assert(app.includes("const APP_VERSION = window.WATCHVERSE_VERSION || '1.0.0'"));
 assert(app.includes("browserGeolocationPermissionState"));
 assert(app.includes("window.isSecureContext"));
 assert(app.includes("$('#cinemaSearchForm')?.addEventListener('submit'"));

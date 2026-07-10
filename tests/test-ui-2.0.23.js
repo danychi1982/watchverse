@@ -5,7 +5,7 @@ const css=fs.readFileSync('styles.css','utf8');
 const html=fs.readFileSync('index.html','utf8');
 const server=fs.readFileSync('avvia_server.py','utf8');
 
-assert(app.includes("const APP_VERSION = root.WATCHVERSE_VERSION || '1.0.0'"));
+assert(app.includes("const APP_VERSION = window.WATCHVERSE_VERSION || '1.0.0'"));
 assert(app.includes('detail-banner media-frame media-frame-backdrop'),'backdrop non confinato');
 assert(app.includes('detail-poster media-frame media-frame-poster'),'poster non confinato');
 assert(css.includes(':is(.poster,.row-poster,.search-result .thumb,.continue-poster,.cast-photo,.suggestion-poster,.person-credit-poster) > img'),'regola condivisa immagini mancante');

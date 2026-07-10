@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 const app = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
-assert(app.includes("const APP_VERSION = root.WATCHVERSE_VERSION || '1.0.0'"), 'Versione 2.0.21 non impostata');
+assert(app.includes("const APP_VERSION = window.WATCHVERSE_VERSION || '1.0.0'"), 'Versione 2.0.21 non impostata');
 assert(app.includes('function renderEmptyLibraryHome()'), 'Onboarding libreria vuota mancante');
 assert(app.includes('id="emptyHomeImport"'), 'Pulsante import Home mancante');
 assert(app.includes('id="emptyHomeDrop"'), 'Dropzone Home mancante');
