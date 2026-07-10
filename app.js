@@ -417,13 +417,23 @@
       showToast('Sincronizzazione cloud inattiva', session?.mode === 'cloud' ? 'La sessione Supabase non contiene un token valido.' : 'È attiva una sessione locale: esci e accedi di nuovo con daniela.', '!', 9000, { kind: 'error' });
       return;
     }
-    if (!profile?.cloudId) {
+    let activeProfile = profile;
+    if (!activeProfile?.cloudId) {
+      const recoveredProfiles = await bootstrapCloudProfilesWithRetry();
+      const recovered = recoveredProfiles?.find(item => item.id === profile?.id);
+      if (recovered) {
+        state.profiles = state.profiles.map(item => item.id === recovered.id ? recovered : item);
+        saveProfiles(false);
+        activeProfile = recovered;
+      }
+    }
+    if (!activeProfile?.cloudId) {
       const userId = window.WatchverseAuth?.getSession()?.user?.id || 'non disponibile';
       showToast('Profilo cloud non collegato', `Daniela non è visibile per l’utente Supabase ${userId}. Confronta questo ID con account_id nella tabella profiles.`, '!', 12000, { kind: 'error' });
       return;
     }
     let cloud;
-    try { cloud = await sync.pullProfile(profile); } catch (error) {
+    try { cloud = await sync.pullProfile(activeProfile); } catch (error) {
       console.warn('Watchverse cloud profile pull:', error);
       showToast('Libreria cloud non caricata', 'Controlla la connessione e riprova. I dati online non sono stati cancellati.', '!', 7000, { kind: 'error' });
       return;
@@ -434,7 +444,7 @@
       showToast('Catalogo cloud caricato', 'Il progresso degli episodi verrà riprovato al prossimo accesso.', '!', 7000, { kind: 'error' });
     }
     for (const store of ['series', 'movies', 'progress']) {
-      const local = (await dbGetAll(store)).filter(value => value.profileId === profile.id);
+      const local = (await dbGetAll(store)).filter(value => value.profileId === activeProfile.id);
       const localById = new Map(local.map(value => [value.id, value]));
       const winners = [];
       const pendingUpload = [];
@@ -448,10 +458,10 @@
         winners.push(value);
         pendingUpload.push(value);
       }
-      if (pendingUpload.length) await sync.pushRecords(profile, store, pendingUpload);
+      if (pendingUpload.length) await sync.pushRecords(activeProfile, store, pendingUpload);
       if (winners.length) await dbBulkPut(store, winners, false);
     }
-    const settingsKey = `watchverse.${profile.id}.settings`;
+    const settingsKey = `watchverse.${activeProfile.id}.settings`;
     const localSettings = safeJson(localStorage.getItem(settingsKey), null);
     if (cloud.settings && Object.keys(cloud.settings).length) localStorage.setItem(settingsKey, JSON.stringify(cloud.settings));
     else if (localSettings) void sync.saveSettings(profile, localSettings).catch(error => console.warn('Watchverse cloud settings migration:', error));
