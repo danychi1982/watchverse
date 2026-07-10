@@ -19,6 +19,16 @@
     return data;
   }
 
+  async function requestAll(path, pageSize = 1000) {
+    const rows = [];
+    for (let offset = 0; ; offset += pageSize) {
+      const separator = path.includes('?') ? '&' : '?';
+      const page = await request(`${path}${separator}limit=${pageSize}&offset=${offset}`);
+      rows.push(...(Array.isArray(page) ? page : []));
+      if (!Array.isArray(page) || page.length < pageSize) return rows;
+    }
+  }
+
   function accountId() { return auth()?.getSession()?.user?.id || null; }
   function isEnabled() { return configured() && !!accountId(); }
   function profileId(profile) { return profile?.cloudId || null; }
@@ -108,11 +118,16 @@
   async function pullProfile(profile) {
     if (!isEnabled() || !profileId(profile)) return null;
     const id = encodeURIComponent(profile.cloudId);
-    const [library, progress, settings] = await Promise.all([
-      request(`/library_records?select=local_id,kind,payload,updated_at&profile_id=eq.${id}&deleted_at=is.null`),
-      request(`/episode_progress?select=local_id,series_local_id,season,episode,watched,watched_at,rating,payload,updated_at&profile_id=eq.${id}&deleted_at=is.null`),
+    const [libraryResult, progressResult, settingsResult] = await Promise.allSettled([
+      requestAll(`/library_records?select=local_id,kind,payload,updated_at&profile_id=eq.${id}&deleted_at=is.null`),
+      requestAll(`/episode_progress?select=local_id,series_local_id,season,episode,watched,watched_at,rating,payload,updated_at&profile_id=eq.${id}&deleted_at=is.null`),
       request(`/profile_settings?select=payload,updated_at&profile_id=eq.${id}`)
     ]);
+    if (libraryResult.status === 'rejected') throw libraryResult.reason;
+    if (progressResult.status === 'rejected') throw progressResult.reason;
+    const library = libraryResult.value;
+    const progress = progressResult.value;
+    const settings = settingsResult.status === 'fulfilled' ? settingsResult.value : [];
     const records = { series: [], movies: [], progress: [] };
     for (const row of library || []) {
       const value = { ...(row.payload || {}), id: row.local_id, profileId: profile.id, updatedAt: row.updated_at };
