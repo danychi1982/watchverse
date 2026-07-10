@@ -20,7 +20,8 @@ const entries = [
   "public-metadata.js",
   "accessibility-report.js",
   "styles.css",
-  "assets"
+  "assets",
+  "docs"
 ];
 
 function sleep(ms) {

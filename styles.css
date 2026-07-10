@@ -1911,6 +1911,10 @@ html[data-theme="system"] { --toast-bg:#26231f; --toast-text:#fffdf8; --toast-mu
 .sidebar-toggle-icon { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
 .sidebar-collapsed .sidebar-toggle { width:32px; min-width:32px; padding:0; align-self:auto; }
 
+/* Feedback comune dei link d’azione: stesso comportamento di Accessibilità nel footer. */
+:is(.section-link,.app-footer a):hover,
+:is(.section-link,.app-footer a):focus-visible { color:#fff !important; }
+
 .topbar-brand {
   gap:14px;
   min-width:238px;
