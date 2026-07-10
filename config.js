@@ -5,13 +5,13 @@
  */
 window.WATCHVERSE_CONFIG = Object.freeze({
   appName: 'Watchverse',
-  accountUsername: '',
-  recoveryEmail: '',
+  accountUsername: 'daniela',
+  recoveryEmail: 'daniela.chiumarulo@gmail.com',
 
   // Autenticazione cloud opzionale. La chiave anon/publishable può stare nel client;
   // la sicurezza dei dati dipende dalle policy RLS incluse nel pacchetto.
-  supabaseUrl: '',
-  supabaseAnonKey: '',
+  supabaseUrl: 'https://aqphrgmnngxogqijdvpk.supabase.co',
+  supabaseAnonKey: 'sb_publishable_TINmyB0UDRxG-ZpkRig8ng_MUmMOohP',
   allowCloudSignup: false,
 
   // URL della Supabase Edge Function tmdb-proxy, ad esempio:
