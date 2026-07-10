@@ -1462,18 +1462,38 @@
 
   function openModal(title, body, actions = '', options = {}) {
     const dismissible = options.dismissible !== false;
-    document.removeEventListener('keydown', modalEscape);
+    document.removeEventListener('keydown', modalKeydown);
+    state.modalPreviousFocus = document.activeElement;
+    document.documentElement.classList.add('modal-open');
+    document.body.classList.add('modal-open');
     $('#modalRoot').innerHTML = `<div class="modal-backdrop" role="dialog" aria-modal="true" aria-label="${esc(title)}" ${options.busy ? 'aria-busy="true"' : ''}>
       <section class="modal"><header class="modal-head"><h2>${esc(title)}</h2>${dismissible ? '<button class="modal-close" type="button" aria-label="Chiudi">×</button>' : '<span class="modal-working" aria-hidden="true">•••</span>'}</header>
       <div class="modal-body">${body}${actions ? `<div class="modal-actions">${actions}</div>` : ''}</div></section></div>`;
     if (dismissible) {
       $('.modal-close').addEventListener('click', closeModal);
       $('.modal-backdrop').addEventListener('click', e => { if (e.target.classList.contains('modal-backdrop')) closeModal(); });
-      document.addEventListener('keydown', modalEscape);
+      document.addEventListener('keydown', modalKeydown);
     }
+    $('.modal-close, .modal-actions button, .modal-actions a, .modal-body input, .modal-body select, .modal-body textarea, .modal-body [tabindex]:not([tabindex="-1"])')?.focus();
   }
-  function modalEscape(e) { if (e.key === 'Escape') closeModal(); }
-  function closeModal() { document.removeEventListener('keydown', modalEscape); $('#modalRoot').innerHTML = ''; }
+  function modalKeydown(e) {
+    if (e.key === 'Escape') { closeModal(); return; }
+    if (e.key !== 'Tab') return;
+    const modal = $('#modalRoot .modal'); if (!modal) return;
+    const focusable = $$('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])', modal);
+    if (!focusable.length) return;
+    const first = focusable[0], last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+  function closeModal() {
+    document.removeEventListener('keydown', modalKeydown);
+    document.documentElement.classList.remove('modal-open');
+    document.body.classList.remove('modal-open');
+    $('#modalRoot').innerHTML = '';
+    if (state.modalPreviousFocus?.isConnected) state.modalPreviousFocus.focus({ preventScroll:true });
+    state.modalPreviousFocus = null;
+  }
 
   function posterInner(item) {
     const image = item.poster ? `<img class="poster-img" src="${esc(item.poster)}" alt="" loading="lazy" decoding="async">` : '';
@@ -1753,6 +1773,7 @@
       else if (r.page === 'person') renderPerson(r.id, r.query);
       else if (r.page === 'accessibility') { state.accessibilityTab='declaration'; renderAccessibility(); }
       else if (r.page === 'accessibility-report') renderAccessibilityReport();
+      else if (r.page === 'design-system') renderDesignSystem();
       else renderSettings();
       state.lastRenderedRoute = routeKey;
       if (preserveScroll) requestAnimationFrame(() => window.scrollTo({ top: preservedScrollY, behavior: 'instant' }));
@@ -2369,10 +2390,23 @@
     return !text || text.includes('importat') || text.includes('collega i metadati') || text.includes('descrizione non');
   }
   function metadataParts(item) { return item.publicMetadata?.parts || {}; }
+  function metadataErrorInfo(error) {
+    const message = String(error?.message || error || 'Errore sconosciuto');
+    if (/429|rate.?limit|troppe richieste/i.test(message)) return { code:'rate-limit', label:'Limite richieste della fonte' };
+    if (/timeout|abort|tempo/i.test(message)) return { code:'timeout', label:'Timeout della fonte' };
+    if (/network|fetch|connession|offline|failed to/i.test(message)) return { code:'network', label:'Errore di rete' };
+    if (/nessuna corrispondenza|non trovata|scheda pubblica/i.test(message)) return { code:'not-found', label:'Titolo non trovato' };
+    if (/Fonte metadati non disponibile|5\d\d/i.test(message)) return { code:'source-error', label:'Fonte temporaneamente non disponibile' };
+    return { code:'unknown', label:'Errore tecnico' };
+  }
+  function metadataRetryDelay(attempts = 1) {
+    return Math.min(1000 * 60 * 60 * 24 * 7, 1000 * 60 * 60 * Math.pow(2, Math.max(0, Math.min(6, attempts - 1))));
+  }
   function needsPublicMetadata(item, kind, includeCast = false) {
     if (!state.settings.publicMetadataEnabled || !publicMetadataApi()) return false;
     const meta = item.publicMetadata || {}; const parts = metadataParts(item);
-    if (meta.failedAt && Date.now() - dateMs(meta.failedAt) < 1000 * 60 * 60 * 24) return false;
+    if (meta.nextRetryAt && dateMs(meta.nextRetryAt) > Date.now()) return false;
+    if (meta.failedAt && !meta.nextRetryAt && Date.now() - dateMs(meta.failedAt) < 1000 * 60 * 60 * 24) return false;
     if (!parts.coreComplete) return true;
     if (includeCast && !parts.castComplete) return true;
     if (kind === 'series') {
@@ -2470,7 +2504,7 @@
         officialSite: metadata.officialSite || item.officialSite || null,
         providerStatus: metadata.statusText || item.providerStatus || null,
         seasons: mergeSeriesSeasons(item.seasons || [], metadata.seasons || [], item.id),
-        publicMetadata: { ...previousMeta, provider: metadata.provider, providerLabel: metadata.providerLabel, providerId: metadata.providerId, sourceUrl: metadata.sourceUrl, italianSourceUrl: metadata.italianSourceUrl, englishSourceUrl: metadata.englishSourceUrl, language: metadata.language, parts, failedAt: null, error: null, updatedAt: now }
+        publicMetadata: { ...previousMeta, provider: metadata.provider, providerLabel: metadata.providerLabel, providerId: metadata.providerId, sourceUrl: metadata.sourceUrl, italianSourceUrl: metadata.italianSourceUrl, englishSourceUrl: metadata.englishSourceUrl, language: metadata.language, parts, failedAt: null, error: null, errorCode: null, errorCategory: null, attempts: 0, nextRetryAt: null, updatedAt: now }
       }, userFields);
       await dbPut('series', item);
       await saveSharedCatalog('series', item, 'public-metadata');
@@ -2489,7 +2523,7 @@
         cast: includeCast ? (metadata.cast || []) : (item.cast || []),
         wikidataId: metadata.wikidataId || item.wikidataId || null,
         imdbId: item.imdbId || metadata.imdbId || null,
-        publicMetadata: { ...previousMeta, provider: metadata.provider, providerLabel: metadata.providerLabel, sourceUrl: metadata.sourceUrl, italianSourceUrl: metadata.italianSourceUrl, englishSourceUrl: metadata.englishSourceUrl, language: metadata.language, parts, failedAt: null, error: null, updatedAt: now }
+        publicMetadata: { ...previousMeta, provider: metadata.provider, providerLabel: metadata.providerLabel, sourceUrl: metadata.sourceUrl, italianSourceUrl: metadata.italianSourceUrl, englishSourceUrl: metadata.englishSourceUrl, language: metadata.language, parts, failedAt: null, error: null, errorCode: null, errorCategory: null, attempts: 0, nextRetryAt: null, updatedAt: now }
       });
       await dbPut('movies', item);
       await saveSharedCatalog('movie', item, 'public-metadata');
@@ -2516,7 +2550,7 @@
       state.metadataRecoveryScheduled = false;
       if (!navigator.onLine || state.metadataRunning || state.metadataQueue.length) return;
       state.metadataRecoveryDone = true;
-      [...failedSeries, ...failedMovies].forEach(item => { item.publicMetadata = { ...(item.publicMetadata || {}), failedAt: null, error: null }; });
+      [...failedSeries, ...failedMovies].forEach(item => { item.publicMetadata = { ...(item.publicMetadata || {}), failedAt: null, error: null, nextRetryAt: null }; });
       queuePublicMetadata('series', failedSeries, { force: true, unlimited: true, silent: true, includeCast: true });
       queuePublicMetadata('movie', failedMovies, { force: true, unlimited: true, silent: true, includeCast: true });
       showToast('Recupero metadati', `Nuovo tentativo per ${failedSeries.length + failedMovies.length} titoli da verificare.`, '↻', 3600);
@@ -2537,8 +2571,14 @@
         })
         .catch(async error => {
           state.metadataFailedThisSession++;
-          task.item.publicMetadata = { ...(task.item.publicMetadata || {}), failedAt: new Date().toISOString(), error: error.message };
+          const now = new Date();
+          const previous = task.item.publicMetadata || {};
+          const attempts = Number(previous.attempts || 0) + 1;
+          const errorInfo = metadataErrorInfo(error);
+          const nextRetryAt = new Date(now.getTime() + metadataRetryDelay(attempts)).toISOString();
+          task.item.publicMetadata = { ...previous, failedAt: now.toISOString(), error: error.message, errorCode: errorInfo.code, errorCategory: errorInfo.label, attempts, nextRetryAt };
           try { await dbPut(task.kind === 'series' ? 'series' : 'movies', task.item); } catch {}
+          try { await saveSharedCatalog(task.kind, task.item, 'public-metadata-error'); } catch {}
           if (!task.silent) showToast('Metadati non trovati', `${task.item.title}: ${error.message}`, '!', 6000, { kind: 'error' });
         })
         .finally(() => {
@@ -2571,7 +2611,7 @@
     if ((!force && state.metadataBackgroundStarted) || !navigator.onLine || !state.settings.publicMetadataEnabled || libraryIsEmpty()) return;
     if (force) {
       for (const item of [...state.series, ...state.movies]) {
-        if (item.publicMetadata?.failedAt) item.publicMetadata = { ...item.publicMetadata, failedAt: null, error: null };
+        if (item.publicMetadata?.failedAt) item.publicMetadata = { ...item.publicMetadata, failedAt: null, error: null, nextRetryAt: null };
       }
     }
     state.metadataBackgroundStarted = true;
@@ -2579,10 +2619,13 @@
       const seriesTargets = sortSeriesItems(state.series, 'recent').filter(item => needsPublicMetadata(item, 'series', true));
       const movieTargets = sortMovieItems(state.movies, 'recent').filter(item => needsPublicMetadata(item, 'movie', true));
       // Prima i titoli usati più di recente; poi il resto. Core, cast ed episodi vengono acquisiti insieme e salvati una sola volta.
-      queuePublicMetadata('series', seriesTargets.slice(0, 24), { unlimited: true, silent: true, includeCast: true });
-      queuePublicMetadata('movie', movieTargets.slice(0, 24), { unlimited: true, silent: true, includeCast: true });
-      queuePublicMetadata('series', seriesTargets.slice(24), { unlimited: true, silent: true, includeCast: true });
-      queuePublicMetadata('movie', movieTargets.slice(24), { unlimited: true, silent: true, includeCast: true });
+      const targets = [];
+      const max = Math.max(1, Number(state.metadataAutoBudget || 36));
+      for (let index = 0; targets.length < max && (index < seriesTargets.length || index < movieTargets.length); index += 1) {
+        if (seriesTargets[index]) targets.push({ kind:'series', item:seriesTargets[index] });
+        if (movieTargets[index] && targets.length < max) targets.push({ kind:'movie', item:movieTargets[index] });
+      }
+      for (const target of targets) queuePublicMetadata(target.kind, [target.item], { silent:true, includeCast:true });
       scheduleMetadataHeaderUpdate();
       if (!state.metadataQueue.length && state.metadataRunning === 0) scheduleMetadataRecoveryPass();
     });
@@ -2596,7 +2639,7 @@
   async function manualPublicMetadata(kind, item) {
     if (!navigator.onLine) { showToast('Connessione assente', 'I metadati pubblici richiedono internet.', '!', 5000, { kind: 'error' }); return; }
     showToast('Aggiornamento avviato', item.title, '↻', 2500);
-    item.publicMetadata = { ...(item.publicMetadata || {}), failedAt: null };
+    item.publicMetadata = { ...(item.publicMetadata || {}), failedAt: null, nextRetryAt: null };
     queuePublicMetadata(kind, [item], { force: true, includeCast: true, silent: false });
   }
 
@@ -3513,6 +3556,21 @@
     renderAccessibility();
   }
 
+  function renderDesignSystem(){
+    setPage('Design system','Specifiche visuali e componenti','');
+    setMain(`<div class="design-system-page">
+      <div class="design-system-toolbar"><button class="ghost" id="designSystemBack" type="button">← Torna indietro</button><span>Watchverse 1.0.0 · Build 24</span></div>
+      <header class="design-system-intro"><span class="eyebrow">Watchverse design system</span><h2>Fondamenti e componenti</h2><p>Specifiche operative del linguaggio visivo Watchverse Black. Questa pagina documenta i token e le regole usate dall'interfaccia, con esempi direttamente verificabili.</p></header>
+      <section class="design-system-section"><div><span class="eyebrow">01 · Brand</span><h3>Marchio e voce</h3><p>Il wordmark decorativo e il simbolo drago sono riservati al brand. Titoli, controlli e testi dell'interfaccia usano la tipografia UI standard.</p></div><div class="design-system-brand-sample"><img src="assets/brand/watchverse-dragon-w.svg" alt="Logo Watchverse"><div><strong>Watchverse</strong><span>Scegli cosa guardare.<br>Ricorda cosa hai visto.</span></div></div></section>
+      <section class="design-system-section"><div><span class="eyebrow">02 · Colore</span><h3>Token semantici</h3><p>Il rosso Deep Crimson e' il colore primario. I token semantici vengono usati anche per focus, errori, successo e stati di sincronizzazione.</p></div><div class="design-system-token-table"><div><i style="--token:#070707"></i><span>Background</span><code>#070707</code></div><div><i style="--token:#111112"></i><span>Surface</span><code>#111112</code></div><div><i style="--token:#242427"></i><span>Surface 3</span><code>#242427</code></div><div><i style="--token:#8e1624"></i><span>Accent / Deep Crimson</span><code>#8e1624</code></div><div><i style="--token:#c02a38"></i><span>Accent strong</span><code>#c02a38</code></div><div><i style="--token:#fafafa"></i><span>Text</span><code>#fafafa</code></div></div></section>
+      <section class="design-system-section"><div><span class="eyebrow">03 · Tipografia</span><h3>Scala e gerarchia</h3><p>La gerarchia segue il contenuto: un solo H1 per pagina, titoli di sezione più contenuti, corpo leggibile e metadati compatti.</p></div><div class="design-system-type-sample"><div><strong class="ds-display">Titolo display</strong><code>800 · responsive</code></div><div><strong class="ds-page-title">Titolo pagina H1</strong><code>800 · 2.5rem</code></div><div><strong class="ds-section-title">Titolo sezione</strong><code>800 · 1.5rem</code></div><div><span class="ds-body">Testo del contenuto</span><code>400-600 · 1rem</code></div><div><span class="ds-meta">Metadata e badge</span><code>700-850 · .75rem</code></div></div></section>
+      <section class="design-system-section"><div><span class="eyebrow">04 · Layout</span><h3>Struttura della pagina</h3><p>Desktop: sidebar, topbar e contenuto principale. Mobile: navigazione adattata, una colonna e controlli con target minimo di 44px.</p></div><div class="design-system-layout-sample"><span>Sidebar</span><span>Topbar · contesto · brand · azioni</span><span>Main content · griglia fluida</span><span>Footer · versione · link</span></div></section>
+      <section class="design-system-section"><div><span class="eyebrow">05 · Componenti</span><h3>Azioni, stati e feedback</h3><p>I controlli mantengono dimensioni, stati hover e focus coerenti. I link d'azione sono sottolineati e cambiano colore al passaggio del mouse.</p></div><div class="design-system-component-sample"><div class="ds-actions"><button class="primary">Azione primaria</button><button class="secondary">Azione secondaria</button><a class="auth-link" href="#/design-system">Link di servizio</a></div><div class="ds-status"><span class="metadata-status-symbol">↻</span><strong>Sincronizzazione in corso</strong><span class="progress-track"><span class="progress-fill" style="width:72%"></span></span></div><div class="ds-card"><div class="ds-card-poster">WATCH</div><div><strong>Serie in corso</strong><p>Prossimo episodio <span class="episode-code">S02 E05</span></p></div></div></div></section>
+      <section class="design-system-section design-system-guidance"><div><span class="eyebrow">06 · Accessibilita'</span><h3>Regole di qualita'</h3><p>Contrasto minimo verificato su testo e controlli, focus visibile, informazione non affidata al solo colore, stati annunciabili e layout senza sovrapposizioni.</p></div><ul><li>Target interattivi minimi: 44 × 44px.</li><li>Focus sempre visibile con bordo ad alto contrasto.</li><li>Testi lunghi: wrapping o troncamento controllato, mai sovrapposizione.</li><li>Hover e focus disponibili per link, pulsanti e controlli iconografici.</li></ul></section>
+    </div>`);
+    $('#designSystemBack')?.addEventListener('click',()=>{ if (history.length > 1) history.back(); else location.hash='#/home'; });
+  }
+
   function renderSettings(){
     setPage('Profilo','Impostazioni e privacy','settings');
     const p=currentProfile(),account=WatchverseAuth.readAccount();
@@ -3644,7 +3702,7 @@
     async function notifyUpcoming(){if(Notification.permission!=='granted'||!state.settings.notifyNewEpisodes)return;const n=state.notifications[0];if(!n)return;const icon=n.poster||'assets/brand/watchverse-dragon-w.svg';try{const reg=await navigator.serviceWorker?.ready;if(reg)await reg.showNotification(n.title,{body:`${n.episodeLine || ''}\n${n.body || ''}`,icon,badge:'assets/brand/watchverse-dragon-w.svg',tag:n.id,data:{url:n.route}});else new Notification(n.title,{body:`${n.episodeLine || ''}\n${n.body || ''}`,icon});}catch{new Notification(n.title,{body:n.body});}}
   function showNotifications(){openModal('Notifiche',state.notifications.length?`<div class="notification-list">${state.notifications.map(n=>`<a class="notification-item" href="${n.route}"><div class="notification-poster" style="background:${n.posterGradient||gradient(n.seriesTitle||n.title)}">${n.poster?`<img src="${esc(n.poster)}" alt="Locandina di ${esc(n.seriesTitle||'serie')}" loading="lazy" decoding="async">`:`<span>${esc((n.seriesTitle||'TV').slice(0,2))}</span>`}</div><div class="notification-copy"><span class="result-kicker">Calendario serie</span><h3>${esc(n.title)}</h3><p class="notification-episode">${esc(n.episodeLine||n.seriesTitle||'')}</p><p class="notification-schedule-line">${esc(n.originalLine||'')}</p><p class="notification-schedule-line italy">${esc(n.italyLine||'')}</p></div><span class="notification-arrow">→</span></a>`).join('')}</div>`:'<div class="empty-state"><div class="empty-icon">🔕</div><h3>Nessun nuovo avviso</h3><p>Il calendario è aggiornato.</p></div>');}
   async function installApp(){if(state.deferredInstall){state.deferredInstall.prompt();await state.deferredInstall.userChoice;state.deferredInstall=null;$('#installButton')?.classList.add('hidden');}else showToast('Installazione PWA','Apri il menu del browser e scegli “Installa app” o “Aggiungi a schermata Home”.','⇩');}
-  function showQuickAdd(){openModal('Aggiungi rapidamente',`<div class="settings-grid"><a class="settings-card" href="#/search" onclick="document.querySelector('#modalRoot').innerHTML=''"><h3>⌕ Cerca online</h3><p>Film, serie e persone con metadati italiani.</p></a><a class="settings-card" href="#/import" onclick="document.querySelector('#modalRoot').innerHTML=''"><h3>⇧ Importa file</h3><p>CSV, JSON o ZIP della tua vecchia libreria.</p></a></div>`);}
+  function showQuickAdd(){openModal('Aggiungi rapidamente',`<div class="settings-grid"><a class="settings-card" data-quick-nav href="#/search"><h3>⌕ Cerca online</h3><p>Film, serie e persone con metadati italiani.</p></a><a class="settings-card" data-quick-nav href="#/import"><h3>⇧ Importa file</h3><p>CSV, JSON o ZIP della tua vecchia libreria.</p></a></div>`);$$('[data-quick-nav]').forEach(link=>link.addEventListener('click',()=>closeModal()));}
 
   function hideAppShell() {
     const app = $('#app');
@@ -3826,7 +3884,7 @@
         if (Array.isArray(cloudProfiles) && cloudProfiles.length) { state.profiles = cloudProfiles; saveProfiles(false); if (!state.profileSelected) showProfileGate(); }
       }).catch(error => console.warn('Watchverse cloud profile bootstrap:', error));
       state.authenticated=true;showProfileGate();
-    }catch(e){console.error(e);document.body.innerHTML=`<main style="padding:40px;font-family:system-ui;color:white;background:#111;min-height:100vh"><h1>Watchverse non è riuscita ad avviarsi</h1><p>${esc(e.message)}</p><button onclick="location.reload()">Riprova</button></main>`;}
+    }catch(e){console.error(e);document.body.innerHTML=`<main style="padding:40px;font-family:system-ui;color:white;background:#111;min-height:100vh"><h1>Watchverse non è riuscita ad avviarsi</h1><p>${esc(e.message)}</p><button id="retryApp" type="button">Riprova</button></main>`;$('#retryApp')?.addEventListener('click',()=>location.reload());}
   }
 
   init();
