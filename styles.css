@@ -95,8 +95,8 @@ button[disabled] { opacity:.45; cursor:not-allowed; }
 .section-head { display:flex; align-items:end; justify-content:space-between; gap:16px; margin-bottom:16px; }
 .section-head h2, .section-head h3 { margin:0; }
 .section-head p { margin:5px 0 0; color:var(--muted); }
-.section-link { color:var(--accent-text,var(--accent)); font-weight:800; text-decoration:underline; text-underline-offset:3px; }
-.section-link:hover,.section-link:focus-visible { color:var(--accent-2); }
+.section-link { color:var(--accent-2); font-weight:800; text-decoration:underline; text-underline-offset:3px; transition:color .16s ease; }
+.section-link:hover,.section-link:focus-visible { color:var(--text); }
 
 .home-welcome { display:flex; align-items:center; justify-content:space-between; gap:18px; margin-bottom:20px; padding:18px 20px; border:1px solid rgba(var(--accent-rgb),.24); border-radius:var(--radius); background:linear-gradient(135deg,rgba(var(--accent-rgb),.10),rgba(255,255,255,.018)); }
 .home-welcome h2 { margin:3px 0 4px; font-size:clamp(22px,3vw,30px); }
@@ -1091,13 +1091,13 @@ html[data-theme="watchverse-black"] .media-card,
 html[data-theme="watchverse-black"] .media-row { border-color:#303034; }
 html[data-theme="watchverse-black"] .media-card:hover,
 html[data-theme="watchverse-black"] .media-row:hover { border-color:rgba(var(--accent-rgb),.75); }
-html[data-theme="watchverse-black"] :is(.eyebrow,.kicker,.section-link,.brand-copy small,.brand-slogan,.auth-link,.app-footer a,.chart-kicker,.rating-bars .hbar-row > span,.notification-arrow,.trailer-copy span,.dropzone.compact small,.log-level) { color:var(--accent-text); }
+html[data-theme="watchverse-black"] :is(.eyebrow,.kicker,.section-link,.brand-copy small,.brand-slogan,.auth-link,.app-footer a,.chart-kicker,.rating-bars .hbar-row > span,.notification-arrow,.trailer-copy span,.dropzone.compact small,.log-level) { color:var(--accent-2); }
 html[data-theme="watchverse-black"] .section-link:hover,
 html[data-theme="watchverse-black"] .section-link:focus-visible,
 html[data-theme="watchverse-black"] .app-footer a:hover,
 html[data-theme="watchverse-black"] .app-footer a:focus-visible,
 html[data-theme="watchverse-black"] .brand-profile-switch:hover,
-html[data-theme="watchverse-black"] .brand-profile-switch:focus-visible { color:var(--accent-text); }
+html[data-theme="watchverse-black"] .brand-profile-switch:focus-visible { color:var(--text); }
 .tabbar { display:flex; gap:6px; align-items:center; overflow-x:auto; padding:5px; border:1px solid var(--line); border-radius:14px; background:var(--surface); scrollbar-width:thin; }
 .tab-button { display:inline-flex; align-items:center; gap:7px; flex:0 0 auto; min-height:38px; padding:0 12px; border:1px solid transparent; border-radius:10px; color:var(--muted); background:transparent; font-weight:850; white-space:nowrap; }
 .tab-button:hover { color:var(--text); background:var(--surface-2); }
