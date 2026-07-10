@@ -1,4 +1,4 @@
-const CACHE='watchverse-v2.0.29';
+const CACHE='watchverse-v2.0.30';
 const ASSETS=['./','./index.html','./styles.css','./config.js','./auth.js','./assets/vendor/pako_inflate.min.js','./gdpr-import.js','./public-metadata.js','./accessibility-report.js','./app.js','./manifest.webmanifest','./assets/icons/icon-192.png','./assets/icons/icon-512.png','./assets/themes/last-of-us-infected-wall.svg','./assets/themes/last-of-us-proposal-3-wallpaper.jpg','./assets/themes/tlou-cordyceps.svg','./assets/themes/tlou-backpack.svg','./assets/themes/tlou-flashlight.svg','./assets/themes/the-last-of-us-official-logo.png','./assets/themes/tlou-loader-cordyceps.svg','./assets/themes/tlou-firefly.svg','./assets/themes/tlou-tattoo.svg','./assets/themes/buffy-cemetery.svg'];
 ASSETS.push('./cloud-sync.js');
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));
