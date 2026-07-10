@@ -1433,13 +1433,12 @@ html[data-density="compact"] .profile-card { padding:15px; }
 .episode-media-card .card-title a:hover {
   color:var(--accent);
 }
-.episode-card-meta-line {
+.episode-title-row {
   display:flex;
   align-items:flex-start;
-  justify-content:space-between;
   gap:8px;
   min-width:0;
-  margin-top:6px;
+  margin-top:8px;
 }
 .episode-code {
   flex:0 0 auto;
@@ -1455,20 +1454,8 @@ html[data-density="compact"] .profile-card { padding:15px; }
   letter-spacing:.03em;
   white-space:nowrap;
 }
-.episode-card-kicker {
-  min-width:0;
-  flex:1 1 auto;
-  overflow:hidden;
-  color:var(--accent-2);
-  font-size:10px;
-  font-weight:950;
-  letter-spacing:.055em;
-  text-overflow:ellipsis;
-  text-transform:uppercase;
-  white-space:nowrap;
-}
 .episode-media-card .card-title {
-  min-height:36px;
+  min-height:34px;
   margin-top:7px;
   white-space:normal;
   display:-webkit-box;
@@ -1478,8 +1465,10 @@ html[data-density="compact"] .profile-card { padding:15px; }
   line-height:1.2;
 }
 .episode-card-title {
+  min-width:0;
+  flex:1 1 auto;
   min-height:38px;
-  margin:6px 0 0;
+  margin:0;
   overflow:hidden;
   color:var(--muted);
   display:-webkit-box;
@@ -4055,9 +4044,14 @@ html[data-theme="buffy"] .brand-mark {
   background-size: cover !important;
 }
 /* Wordmark coerente con la proposta approvata: serif ad alto contrasto, senza dipendenze esterne. */
-:is(.brand-name,.auth-brand h1,.profile-gate h1) {
+:is(.brand-name,.auth-brand h1) {
   font-family:"WatchverseFraktur","Old English Text MT","UnifrakturCook","Cloister Black",Georgia,"Times New Roman",serif;
   font-weight:700;
+  letter-spacing:0;
+}
+.profile-gate h1 {
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-weight:800;
   letter-spacing:0;
 }
 .brand-name { text-rendering:geometricPrecision; }
