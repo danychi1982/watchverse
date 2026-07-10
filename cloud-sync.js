@@ -118,14 +118,16 @@
     }
   }
 
-  async function pullProfile(profile) {
+  async function pullProfile(profile, options = {}) {
     if (!isEnabled() || !profileId(profile)) return null;
+    const onlyProgress = options.onlyProgress === true;
+    const skipProgress = options.skipProgress === true;
     let cloudId = profile.cloudId;
     const id = () => encodeURIComponent(cloudId);
     let libraryResult = await Promise.allSettled([
-      requestAll(`/library_records?select=local_id,kind,payload,updated_at&profile_id=eq.${id()}&deleted_at=is.null`)
+      onlyProgress ? Promise.resolve([]) : requestAll(`/library_records?select=local_id,kind,payload,updated_at&profile_id=eq.${id()}&deleted_at=is.null`)
     ]);
-    if (libraryResult[0].status === 'fulfilled' && libraryResult[0].value.length === 0) {
+    if (!onlyProgress && libraryResult[0].status === 'fulfilled' && libraryResult[0].value.length === 0) {
       // Compatibilita per importazioni create prima del riallineamento degli UUID
       // cloud: il prefisso local_id identifica ancora senza ambiguita il profilo.
       const prefix = encodeURIComponent(`${profile.id}|%`);
@@ -139,8 +141,8 @@
       }
     }
     const [progressResult, settingsResult] = await Promise.allSettled([
-      requestAll(`/episode_progress?select=local_id,series_local_id,season,episode,watched,watched_at,rating,payload,updated_at&profile_id=eq.${id()}&deleted_at=is.null`),
-      request(`/profile_settings?select=payload,updated_at&profile_id=eq.${id()}`)
+      skipProgress ? Promise.resolve([]) : requestAll(`/episode_progress?select=local_id,series_local_id,season,episode,watched,watched_at,rating,payload,updated_at&profile_id=eq.${id()}&deleted_at=is.null`),
+      onlyProgress ? Promise.resolve([]) : request(`/profile_settings?select=payload,updated_at&profile_id=eq.${id()}`)
     ]);
     const libraryResultValue = libraryResult[0];
     if (libraryResultValue.status === 'rejected') throw libraryResultValue.reason;
@@ -157,7 +159,7 @@
       ...records,
       settings: settings?.[0]?.payload || null,
       warnings: {
-        progress: progressResult.status === 'rejected' ? progressResult.reason?.message || 'Progresso episodi non disponibile.' : null,
+        progress: skipProgress ? null : (progressResult.status === 'rejected' ? progressResult.reason?.message || 'Progresso episodi non disponibile.' : null),
         settings: settingsResult.status === 'rejected' ? settingsResult.reason?.message || 'Impostazioni cloud non disponibili.' : null
       }
     };

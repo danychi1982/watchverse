@@ -406,7 +406,7 @@
     });
   }
 
-  async function syncCloudProfile(profile) {
+  async function syncCloudProfile(profile, options = {}) {
     const sync = window.WatchverseCloudSync;
     if (!sync) {
       showToast('Sincronizzazione non disponibile', 'Il modulo cloud non è stato caricato. Ricarica la pagina.', '!', 8000, { kind: 'error' });
@@ -433,7 +433,7 @@
       return;
     }
     let cloud;
-    try { cloud = await sync.pullProfile(activeProfile); } catch (error) {
+    try { cloud = await sync.pullProfile(activeProfile, options); } catch (error) {
       console.warn('Watchverse cloud profile pull:', error);
       showToast('Libreria cloud non caricata', 'Controlla la connessione e riprova. I dati online non sono stati cancellati.', '!', 7000, { kind: 'error' });
       return;
@@ -443,7 +443,8 @@
       console.warn('Watchverse cloud episode progress pull:', cloud.warnings.progress);
       showToast('Catalogo cloud caricato', 'Il progresso degli episodi verrà riprovato al prossimo accesso.', '!', 7000, { kind: 'error' });
     }
-    for (const store of ['series', 'movies', 'progress']) {
+    const stores = options.onlyProgress ? ['progress'] : (options.skipProgress ? ['series', 'movies'] : ['series', 'movies', 'progress']);
+    for (const store of stores) {
       const local = (await dbGetAll(store)).filter(value => value.profileId === activeProfile.id);
       const localById = new Map(local.map(value => [value.id, value]));
       const winners = [];
@@ -3653,15 +3654,16 @@
     await nextPaint();
     try {
       state.profileId=id;state.profileSelected=true;localStorage.setItem('watchverse.currentProfile',id);
-      await syncCloudProfile(profile);
+      await syncCloudProfile(profile, { skipProgress: true });
       // Il primo accesso dopo la pulizia del browser puo' incontrare una risposta
       // transitoria del servizio cloud. Ritenta prima di mostrare una Home vuota.
-      if (window.WatchverseCloudSync?.isEnabled() && profile?.cloudId) {
+      const linkedProfile = state.profiles.find(item => item.id === id);
+      if (window.WatchverseCloudSync?.isEnabled() && linkedProfile?.cloudId) {
         const [loadedSeries, loadedMovies] = await Promise.all([dbGetAll('series'), dbGetAll('movies')]);
         const hasCloudLibrary = loadedSeries.some(item => item.profileId === id) || loadedMovies.some(item => item.profileId === id);
         if (!hasCloudLibrary) {
           await new Promise(resolve => setTimeout(resolve, 1200));
-          await syncCloudProfile(profile);
+          await syncCloudProfile(linkedProfile, { skipProgress: true });
         }
       }
       loadSettings();loadDefaultSourceStatus();
@@ -3680,6 +3682,15 @@
       state.lastRenderedRoute = '';
       location.hash='#/home';
       await route({ loader:false });
+      idle(async () => {
+        const backgroundProfile = state.profiles.find(item => item.id === id);
+        if (!backgroundProfile || state.profileId !== id) return;
+        await syncCloudProfile(backgroundProfile, { onlyProgress: true });
+        if (state.profileId === id) {
+          await reloadData();
+          await route({ loader:false });
+        }
+      });
       idle(scheduleBackgroundMetadataSync);
       idle(()=>syncDefaultPublicSources(false));
     } finally {
