@@ -3441,7 +3441,24 @@ html[data-theme="buffy"] .brand-mark {
   box-shadow:inset 0 0 0 2px rgba(213,154,67,.13),0 0 24px rgba(169,46,60,.28);
 }
 html[data-theme="buffy"] .brand-mark::before,
-html[data-theme="buffy"] .brand-mark::after { content:none; }
+html[data-theme="buffy"] .brand-mark::before { content:none; }
+html[data-theme="buffy"] .brand-mark::after {
+  content:"B";
+  position:absolute;
+  right:-7px;
+  bottom:-7px;
+  width:19px;
+  height:19px;
+  display:grid;
+  place-items:center;
+  border:1px solid #d59a43;
+  border-radius:50%;
+  background:#1b0d11;
+  color:#f2dfc8;
+  font:700 12px/1 Georgia,"Times New Roman",serif;
+  text-shadow:0 1px 0 #571522;
+  box-shadow:0 2px 6px rgba(0,0,0,.55);
+}
 html[data-theme="buffy"] .nav-item {
   border-radius:2px 12px 2px 12px;
   border-left:2px solid transparent;
