@@ -11,13 +11,13 @@
   "orientation": "any",
   "icons": [
     {
-      "src": "assets/brand/watchverse-dragon-w.svg?v=8",
+      "src": "assets/brand/watchverse-dragon-w.svg?v=9",
       "sizes": "64x64",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "assets/brand/watchverse-dragon-w.svg?v=8",
+      "src": "assets/brand/watchverse-dragon-w.svg?v=9",
       "sizes": "64x64",
       "type": "image/svg+xml",
       "purpose": "any"
