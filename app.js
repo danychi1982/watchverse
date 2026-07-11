@@ -200,7 +200,7 @@
     notifications: [], tmdbResults: [], publicResults: [], catalogResults: [], isLoading: false, pendingAvatarProfileId: null, personFilmographyFilter: 'all', profileSettingsTab: 'identity',
     catalogEntries: [], catalogIndex: new Map(), catalogHydratedThisSession: 0, catalogNetworkAvoidedThisSession: 0,
     metadataQueue: [], metadataRunning: 0, metadataQueuedIds: new Set(), metadataAutoBudget: 36, metadataRenderPending: false, metadataRerenderTimer: null, metadataBackgroundStarted: false, metadataHeaderTimer: null, metadataCompletedThisSession: 0, metadataFailedThisSession: 0, metadataRecoveryScheduled: false, metadataRecoveryDone: false, wcagStatusFilter: 'all', wcagLevelFilter: 'all', accessibilityTab: 'declaration', searchRecommendationFilter: 'all',
-    sidebarCollapsed: localStorage.getItem('watchverse.sidebarCollapsed') === '1', cinemaSearchLocation: null, cinemaSearchQuery: '', cinemaLocationFeedback: null, aivengersInitialized: false, lastRenderedRoute: '', defaultSourceStatus: null, defaultSourceSyncRunning: false
+    sidebarCollapsed: localStorage.getItem('watchverse.sidebarCollapsed') === '1', cinemaSearchLocation: null, cinemaSearchQuery: '', cinemaLocationFeedback: null, aivengersInitialized: false, lastRenderedRoute: '', defaultSourceStatus: null, defaultSourceSyncRunning: false, viewActionBusy: false
   };
 
 
@@ -209,6 +209,38 @@
   let blockingLoaderHideTimer = null;
   function nextPaint() {
     return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  }
+  function nextFrame() {
+    return new Promise(resolve => requestAnimationFrame(resolve));
+  }
+  async function runViewAction(button, action) {
+    if (!button || state.viewActionBusy) return;
+    state.viewActionBusy = true;
+    const container = button.closest('.tabbar, .view-toggle, .toolbar') || button.parentElement;
+    button.disabled = true;
+    button.classList.add('view-action-busy');
+    button.setAttribute('aria-busy', 'true');
+    if (container) {
+      container.classList.add('view-action-pending');
+      container.setAttribute('aria-busy', 'true');
+    }
+    try {
+      // Give the browser a frame to paint feedback before a heavy list render starts.
+      await nextFrame();
+      await action();
+      await nextFrame();
+    } finally {
+      state.viewActionBusy = false;
+      $$('.view-action-busy').forEach(control => {
+        control.disabled = false;
+        control.classList.remove('view-action-busy');
+        control.removeAttribute('aria-busy');
+      });
+      $$('.view-action-pending').forEach(group => {
+        group.classList.remove('view-action-pending');
+        group.removeAttribute('aria-busy');
+      });
+    }
   }
   function showBlockingLoader(title = 'Caricamento Watchverse', detail = 'Sto preparando i tuoi contenuti.') {
     const loader = $('#blockingLoader');
@@ -1869,7 +1901,7 @@
           <button class="secondary" id="emptyHomeManual">＋ Aggiungi manualmente</button>
         </div>
       </div>
-      <div class="empty-library-orbit" aria-hidden="true"><span>🎬</span><span>📺</span><span>⭐</span><span class="brand-mark empty-library-logo">W</span></div>
+      <div class="empty-library-orbit" aria-hidden="true"><span>🎬</span><span>📺</span><span>⭐</span><span class="brand-mark empty-library-logo"></span></div>
     </section>
     ${emptyPopularSeriesSection()}
     <section class="empty-library-grid" aria-label="Modi per iniziare">
@@ -2106,7 +2138,7 @@
     </section>
       <div class="tabbar"><button class="tab-button ${state.homeTab === 'watch' ? 'active' : ''}" data-home-tab="watch">Da vedere</button><button class="tab-button ${state.homeTab === 'upcoming' ? 'active' : ''}" data-home-tab="upcoming">In arrivo</button></div>${listContent}`);
 
-    $$('[data-home-tab]').forEach(b => b.addEventListener('click', () => { state.homeTab = b.dataset.homeTab; renderHome(); }));
+    $$('[data-home-tab]').forEach(b => b.addEventListener('click', () => runViewAction(b, () => { state.homeTab = b.dataset.homeTab; renderHome(); })));
     $$('[data-episode-action]').forEach(b => b.addEventListener('click', () => toggleEpisode(b.dataset.series, Number(b.dataset.season), Number(b.dataset.episode), b.dataset.title)));
     if ($('#notifyPermission')) $('#notifyPermission').addEventListener('click', requestNotifications);
     bindHorizontalRails($('#main'));
@@ -2179,9 +2211,9 @@
       <div class="toolbar-right"><div class="view-toggle" aria-label="Vista serie"><button data-view="grid" class="${view==='grid'?'active':''}" aria-label="Vista locandine" aria-pressed="${view==='grid'}">▦</button><button data-view="list" class="${view==='list'?'active':''}" aria-label="Vista elenco" aria-pressed="${view==='list'}">☷</button></div></div></div>
       ${items.length ? `<div class="${view==='grid'?'media-grid':'media-list'}">${visible.map(s => view==='grid'?mediaCard(s,'series'):mediaRow(s,'series')).join('')}</div>${visible.length < items.length ? `<div class="load-more"><button class="secondary" id="loadMoreSeries">Mostra altre ${Math.min(60, items.length-visible.length)} serie</button><span>${visible.length} di ${items.length}</span></div>` : ''}` : `<div class="empty-state"><div class="empty-icon">▣</div><h3>Nessuna serie trovata</h3><p>Cambia filtro o importa la tua cronologia.</p><a class="primary" href="#/import">Importa dati</a></div>`}`);
 
-    $$('[data-filter]').forEach(b => b.addEventListener('click', () => { state.seriesFilter=b.dataset.filter; state.seriesVisible=60; state.settings.seriesFilter=state.seriesFilter; saveSettings(); renderSeriesLibrary(); }));
+    $$('[data-filter]').forEach(b => b.addEventListener('click', () => runViewAction(b, () => { state.seriesFilter=b.dataset.filter; state.seriesVisible=60; state.settings.seriesFilter=state.seriesFilter; saveSettings(); renderSeriesLibrary(); })));
     $('#seriesSearch').addEventListener('input', debounce(e => { state.seriesSearch=e.target.value; state.seriesVisible=60; renderSeriesLibrary(); }, 180));
-    $$('[data-view]').forEach(b => b.addEventListener('click', () => { state.settings.seriesView=b.dataset.view; saveSettings(); renderSeriesLibrary(); }));
+    $$('[data-view]').forEach(b => b.addEventListener('click', () => runViewAction(b, () => { state.settings.seriesView=b.dataset.view; saveSettings(); renderSeriesLibrary(); })));
     $('#seriesSort').addEventListener('change', e => { state.seriesSort=e.target.value; state.settings.seriesSort=state.seriesSort; state.seriesVisible=60; saveSettings(); renderSeriesLibrary(); });
     $('#loadMoreSeries')?.addEventListener('click',()=>{state.seriesVisible+=60;renderSeriesLibrary();});
     $('#addSeries').addEventListener('click', () => location.hash='#/search');
@@ -2212,9 +2244,9 @@
       <div class="toolbar"><div class="toolbar-left"><label class="search-box"><span>⌕</span><input id="movieSearch" type="search" placeholder="Cerca nei tuoi film" value="${esc(state.movieSearch)}" aria-label="Cerca film"></label>
       <select id="movieSort" aria-label="Ordina film"><option value="recent" ${state.movieSort==='recent'?'selected':''}>Data visione</option><option value="rating" ${state.movieSort==='rating'?'selected':''}>Voto</option><option value="title" ${state.movieSort==='title'?'selected':''}>Titolo</option></select></div><div class="toolbar-right"><div class="view-toggle" aria-label="Vista film"><button data-view="grid" class="${view==='grid'?'active':''}" aria-label="Vista locandine" aria-pressed="${view==='grid'}">▦</button><button data-view="list" class="${view==='list'?'active':''}" aria-label="Vista elenco" aria-pressed="${view==='list'}">☷</button></div></div></div>
       ${items.length?`<div class="${view==='grid'?'media-grid':'media-list'}">${visible.map(m=>view==='grid'?mediaCard(m,'movie'):mediaRow(m,'movie')).join('')}</div>${visible.length<items.length?`<div class="load-more"><button class="secondary" id="loadMoreMovies">Mostra altri ${Math.min(60,items.length-visible.length)} film</button><span>${visible.length} di ${items.length}</span></div>`:''}`:`<div class="empty-state"><div class="empty-icon">🎬</div><h3>Nessun film trovato</h3><p>Aggiungi un titolo o cambia filtro.</p></div>`}`);
-    $$('[data-filter]').forEach(b=>b.addEventListener('click',()=>{state.movieFilter=b.dataset.filter;state.movieVisible=60;state.settings.movieFilter=state.movieFilter;saveSettings();renderMovieLibrary();}));
+    $$('[data-filter]').forEach(b=>b.addEventListener('click',()=>runViewAction(b,()=>{state.movieFilter=b.dataset.filter;state.movieVisible=60;state.settings.movieFilter=state.movieFilter;saveSettings();renderMovieLibrary();})));
     $('#movieSearch').addEventListener('input',debounce(e=>{state.movieSearch=e.target.value;state.movieVisible=60;renderMovieLibrary();},180));
-    $$('[data-view]').forEach(b=>b.addEventListener('click',()=>{state.settings.movieView=b.dataset.view;saveSettings();renderMovieLibrary();}));
+    $$('[data-view]').forEach(b=>b.addEventListener('click',()=>runViewAction(b,()=>{state.settings.movieView=b.dataset.view;saveSettings();renderMovieLibrary();})));
     $('#movieSort').addEventListener('change',e=>{state.movieSort=e.target.value;state.settings.movieSort=state.movieSort;state.movieVisible=60;saveSettings();renderMovieLibrary();});
     $('#loadMoreMovies')?.addEventListener('click',()=>{state.movieVisible+=60;renderMovieLibrary();});
     $('#addMovie').addEventListener('click',()=>location.hash='#/search');
@@ -3714,7 +3746,7 @@
     $('#authRoot').innerHTML = ''; $('#aivengersButton')?.classList.remove('hidden'); applyAppearanceSettings(); applySidebarState(); updateProfileEntryPoints(); updateBackToTopButton();
   }
   function authBrand(subtitle) {
-    return `<div class="auth-brand"><span class="brand-mark">W</span><div><h1>Watchverse</h1><p class="brand-slogan">Scegli cosa guardare. Ricorda cosa hai visto.</p><p style="margin:6px 0 0">${esc(subtitle)}</p></div></div>`;
+    return `<div class="auth-brand"><img class="auth-wordmark" src="assets/brand/watchverse-dragon-wordmark.svg" alt="Watchverse. Scegli cosa guardare. Ricorda cosa hai visto."><p class="auth-subtitle">${esc(subtitle)}</p></div>`;
   }
   function showSetupScreen() {
     hideAppShell();
@@ -3769,7 +3801,7 @@
   }
   function showProfileGate() {
     state.profileSelected=false; hideAppShell();
-    $('#authRoot').innerHTML = `<section class="profile-gate"><div class="profile-gate-inner"><span class="brand-mark" style="margin:0 auto 24px">W</span><h1>Chi sta guardando?</h1><p>Scegli il profilo. Le librerie, i voti e le statistiche restano separati.</p>
+    $('#authRoot').innerHTML = `<section class="profile-gate"><div class="profile-gate-inner"><img class="profile-brand-mark" src="assets/brand/watchverse-dragon-w.svg" alt="Watchverse"><h1>Chi sta guardando?</h1><p>Scegli il profilo. Le librerie, i voti e le statistiche restano separati.</p>
       <div class="profile-choice-grid">${state.profiles.map(p=>`<button class="profile-choice" data-profile-choice="${esc(p.id)}">${avatarHtml(p,'avatar-large')}<strong>${esc(p.name)}</strong><small>${p.pinHash?'Protetto da PIN':'Nessun PIN'}</small></button>`).join('')}</div>
       <div class="profile-gate-actions"><button id="logoutFromGate" class="ghost">Esci dall’account</button></div></div></section>`;
     $$('[data-profile-choice]').forEach(b=>b.addEventListener('click',()=>requestProfileAccess(b.dataset.profileChoice)));
