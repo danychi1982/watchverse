@@ -21,7 +21,7 @@ assert(css.includes('.app-footer { position:fixed'));
 assert(html.includes('id="blockingLoader"'));
 assert(app.includes('function showBlockingLoader'));
 assert(app.includes('function loaderCopyForRoute'));
-assert(app.includes("inlineCinemaLoaderHtml('Ricerca nelle fonti pubbliche'"));
+assert(app.includes("inlineCinemaLoaderHtml('Ricerca in corso'"));
 assert(css.includes('.blocking-loader.is-visible'));
 assert(css.includes('.suggestion-poster img'));
 assert(css.includes('object-fit:cover!important'));
