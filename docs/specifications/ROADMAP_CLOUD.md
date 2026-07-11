@@ -106,6 +106,8 @@ Attivita:
 - [ ] definire fonte sostenibile per orari cinema italiani;
 - [x] distinguere chiaramente dato certo, dato stimato e dato non disponibile;
 - [x] aggiungere refresh manuale per una scheda;
+- [ ] eliminare il retry automatico al login per titoli incompleti o con errori persistenti;
+- [ ] mostrare un avviso contestuale con numero di titoli coinvolti, dettaglio errori e azioni “Riprova” / “Ignora per ora”;
 - [ ] aggiungere test automatici per casi con e senza dati.
 
 Criteri di chiusura:
@@ -227,6 +229,21 @@ Attivita:
 - [x] pagina o pannello diagnostico con versione, backend configurato e stato sync;
 - [x] logging errori non sensibile;
 - [ ] test e2e obbligatori prima del commit per flussi critici.
+
+### Retry metadati e decisione utente
+
+Motivo:
+
+Un titolo incompleto o un errore persistente non deve riavviare tentativi di rete silenziosi a ogni accesso al profilo. L'utente deve poter scegliere quando consumare nuove richieste e quando ignorare temporaneamente il problema.
+
+Attivita:
+
+- [ ] mostrare l'avviso solo quando esistono elementi incompleti o errori persistenti;
+- [ ] separare “dati mancanti” da “errore tecnico” nel messaggio;
+- [ ] offrire il comando manuale “Riprova” dal pannello fonti e dal dettaglio elementi;
+- [ ] offrire “Ignora per ora” con stato persistente fino a una nuova richiesta esplicita;
+- [ ] non avviare richieste automatiche al login quando l'utente non ha scelto di riprovare;
+- [ ] coprire il comportamento con test E2E su primo accesso, accessi successivi e retry manuale.
 
 ## Ordine consigliato
 
