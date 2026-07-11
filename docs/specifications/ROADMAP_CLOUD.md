@@ -284,3 +284,31 @@ Attivita:
 8. Favicon e identita visiva.
 
 La favicon puo essere anticipata se vogliamo una vittoria rapida, ma non sblocca le parti piu importanti.
+
+## Priorita operative delle attivita aperte
+
+### Alta
+
+- completare la sincronizzazione bidirezionale cloud con versioni, conflitti e test multi-dispositivo;
+- rendere IndexedDB una cache/offline e non la fonte primaria dei dati;
+- completare proxy TMDB/JustWatch e fonti protette per trailer, streaming e cinema;
+- eliminare il retry automatico al login e introdurre la scelta esplicita dell'utente tra `Riprova` e `Ignora per ora`;
+- completare audit mobile di login, home, librerie, dettagli, profilo, import e ricerca;
+- eseguire test E2E sui flussi critici prima del rilascio;
+- completare security review, VAPT applicativo mirato e hardening del deploy pubblico.
+
+### Media
+
+- completare l'audit globale degli indicatori di caricamento, inclusi errore, successo, stato vuoto e rete lenta;
+- aggiungere test E2E per click ripetuti, filtri, ordinamenti, cambi vista e comportamento desktop/mobile;
+- aggiungere filtri combinabili e ordinamenti avanzati;
+- ristrutturare le pagine di dettaglio ispirandosi a Showly;
+- migliorare calendario, watchlist separata, ricerca globale e gestione degli episodi;
+- scegliere e documentare la soluzione tecnica per l'app Android;
+- completare test responsive e verifica PWA su dispositivi reali.
+
+### Bassa
+
+- completare il pacchetto favicon/PWA con icone 192, 512 e maskable;
+- verificare la resa finale del nuovo logo su browser, login, profili, header e home screen;
+- rifinire stati vuoti e dettagli estetici dopo la validazione funzionale delle priorita alte e medie.
