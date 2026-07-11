@@ -142,6 +142,7 @@ Le seguenti migliorie sono state aggiunte come backlog funzionale, da affrontare
 - [ ] ordinamento configurabile e memorizzato per ogni sezione;
 - [x] vista griglia/lista con scelta persistente e densita regolabile;
 - [x] schede compatte con poster, stato, progresso episodio e azioni rapide;
+- [ ] rivedere l'indicatore percentuale nelle card serie: mostrare gli episodi residui, chiarire il rapporto tra episodio corrente e avanzamento globale e spostare il dato in una posizione riferita alla serie, ispirandosi a Showly;
 - [ ] pagina dettaglio piu strutturata: hero, riepilogo, cast, episodi, dove vederlo e titoli correlati;
 - [x] sezioni orizzontali con scorrimento da tastiera, touch e pulsanti freccia accessibili;
 - [ ] calendario/programmazione con filtri per giorno, piattaforma e tipo di contenuto;
@@ -244,6 +245,32 @@ Attivita:
 - [ ] offrire “Ignora per ora” con stato persistente fino a una nuova richiesta esplicita;
 - [ ] non avviare richieste automatiche al login quando l'utente non ha scelto di riprovare;
 - [ ] coprire il comportamento con test E2E su primo accesso, accessi successivi e retry manuale.
+
+### Feedback di caricamento e aggiornamenti asincroni
+
+Motivo:
+
+Alcune azioni asincrone aggiornano la vista dopo alcuni secondi senza rendere immediatamente evidente che il comando sia stato ricevuto. Per esempio, passando da “Da vedere” a “In arrivo” nella Home, la lista precedente resta visibile e l'utente può fare altri click, creando l'impressione che il comando non abbia funzionato.
+
+Attivita:
+
+- [ ] verificare il bug nella Home per tab, filtri, ordinamenti e cambi vista;
+- [ ] eseguire un audit globale di tutte le azioni asincrone del sito;
+- [ ] mostrare uno stato di caricamento locale sul controllo attivato;
+- [ ] disabilitare temporaneamente i controlli duplicabili durante l'aggiornamento;
+- [ ] mantenere layout e dimensioni stabili durante il caricamento;
+- [ ] mostrare feedback di successo, errore o risultato vuoto al termine;
+- [ ] evitare loader globali bloccanti quando è sufficiente un aggiornamento locale;
+- [ ] aggiungere test E2E per click ripetuti, cambio rapido di filtro e rete lenta;
+- [ ] verificare il comportamento su desktop e mobile.
+
+### Processo di rilascio concordato
+
+- [ ] non eseguire build, deploy o push automaticamente dopo ogni modifica;
+- [ ] prima di ogni rilascio fornire l'elenco delle attività completate localmente;
+- [ ] evidenziare esplicitamente le modifiche completate ma non ancora pubblicate;
+- [ ] elencare le attività ancora da fare e i test eseguiti;
+- [ ] procedere al rilascio solo dopo conferma esplicita di Daniela.
 
 ## Ordine consigliato
 

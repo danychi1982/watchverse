@@ -142,6 +142,10 @@ button[disabled] { opacity:.45; cursor:not-allowed; }
 .tab-button { white-space:nowrap; border:0; background:transparent; color:var(--muted); border-radius:12px; padding:10px 16px; font-weight:850; }
 .tab-button.active { color:var(--on-accent); background:var(--accent); }
 
+.view-action-pending { cursor: progress; }
+.view-action-busy { position:relative; cursor:progress !important; opacity:.78; }
+.view-action-busy::after { content:""; display:inline-block; width:13px; height:13px; margin-left:6px; vertical-align:-2px; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; animation:watchverse-spin .8s linear infinite; }
+.view-action-pending > :not(.view-action-busy) { pointer-events:none; }
 .toolbar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:18px; }
 .toolbar-left, .toolbar-right { display:flex; align-items:center; flex-wrap:wrap; gap:10px; }
 .search-box { position:relative; min-width:min(360px,80vw); }
@@ -3531,6 +3535,35 @@ html[data-theme="buffy"] .brand-mark {
 @media (max-width:720px) { .design-system-section { grid-template-columns:1fr; gap:18px; } .design-system-toolbar { align-items:flex-start; flex-direction:column; } .design-system-layout-sample { grid-template-columns:1fr; grid-template-rows:auto; } .design-system-layout-sample span:first-child { grid-row:auto; } .design-system-layout-sample span { grid-column:1; } .ds-status { grid-template-columns:34px 1fr; } .ds-status .progress-track { grid-column:1/-1; } }
 html[data-theme="buffy"] .brand-mark::before,
 html[data-theme="buffy"] .brand-mark::before { content:none; }
+
+/* Brand assets: use the supplied vector artwork directly across the product. */
+.topbar-wordmark {
+  display:block;
+  width:240px;
+  height:auto;
+  max-width:100%;
+  object-fit:contain;
+}
+.auth-brand { display:block; }
+.auth-wordmark {
+  display:block;
+  width:min(100%, 500px);
+  height:auto;
+  margin:0 auto 18px;
+  object-fit:contain;
+}
+.auth-subtitle { margin:0; }
+.profile-brand-mark {
+  display:block;
+  width:88px;
+  height:88px;
+  margin:0 auto 24px;
+  object-fit:contain;
+}
+.brand-wordmark-preview { width:min(100%, 360px); height:auto; display:block; object-fit:contain; }
+@media (max-width:700px) {
+  .topbar-wordmark { width:190px; }
+}
 html[data-theme="buffy"] .brand-mark::after {
   content:"B";
   position:absolute;
