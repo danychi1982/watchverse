@@ -16,11 +16,11 @@ window.WATCHVERSE_CONFIG = Object.freeze({
 
   // URL della Supabase Edge Function tmdb-proxy, ad esempio:
   // https://<project-ref>.supabase.co/functions/v1/tmdb-proxy
-  tmdbProxyUrl: '',
+  tmdbProxyUrl: 'https://aqphrgmnngxogqijdvpk.supabase.co/functions/v1/tmdb-proxy',
 
   // URL opzionale di un server compatibile con /api/trailer e /api/cinema.
   // In locale avvia_server.py espone automaticamente questi endpoint.
-  publicSourcesProxyUrl: '',
+  publicSourcesProxyUrl: 'https://aqphrgmnngxogqijdvpk.supabase.co/functions/v1/public-sources-proxy',
 
   // Fonti pubbliche preconfigurate. Nelle schede vengono mostrati solo dati effettivi.
   defaultSources: Object.freeze({

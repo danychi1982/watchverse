@@ -119,12 +119,32 @@
     }
   }
 
+  async function recordConflict(profile, store, localValue, cloudValue, resolution) {
+    if (!isEnabled() || !profileId(profile) || !localValue || !cloudValue) return;
+    try {
+      await request('/sync_conflicts', {
+        method: 'POST',
+        headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({
+          profile_id: profile.cloudId,
+          store_name: store,
+          local_id: localValue.id || cloudValue.id,
+          local_revision: Number(localValue.revision || 1),
+          cloud_revision: Number(cloudValue.revision || 1),
+          resolution
+        })
+      });
+    } catch (error) { console.warn('Watchverse sync conflict log:', error); }
+  }
+
   async function deleteRecord(profile, store, value) {
     if (!isEnabled() || !profileId(profile) || !value) return;
+    const deletedAt = new Date().toISOString();
+    const revision = Number(value.revision || 0) + 1;
     if (store === 'series' || store === 'movies') {
-      await request(`/library_records?profile_id=eq.${encodeURIComponent(profile.cloudId)}&kind=eq.${store === 'series' ? 'series' : 'movie'}&local_id=eq.${encodeURIComponent(value.id)}`, { method: 'DELETE' });
+      await request(`/library_records?profile_id=eq.${encodeURIComponent(profile.cloudId)}&kind=eq.${store === 'series' ? 'series' : 'movie'}&local_id=eq.${encodeURIComponent(value.id)}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ deleted_at: deletedAt, revision, updated_at: deletedAt }) });
     } else if (store === 'progress') {
-      await request(`/episode_progress?profile_id=eq.${encodeURIComponent(profile.cloudId)}&series_local_id=eq.${encodeURIComponent(value.seriesId || '')}&season=eq.${Number(value.season || 0)}&episode=eq.${Number(value.episode || 0)}`, { method: 'DELETE' });
+      await request(`/episode_progress?profile_id=eq.${encodeURIComponent(profile.cloudId)}&series_local_id=eq.${encodeURIComponent(value.seriesId || '')}&season=eq.${Number(value.season || 0)}&episode=eq.${Number(value.episode || 0)}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ deleted_at: deletedAt, revision, updated_at: deletedAt }) });
     }
   }
 
@@ -135,39 +155,44 @@
     let cloudId = profile.cloudId;
     const id = () => encodeURIComponent(cloudId);
     let libraryResult = await Promise.allSettled([
-      onlyProgress ? Promise.resolve([]) : requestAll(`/library_records?select=local_id,kind,payload,updated_at&profile_id=eq.${id()}&deleted_at=is.null`)
+      onlyProgress ? Promise.resolve([]) : requestAll(`/library_records?select=local_id,kind,payload,revision,updated_at,deleted_at&profile_id=eq.${id()}`)
     ]);
     if (!onlyProgress && libraryResult[0].status === 'fulfilled' && libraryResult[0].value.length === 0) {
       // Compatibilita per importazioni create prima del riallineamento degli UUID
       // cloud: il prefisso local_id identifica ancora senza ambiguita il profilo.
       const prefix = encodeURIComponent(`${profile.id}|%`);
-      const legacyRows = await request(`/library_records?select=profile_id,local_id&local_id=like.${prefix}&deleted_at=is.null&limit=1`);
+      const legacyRows = await request(`/library_records?select=profile_id,local_id&local_id=like.${prefix}&limit=1`);
       if (legacyRows?.[0]?.profile_id && legacyRows[0].profile_id !== cloudId) {
         cloudId = legacyRows[0].profile_id;
         profile.cloudId = cloudId;
         libraryResult = await Promise.allSettled([
-          requestAll(`/library_records?select=local_id,kind,payload,updated_at&profile_id=eq.${id()}&deleted_at=is.null`)
+          requestAll(`/library_records?select=local_id,kind,payload,revision,updated_at,deleted_at&profile_id=eq.${id()}`)
         ]);
       }
     }
     const [progressResult, settingsResult] = await Promise.allSettled([
-      skipProgress ? Promise.resolve([]) : requestAll(`/episode_progress?select=local_id,series_local_id,season,episode,watched,watched_at,rating,payload,updated_at&profile_id=eq.${id()}&deleted_at=is.null`),
-      onlyProgress ? Promise.resolve([]) : request(`/profile_settings?select=payload,updated_at&profile_id=eq.${id()}`)
+      skipProgress ? Promise.resolve([]) : requestAll(`/episode_progress?select=local_id,series_local_id,season,episode,watched,watched_at,rating,payload,revision,updated_at,deleted_at&profile_id=eq.${id()}`),
+      onlyProgress ? Promise.resolve([]) : request(`/profile_settings?select=payload,revision,updated_at&profile_id=eq.${id()}`)
     ]);
     const libraryResultValue = libraryResult[0];
     if (libraryResultValue.status === 'rejected') throw libraryResultValue.reason;
     const library = libraryResultValue.value;
     const progress = progressResult.status === 'fulfilled' ? progressResult.value : [];
     const settings = settingsResult.status === 'fulfilled' ? settingsResult.value : [];
-    const records = { series: [], movies: [], progress: [] };
+    const records = { series: [], movies: [], progress: [], deleted: { series: [], movies: [], progress: [] } };
     for (const row of library || []) {
-      const value = { ...(row.payload || {}), id: row.local_id, profileId: profile.id, updatedAt: row.updated_at };
-      records[row.kind === 'series' ? 'series' : 'movies'].push(value);
+      const store = row.kind === 'series' ? 'series' : 'movies';
+      const value = { ...(row.payload || {}), id: row.local_id, profileId: profile.id, revision: Number(row.revision || 1), updatedAt: row.updated_at };
+      (row.deleted_at ? records.deleted[store] : records[store]).push(value);
     }
-    for (const row of progress || []) records.progress.push({ ...(row.payload || {}), id: row.local_id, profileId: profile.id, seriesId: row.series_local_id, season: row.season, episode: row.episode, watched: row.watched, watchedAt: row.watched_at, rating: row.rating, updatedAt: row.updated_at });
+    for (const row of progress || []) {
+      const value = { ...(row.payload || {}), id: row.local_id, profileId: profile.id, seriesId: row.series_local_id, season: row.season, episode: row.episode, watched: row.watched, watchedAt: row.watched_at, rating: row.rating, revision: Number(row.revision || 1), updatedAt: row.updated_at };
+      (row.deleted_at ? records.deleted.progress : records.progress).push(value);
+    }
     return {
       ...records,
       settings: settings?.[0]?.payload || null,
+      settingsMeta: settings?.[0] ? { revision: Number(settings[0].revision || 1), updatedAt: settings[0].updated_at } : null,
       warnings: {
         progress: skipProgress ? null : (progressResult.status === 'rejected' ? progressResult.reason?.message || 'Progresso episodi non disponibile.' : null),
         settings: settingsResult.status === 'rejected' ? settingsResult.reason?.message || 'Impostazioni cloud non disponibili.' : null
@@ -177,8 +202,8 @@
 
   async function saveSettings(profile, settings) {
     if (!isEnabled() || !profileId(profile)) return;
-    await request('/profile_settings?on_conflict=profile_id', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ profile_id: profile.cloudId, payload: structuredClone(settings), updated_at: new Date().toISOString() }) });
+    await request('/profile_settings?on_conflict=profile_id', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ profile_id: profile.cloudId, payload: structuredClone(settings), revision: Number(settings.revision || 1), updated_at: new Date().toISOString() }) });
   }
 
-  root.WatchverseCloudSync = { isEnabled, bootstrapProfiles, saveProfiles, pushRecord, pushRecords, deleteRecord, pullProfile, saveSettings };
+  root.WatchverseCloudSync = { isEnabled, bootstrapProfiles, saveProfiles, pushRecord, pushRecords, deleteRecord, pullProfile, saveSettings, recordConflict };
 })(window);
