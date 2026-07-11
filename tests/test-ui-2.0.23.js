@@ -11,7 +11,7 @@ assert(app.includes('detail-poster media-frame media-frame-poster'),'poster non 
 assert(css.includes(':is(.poster,.row-poster,.search-result .thumb,.continue-poster,.cast-photo,.suggestion-poster,.person-credit-poster) > img'),'regola condivisa immagini mancante');
 assert(css.includes('contain:strict'),'contenimento difensivo mancante');
 assert(css.includes('assets/themes/last-of-us-infected-wall.svg'),'asset The Last of Us non usato');
-assert(css.includes('assets/themes/buffy-cemetery.svg'),'asset Buffy non usato');
+assert(css.includes('assets/themes/buffy-gentlemen.svg')&&css.includes('assets/themes/buffy-cemetery.svg'),'asset Buffy e Gentlemen non usati');
 assert(app.includes('THEME_NAV_ICONS')&&app.includes('<svg viewBox="0 0 24 24">'),'icone SVG tematiche mancanti');
 
 assert(!app.includes('Servizi da controllare'),'provider ipotetici ancora presenti');

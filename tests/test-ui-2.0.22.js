@@ -12,7 +12,7 @@ assert(app.includes('buffy: {') && app.includes('class="theme-detail"'),'Icone S
 assert(css.includes('html[data-theme="last-of-us"] .cinema-loader-art::before'),'Loader The Last of Us mancante');
 assert(css.includes('html[data-theme="buffy"] .cinema-loader-art::before'),'Loader Buffy mancante');
 assert(css.includes('assets/themes/last-of-us-infected-wall.svg'),'Sfondo The Last of Us mancante');
-assert(css.includes('assets/themes/buffy-cemetery.svg'),'Sfondo Buffy mancante');
+assert(css.includes('assets/themes/buffy-gentlemen.svg')&&css.includes('assets/themes/buffy-cemetery.svg'),'Sfondo Buffy e Gentlemen mancanti');
 assert(css.includes('@media (prefers-reduced-motion:reduce)'),'Movimento ridotto non gestito');
 assert(css.includes('.metadata-issue-row'),'Stile dettaglio metadati mancante');
 assert(html.includes('styles.css?v=1.0.0'),'Cache bust 1.0.0 mancante');
