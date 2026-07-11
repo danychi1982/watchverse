@@ -373,6 +373,8 @@
     applyAppearanceSettings();
   }
   function saveSettings(syncCloud = true) {
+    state.settings.revision = Number(state.settings.revision || 0) + 1;
+    state.settings.updatedAt = new Date().toISOString();
     localStorage.setItem(profileKey('settings'), JSON.stringify(state.settings)); applyAppearanceSettings();
     if (syncCloud) void window.WatchverseCloudSync?.saveSettings(currentProfile(), state.settings).catch(error => console.warn('Watchverse cloud settings sync:', error));
   }
@@ -402,21 +404,31 @@
     });
   }
   function dbTx(store, mode = 'readonly') { return state.db.transaction(store, mode).objectStore(store); }
+  function stampLocalValue(value) {
+    const now = new Date().toISOString();
+    const previous = dateMs(value?.updatedAt);
+    const timestamp = previous >= Date.now() ? new Date(previous + 1).toISOString() : now;
+    const stamped = { ...value, revision: Number(value?.revision || 0) + 1, updatedAt: timestamp };
+    if (value && typeof value === 'object') Object.assign(value, stamped);
+    return stamped;
+  }
   function dbGetAll(store) {
     if (state.db?.memory) return Promise.resolve([...memoryStores[store].values()]);
     return new Promise((resolve, reject) => { const r = dbTx(store).getAll(); r.onsuccess = () => resolve(r.result); r.onerror = () => reject(r.error); });
   }
   function dbPut(store, value) {
-    const finish = () => { void window.WatchverseCloudSync?.pushRecord(currentProfile(), store, value).catch(error => console.warn('Watchverse cloud record sync:', error)); return value; };
-    if (state.db?.memory) { memoryStores[store].set(value.id, structuredClone(value)); return Promise.resolve(finish()); }
-    return new Promise((resolve, reject) => { const r = dbTx(store, 'readwrite').put(value); r.onsuccess = () => resolve(finish()); r.onerror = () => reject(r.error); });
+    const prepared = ['series','movies','progress','settings'].includes(store) ? stampLocalValue(value) : value;
+    const finish = () => { void window.WatchverseCloudSync?.pushRecord(currentProfile(), store, prepared).catch(error => console.warn('Watchverse cloud record sync:', error)); return value; };
+    if (state.db?.memory) { memoryStores[store].set(prepared.id, structuredClone(prepared)); return Promise.resolve(finish()); }
+    return new Promise((resolve, reject) => { const r = dbTx(store, 'readwrite').put(prepared); r.onsuccess = () => resolve(finish()); r.onerror = () => reject(r.error); });
   }
   function dbBulkPut(store, values, syncCloud = true) {
-    const sync = syncCloud ? Promise.resolve(window.WatchverseCloudSync?.pushRecords(currentProfile(), store, values)) : Promise.resolve();
-    const finish = () => values.length;
-    if (state.db?.memory) { values.forEach(v => memoryStores[store].set(v.id, structuredClone(v))); return sync.then(finish); }
+    const prepared = syncCloud && ['series','movies','progress','settings'].includes(store) ? values.map(stampLocalValue) : values;
+    const sync = syncCloud ? Promise.resolve(window.WatchverseCloudSync?.pushRecords(currentProfile(), store, prepared)) : Promise.resolve();
+    const finish = () => prepared.length;
+    if (state.db?.memory) { prepared.forEach(v => memoryStores[store].set(v.id, structuredClone(v))); return sync.then(finish); }
     return new Promise((resolve, reject) => {
-      const tx = state.db.transaction(store, 'readwrite'); const os = tx.objectStore(store); values.forEach(v => os.put(v));
+      const tx = state.db.transaction(store, 'readwrite'); const os = tx.objectStore(store); prepared.forEach(v => os.put(v));
       tx.oncomplete = () => sync.then(() => resolve(finish())).catch(reject); tx.onerror = () => reject(tx.error);
     });
   }
@@ -434,6 +446,10 @@
     const finish = value => { void window.WatchverseCloudSync?.deleteRecord(currentProfile(), store, value).catch(error => console.warn('Watchverse cloud delete sync:', error)); };
     if (state.db?.memory) { const value = memoryStores[store].get(id); memoryStores[store].delete(id); finish(value); return Promise.resolve(); }
     return valuePromise.then(value => new Promise((resolve, reject) => { const r = dbTx(store, 'readwrite').delete(id); r.onsuccess = () => { finish(value); resolve(); }; r.onerror = () => reject(r.error); }));
+  }
+  function dbDeleteLocal(store, id) {
+    if (state.db?.memory) { memoryStores[store].delete(id); return Promise.resolve(); }
+    return new Promise((resolve, reject) => { const r = dbTx(store, 'readwrite').delete(id); r.onsuccess = () => resolve(); r.onerror = () => reject(r.error); });
   }
   function dbClearProfile(store) {
     if (state.db?.memory) { for (const [id, value] of memoryStores[store]) if (value.profileId === state.profileId) memoryStores[store].delete(id); return Promise.resolve(); }
@@ -493,7 +509,16 @@
         const current = localById.get(value.id);
         if (!current || dateMs(value.updatedAt) >= dateMs(current.updatedAt)) winners.push(value);
         else { winners.push(current); pendingUpload.push(current); }
+        if (current && Number(current.revision || 1) !== Number(value.revision || 1)) {
+          await sync.recordConflict(activeProfile, store, current, value, dateMs(value.updatedAt) >= dateMs(current.updatedAt) ? 'cloud_won' : 'local_won');
+        }
         localById.delete(value.id);
+      }
+      for (const tombstone of cloud.deleted?.[store] || []) {
+        const current = localById.get(tombstone.id);
+        if (current && dateMs(tombstone.updatedAt) >= dateMs(current.updatedAt)) await dbDeleteLocal(store, current.id);
+        else if (current) pendingUpload.push(current);
+        localById.delete(tombstone.id);
       }
       for (const value of localById.values()) {
         winners.push(value);
@@ -504,8 +529,17 @@
     }
     const settingsKey = `watchverse.${activeProfile.id}.settings`;
     const localSettings = safeJson(localStorage.getItem(settingsKey), null);
-    if (cloud.settings && Object.keys(cloud.settings).length) localStorage.setItem(settingsKey, JSON.stringify(cloud.settings));
-    else if (localSettings) void sync.saveSettings(profile, localSettings).catch(error => console.warn('Watchverse cloud settings migration:', error));
+    if (cloud.settings && Object.keys(cloud.settings).length) {
+      const localRevision = Number(localSettings?.revision || 0);
+      const cloudRevision = Number(cloud.settingsMeta?.revision || cloud.settings.revision || 1);
+      if (localSettings && localRevision > cloudRevision) {
+        await sync.recordConflict(activeProfile, 'settings', { id:'settings', revision:localRevision }, { id:'settings', revision:cloudRevision }, 'local_won');
+        await sync.saveSettings(activeProfile, localSettings);
+      } else {
+        if (localSettings && localRevision !== cloudRevision) await sync.recordConflict(activeProfile, 'settings', { id:'settings', revision:localRevision }, { id:'settings', revision:cloudRevision }, 'cloud_won');
+        localStorage.setItem(settingsKey, JSON.stringify(cloud.settings));
+      }
+    } else if (localSettings) await sync.saveSettings(activeProfile, localSettings);
   }
 
   // Catalogo condiviso: i dati provenienti dalle fonti pubbliche sono salvati una volta sola
@@ -2841,9 +2875,16 @@
   async function publicSourceFetch(path, params={}) {
     const base=publicSourcesBaseUrl();
     if(base===null)throw new Error('Le fonti locali richiedono avvia_server.py.');
-    const url=new URL(`${base}${path}`,location.href);
-    Object.entries(params).forEach(([key,value])=>{if(value!==undefined&&value!==null&&value!=='')url.searchParams.set(key,String(value));});
-    const response=await fetch(url,{headers:{accept:'application/json'}});
+    const configured=String((window.WATCHVERSE_CONFIG||{}).publicSourcesProxyUrl||'').replace(/\/$/,'');
+    let response;
+    if(configured){
+      const session=await WatchverseAuth.restoreSession();
+      response=await fetch(configured,{method:'POST',headers:{'Content-Type':'application/json',accept:'application/json',...(session?.access_token?{Authorization:`Bearer ${session.access_token}`}:{})},body:JSON.stringify({path,params})});
+    }else{
+      const url=new URL(`${base}${path}`,location.href);
+      Object.entries(params).forEach(([key,value])=>{if(value!==undefined&&value!==null&&value!=='')url.searchParams.set(key,String(value));});
+      response=await fetch(url,{headers:{accept:'application/json'}});
+    }
     if(!response.ok)throw new Error(`Fonte pubblica non disponibile (${response.status})`);
     return response.json();
   }
@@ -3831,6 +3872,9 @@
         for(const store of ['series','movies','progress','imports']) await dbClearProfile(store);
         state.settings.demoSeeded=false;saveSettings();
       }
+      // Online il cloud viene riallineato prima di leggere la cache IndexedDB;
+      // offline la cache resta il fallback per permettere comunque l'accesso.
+      if (window.WatchverseCloudSync?.isEnabled()) await syncCloudProfile(profile);
       await reloadData();
       showAppShell();
       renderNav('home');
@@ -3840,13 +3884,6 @@
       if (window.WatchverseCloudSync?.isEnabled()) showToast('Sincronizzazione in corso', 'La libreria si aggiorna in background.', '↻', 7000, { kind:'sync' });
       idle(async () => {
         let backgroundProfile = state.profiles.find(item => item.id === id);
-        if (!backgroundProfile || state.profileId !== id) return;
-        await syncCloudProfile(backgroundProfile, { skipProgress: true });
-        backgroundProfile = state.profiles.find(item => item.id === id);
-        if (state.profileId === id) {
-          await reloadData();
-          await route({ loader:false });
-        }
         if (!backgroundProfile || state.profileId !== id) return;
         await syncCloudProfile(backgroundProfile, { onlyProgress: true });
         if (state.profileId === id) {

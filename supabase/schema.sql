@@ -21,6 +21,7 @@ create table if not exists public.profiles (
 create table if not exists public.profile_settings (
   profile_id uuid primary key references public.profiles(id) on delete cascade,
   payload jsonb not null default '{}'::jsonb,
+  revision bigint not null default 1,
   updated_at timestamptz not null default now()
 );
 
@@ -75,8 +76,24 @@ create table if not exists public.invite_codes (
   created_at timestamptz not null default now()
 );
 
+-- Audit leggero dei conflitti risolti dal client. Non contiene credenziali: salva
+-- soltanto gli identificativi e le versioni dei due valori confrontati.
+create table if not exists public.sync_conflicts (
+  id uuid primary key default gen_random_uuid(),
+  profile_id uuid not null references public.profiles(id) on delete cascade,
+  store_name text not null check (store_name in ('series','movies','progress','settings')),
+  local_id text not null,
+  local_revision bigint not null default 1,
+  cloud_revision bigint not null default 1,
+  resolution text not null check (resolution in ('cloud_won','local_won')),
+  created_at timestamptz not null default now()
+);
+
+alter table public.profile_settings add column if not exists revision bigint not null default 1;
+
 create index if not exists library_records_profile_updated_idx on public.library_records(profile_id, updated_at desc);
 create index if not exists episode_progress_profile_updated_idx on public.episode_progress(profile_id, updated_at desc);
+create index if not exists sync_conflicts_profile_created_idx on public.sync_conflicts(profile_id, created_at desc);
 
 create or replace function public.owns_profile(target_profile uuid)
 returns boolean
@@ -97,6 +114,7 @@ alter table public.library_records enable row level security;
 alter table public.episode_progress enable row level security;
 alter table public.import_jobs enable row level security;
 alter table public.invite_codes enable row level security;
+alter table public.sync_conflicts enable row level security;
 
 -- L'account autenticato vede e modifica esclusivamente i propri profili.
 drop policy if exists "profiles_select_own" on public.profiles;
@@ -120,6 +138,8 @@ create policy "imports_own" on public.import_jobs for all using (public.owns_pro
 
 drop policy if exists "invites_own" on public.invite_codes;
 create policy "invites_own" on public.invite_codes for all using (account_id = auth.uid()) with check (account_id = auth.uid());
+drop policy if exists "sync_conflicts_own" on public.sync_conflicts;
+create policy "sync_conflicts_own" on public.sync_conflicts for all using (public.owns_profile(profile_id)) with check (public.owns_profile(profile_id));
 
 -- Mantiene updated_at coerente.
 create or replace function public.touch_updated_at()

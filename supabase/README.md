@@ -29,6 +29,7 @@ Inserisci soltanto valori pubblici:
 supabaseUrl: 'https://PROJECT_REF.supabase.co',
 supabaseAnonKey: 'CHIAVE_PUBLISHABLE_O_ANON',
 tmdbProxyUrl: 'https://PROJECT_REF.supabase.co/functions/v1/tmdb-proxy'
+publicSourcesProxyUrl: 'https://PROJECT_REF.supabase.co/functions/v1/public-sources-proxy'
 ```
 
 Non inserire mai nel browser la `service_role` o il token TMDB.
@@ -37,4 +38,10 @@ Non inserire mai nel browser la `service_role` o il token TMDB.
 
 - Login Supabase, refresh sessione, cambio password e recupero email sono già predisposti in `auth.js` quando i valori di configurazione sono presenti.
 - Lo schema RLS separa i dati dell'account da quelli di altri utenti.
+- Il cloud Ã¨ la fonte primaria online; IndexedDB resta cache locale e fallback offline.
+- Le scritture usano revisioni e timestamp. In caso di modifiche concorrenti vince la versione piÃ¹ recente e il confronto viene registrato in `sync_conflicts`.
+- Le cancellazioni usano tombstone (`deleted_at`) per evitare la ricomparsa di record rimossi offline.
+- La funzione TMDB copre dettagli, ricerca, cast, episodi, video e disponibilitÃ  italiane tramite TMDB/JustWatch. Deve essere deployata con il secret `TMDB_READ_TOKEN`.
+- Trailer e streaming usano il proxy TMDB quando configurato. Gli orari cinema restano limitati ai siti ufficiali configurati: su GitHub Pages serve ancora un endpoint server-side dedicato per superare i limiti CORS.
+- Il nuovo endpoint `public-sources-proxy` fornisce il controllo cinema server-side per le sale in whitelist. Va deployato insieme a `tmdb-proxy`.
 - La sincronizzazione automatica IndexedDB ↔ tabelle Supabase è la fase tecnica successiva; fino ad allora usa Backup ZIP tra dispositivi.
