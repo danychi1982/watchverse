@@ -2043,31 +2043,34 @@
       let dragStartX = 0;
       let dragStartScroll = 0;
       let dragging = false;
+      let dragPointerId = null;
       rail.addEventListener('pointerdown', event => {
         if (event.pointerType !== 'mouse' || event.button !== 0) return;
         dragStartX = event.clientX;
         dragStartScroll = rail.scrollLeft;
         dragging = false;
-        rail.setPointerCapture?.(event.pointerId);
+        dragPointerId = event.pointerId;
       });
       rail.addEventListener('pointermove', event => {
-        if (event.pointerType !== 'mouse' || !rail.hasPointerCapture?.(event.pointerId)) return;
+        if (event.pointerType !== 'mouse' || dragPointerId !== event.pointerId) return;
         const delta = event.clientX - dragStartX;
         if (!dragging && Math.abs(delta) < 6) return;
+        if (!dragging) rail.setPointerCapture?.(event.pointerId);
         dragging = true;
         rail.classList.add('is-dragging');
         rail.scrollLeft = dragStartScroll - delta;
         event.preventDefault();
       });
       const stopDrag = event => {
-        if (event.pointerType !== 'mouse') return;
-        rail.releasePointerCapture?.(event.pointerId);
+        if (event.pointerType !== 'mouse' || dragPointerId !== event.pointerId) return;
+        if (rail.hasPointerCapture?.(event.pointerId)) rail.releasePointerCapture?.(event.pointerId);
         rail.classList.remove('is-dragging');
         if (dragging) {
           rail._watchverseSuppressClick = true;
           setTimeout(() => { rail._watchverseSuppressClick = false; }, 120);
         }
         dragging = false;
+        dragPointerId = null;
       };
       rail.addEventListener('pointerup', stopDrag);
       rail.addEventListener('pointercancel', stopDrag);
@@ -2123,9 +2126,6 @@
       .sort((a, b) => dateMs(b.ep.airDate) - dateMs(a.ep.airDate) || seriesRecentEpisodeTimestamp(b.s) - seriesRecentEpisodeTimestamp(a.s))
       .slice(0, 12);
 
-    const watchedMovies = state.movies.filter(m => m.watched).length;
-    const totalProgress = state.indexes.watchedProgressCount || 0;
-    const seriesInProgress = state.series.filter(s => latestWatchedAt(s.id) && nextEpisode(s)).length;
     const upcoming = upcomingEpisodes(state.homeTab === 'upcoming' ? 30 : 7);
     const watchFilms = sortMovieItems(state.movies.filter(m => !m.watched), 'recent').slice(0, 8);
 
@@ -2165,12 +2165,7 @@
       <div class="calendar-groups">${groupedUpcomingHtml(upcoming)}</div></section>`;
 
     const profile = currentProfile();
-    setMain(`<section class="home-welcome" aria-label="Messaggio di benvenuto"><div><span class="kicker">Profilo attivo · ${esc(profile?.name || 'spettatore')}</span><h2>Bentornata, ${esc(profile?.name || 'spettatore')} 👋</h2><p>Stai consultando la libreria personale di <strong>${esc(profile?.name || 'questo profilo')}</strong>. Riprendi da dove avevi lasciato oppure scegli qualcosa di nuovo.</p></div></section><section class="home-summary-grid" aria-label="Riepilogo libreria">
-      <article class="metric-card"><div class="metric-row"><span class="metric-icon metric-icon-episodes" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 4v16M16 4v16M4 9h4M16 9h4M4 15h4M16 15h4"/><path d="m10 12 2 2 4-4"/></svg></span><span>Episodi visti</span></div><strong>${totalProgress.toLocaleString('it-IT')}</strong></article>
-      <article class="metric-card"><div class="metric-row"><span class="metric-icon metric-icon-series" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="m10 8 5 4-5 4Z"/><path d="M5 20h14"/></svg></span><span>Serie da continuare</span></div><strong>${seriesInProgress.toLocaleString('it-IT')}</strong></article>
-      <article class="metric-card"><div class="metric-row"><span class="metric-icon metric-icon-movies" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16v13H4zM4 10h16M8 6v4M16 6v4"/><path d="m9 15 2 2 4-4"/></svg></span><span>Film visti</span></div><strong>${watchedMovies.toLocaleString('it-IT')}</strong></article>
-    </section>
-      <div class="tabbar"><button class="tab-button ${state.homeTab === 'watch' ? 'active' : ''}" data-home-tab="watch">Da vedere</button><button class="tab-button ${state.homeTab === 'upcoming' ? 'active' : ''}" data-home-tab="upcoming">In arrivo</button></div>${listContent}`);
+    setMain(`<section class="home-welcome" aria-label="Messaggio di benvenuto"><div><span class="kicker">Profilo attivo · ${esc(profile?.name || 'spettatore')}</span><h2>Bentornata, ${esc(profile?.name || 'spettatore')} 👋</h2><p>Stai consultando la libreria personale di <strong>${esc(profile?.name || 'questo profilo')}</strong>. Riprendi da dove avevi lasciato oppure scegli qualcosa di nuovo.</p></div></section><div class="tabbar"><button class="tab-button ${state.homeTab === 'watch' ? 'active' : ''}" data-home-tab="watch">Da vedere</button><button class="tab-button ${state.homeTab === 'upcoming' ? 'active' : ''}" data-home-tab="upcoming">In arrivo</button></div>${listContent}`);
 
     $$('[data-home-tab]').forEach(b => b.addEventListener('click', () => runViewAction(b, () => { state.homeTab = b.dataset.homeTab; renderHome(); })));
     $$('[data-episode-action]').forEach(b => b.addEventListener('click', () => toggleEpisode(b.dataset.series, Number(b.dataset.season), Number(b.dataset.episode), b.dataset.title)));
@@ -2473,8 +2468,10 @@
     const meta = item.publicMetadata || {}; const parts = metadataParts(item);
     if (meta.nextRetryAt && dateMs(meta.nextRetryAt) > Date.now()) return false;
     if (meta.failedAt && !meta.nextRetryAt && Date.now() - dateMs(meta.failedAt) < 1000 * 60 * 60 * 24) return false;
-    if (!parts.coreComplete) return true;
-    if (includeCast && !parts.castComplete) return true;
+    const hasCoreData = Boolean(item.poster) && !isImportedPlaceholder(item.overview);
+    const hasCastData = Array.isArray(item.cast) && item.cast.length > 0;
+    if (!parts.coreComplete || !hasCoreData) return true;
+    if (includeCast && (!parts.castComplete || !hasCastData)) return true;
     if (kind === 'series') {
       const episodes = computedSeries(item).episodes;
       const episodesMissing = !episodes.length || !episodes.some(ep => ep.airDate);
@@ -2544,12 +2541,17 @@
     const localizedTitle = metadata.title || item.title;
     const originalTitle = metadata.originalTitle || item.originalTitle || (normalizeSearch(localizedTitle) !== normalizeSearch(originalStoredTitle) ? originalStoredTitle : null);
     const aliases = mergeAliases(item.aliases || [], originalStoredTitle, item.originalTitle, localizedTitle, originalTitle, metadata.aliases || []);
+    const resolvedOverview = metadata.overview || item.overview;
+    const resolvedPoster = metadata.poster || item.poster;
+    const resolvedCast = includeCast ? (metadata.cast || []) : (item.cast || []);
+    const coreComplete = Boolean(resolvedPoster) && !isImportedPlaceholder(resolvedOverview) && metadata.coreComplete !== false;
+    const castComplete = !includeCast || resolvedCast.length > 0;
     const parts = {
       ...previousParts,
       coreAt: previousParts.coreAt || now,
-      coreComplete: metadata.coreComplete !== false,
+      coreComplete,
       castAt: includeCast ? now : previousParts.castAt,
-      castComplete: includeCast ? metadata.castComplete !== false : !!previousParts.castComplete,
+      castComplete: includeCast ? castComplete : !!previousParts.castComplete,
       episodesAt: kind === 'series' ? now : previousParts.episodesAt
     };
     if (kind === 'series') {
@@ -2557,20 +2559,20 @@
       Object.assign(item, {
         title: localizedTitle, originalTitle, aliases,
         year: item.year || metadata.year || null,
-        overview: metadata.overview || item.overview,
+        overview: resolvedOverview,
         overviewLanguage: metadata.language || item.overviewLanguage || 'it',
         genres: metadata.genres?.length ? metadata.genres : (item.genres || []),
         runtime: metadata.runtime || item.runtime || null,
-        poster: metadata.poster || item.poster || null,
+        poster: resolvedPoster || null,
         backdrop: metadata.backdrop || item.backdrop || metadata.poster || null,
-        cast: includeCast ? (metadata.cast || []) : (item.cast || []),
+        cast: resolvedCast,
         tvdbId: item.tvdbId || metadata.tvdbId || null,
         imdbId: item.imdbId || metadata.imdbId || null,
         network: metadata.network || item.network || null,
         officialSite: metadata.officialSite || item.officialSite || null,
         providerStatus: metadata.statusText || item.providerStatus || null,
         seasons: mergeSeriesSeasons(item.seasons || [], metadata.seasons || [], item.id),
-        publicMetadata: { ...previousMeta, provider: metadata.provider, providerLabel: metadata.providerLabel, providerId: metadata.providerId, sourceUrl: metadata.sourceUrl, italianSourceUrl: metadata.italianSourceUrl, englishSourceUrl: metadata.englishSourceUrl, language: metadata.language, parts, failedAt: null, error: null, errorCode: null, errorCategory: null, attempts: 0, nextRetryAt: null, updatedAt: now }
+        publicMetadata: { ...previousMeta, provider: metadata.provider, providerLabel: metadata.providerLabel, providerId: metadata.providerId, sourceUrl: metadata.sourceUrl, italianSourceUrl: metadata.italianSourceUrl, englishSourceUrl: metadata.englishSourceUrl, language: metadata.language, parts, failedAt: null, error: null, errorCode: null, errorCategory: null, attempts: 0, nextRetryAt: coreComplete && castComplete ? null : new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(), updatedAt: now }
       }, userFields);
       await dbPut('series', item);
       await saveSharedCatalog('series', item, 'public-metadata');
@@ -2580,16 +2582,16 @@
       Object.assign(item, {
         title: localizedTitle, originalTitle, aliases,
         year: item.year || metadata.year || null,
-        overview: metadata.overview || item.overview,
+        overview: resolvedOverview,
         overviewLanguage: metadata.language || item.overviewLanguage || 'it',
         genres: metadata.genres?.length ? metadata.genres : (item.genres || []),
         runtime: metadata.runtime || item.runtime || null,
-        poster: metadata.poster || item.poster || null,
+        poster: resolvedPoster || null,
         backdrop: metadata.backdrop || item.backdrop || metadata.poster || null,
-        cast: includeCast ? (metadata.cast || []) : (item.cast || []),
+        cast: resolvedCast,
         wikidataId: metadata.wikidataId || item.wikidataId || null,
         imdbId: item.imdbId || metadata.imdbId || null,
-        publicMetadata: { ...previousMeta, provider: metadata.provider, providerLabel: metadata.providerLabel, sourceUrl: metadata.sourceUrl, italianSourceUrl: metadata.italianSourceUrl, englishSourceUrl: metadata.englishSourceUrl, language: metadata.language, parts, failedAt: null, error: null, errorCode: null, errorCategory: null, attempts: 0, nextRetryAt: null, updatedAt: now }
+        publicMetadata: { ...previousMeta, provider: metadata.provider, providerLabel: metadata.providerLabel, sourceUrl: metadata.sourceUrl, italianSourceUrl: metadata.italianSourceUrl, englishSourceUrl: metadata.englishSourceUrl, language: metadata.language, parts, failedAt: null, error: null, errorCode: null, errorCategory: null, attempts: 0, nextRetryAt: coreComplete && castComplete ? null : new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(), updatedAt: now }
       });
       await dbPut('movies', item);
       await saveSharedCatalog('movie', item, 'public-metadata');
@@ -2910,7 +2912,7 @@
     if((hasProviders&&recent)||item.providerStatus==='loading'||(!tmdbIsReady()&&item.providerStatus==='unavailable'))return;
     if(!tmdbIsReady()){item.providerStatus='unavailable';return;}
     item.providerStatus='loading';
-    const active=parseRoute();if((kind==='series'&&active.page==='series'&&active.id===item.id)||(kind==='movie'&&active.page==='movie'&&active.id===item.id))route();
+    const active=parseRoute();if((kind==='series'&&active.page==='series'&&active.id===item.id)||(kind==='movie'&&active.page==='movie'&&active.id===item.id))route({ loader:false, preserveScroll:true });
     try{
       const id=await resolveTmdbId(kind,item);
       if(!id)throw new Error('Titolo non associato a TMDB');
@@ -2919,14 +2921,14 @@
       item.providerStatus=['streaming','rent','buy','free'].some(key=>(providers[key]||[]).length)?'available':'unavailable';
       item.providersUpdatedAt=new Date().toISOString();item.providerCheckedAt=item.providersUpdatedAt;
       await dbPut(kind==='series'?'series':'movies',item);await saveSharedCatalog(kind,item,'tmdb-providers');
-      const current=parseRoute();if((kind==='series'&&current.page==='series'&&current.id===item.id)||(kind==='movie'&&current.page==='movie'&&current.id===item.id))route();
+      const current=parseRoute();if((kind==='series'&&current.page==='series'&&current.id===item.id)||(kind==='movie'&&current.page==='movie'&&current.id===item.id))route({ loader:false, preserveScroll:true });
     }catch{item.providerStatus='unavailable';item.providerCheckedAt=new Date().toISOString();try{await dbPut(kind==='series'?'series':'movies',item);}catch{}}
   }
   async function maybeLoadTrailer(kind, item) {
     if(officialTrailerForItem(item)||item.trailerLookupStatus==='loading')return;
     const last=dateMs(item.trailerCheckedAt);if(last&&Date.now()-last<1000*60*60*24*30)return;
     item.trailerLookupStatus='loading';
-    const active=parseRoute();if((kind==='series'&&active.page==='series'&&active.id===item.id)||(kind==='movie'&&active.page==='movie'&&active.id===item.id))route();
+    const active=parseRoute();if((kind==='series'&&active.page==='series'&&active.id===item.id)||(kind==='movie'&&active.page==='movie'&&active.id===item.id))route({ loader:false, preserveScroll:true });
     let trailer=null;
     try{
       if(tmdbIsReady()){
@@ -2940,7 +2942,7 @@
       if(trailer)item.trailer=trailer;
       item.trailerCheckedAt=new Date().toISOString();item.trailerLookupStatus=trailer?'available':'unavailable';
       await dbPut(kind==='series'?'series':'movies',item);await saveSharedCatalog(kind,item,trailer?.source||'public-trailer');
-      const current=parseRoute();if((kind==='series'&&current.page==='series'&&current.id===item.id)||(kind==='movie'&&current.page==='movie'&&current.id===item.id))route();
+      const current=parseRoute();if((kind==='series'&&current.page==='series'&&current.id===item.id)||(kind==='movie'&&current.page==='movie'&&current.id===item.id))route({ loader:false, preserveScroll:true });
     }catch{item.trailerCheckedAt=new Date().toISOString();item.trailerLookupStatus='unavailable';try{await dbPut(kind==='series'?'series':'movies',item);}catch{}}
   }
   async function maybeLoadCinemaShowtimes(item){
@@ -2957,8 +2959,8 @@
       for(const result of data.cinemas||[])for(const show of result.showtimes||[])rows.push({...show,cinemaId:result.cinemaId,cinemaName:result.cinemaName,bookingUrl:show.bookingUrl||result.sourceUrl||result.officialUrl,sourceUrl:result.sourceUrl||result.officialUrl});
       item.cinemaShowtimes=rows;item.cinemaCheckedAt=data.checkedAt||new Date().toISOString();item.cinemaStatus=rows.length?'available':'unavailable';
       await dbPut('movies',item);await saveSharedCatalog('movie',item,'official-cinema-sites');
-      const routeInfo=parseRoute();if(routeInfo.page==='movie'&&routeInfo.id===item.id)route();
-    }catch{item.cinemaShowtimes=[];item.cinemaCheckedAt=new Date().toISOString();item.cinemaStatus='unavailable';try{await dbPut('movies',item);}catch{}const routeInfo=parseRoute();if(routeInfo.page==='movie'&&routeInfo.id===item.id)route();}
+      const routeInfo=parseRoute();if(routeInfo.page==='movie'&&routeInfo.id===item.id)route({ loader:false, preserveScroll:true });
+    }catch{item.cinemaShowtimes=[];item.cinemaCheckedAt=new Date().toISOString();item.cinemaStatus='unavailable';try{await dbPut('movies',item);}catch{}const routeInfo=parseRoute();if(routeInfo.page==='movie'&&routeInfo.id===item.id)route({ loader:false, preserveScroll:true });}
   }
 
   async function fetchProviders(kind,id){try{const data=await tmdbFetch(`/${kind}/${id}/watch/providers`);const it=data.results?.IT||{};const rows=a=>(a||[]).map(x=>({name:x.provider_name,providerId:x.provider_id,priority:x.display_priority}));return{streaming:rows(it.flatrate),rent:rows(it.rent),buy:rows(it.buy),free:rows([...(it.free||[]),...(it.ads||[])]),link:it.link};}catch{return{streaming:[],rent:[],buy:[],free:[]};}}
@@ -3888,7 +3890,7 @@
         await syncCloudProfile(backgroundProfile, { onlyProgress: true });
         if (state.profileId === id) {
           await reloadData();
-          await route({ loader:false });
+          await route({ loader:false, preserveScroll:true });
         }
       });
       idle(scheduleBackgroundMetadataSync);
