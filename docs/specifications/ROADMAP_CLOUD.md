@@ -14,12 +14,12 @@ Questo file traccia le attivita ancora aperte. Una voce si considera chiusa solo
 | --- | --- | --- | --- |
 | Autenticazione familiare cloud | In corso | Alta | Login cloud verificato; restano recupero password e profili persistenti |
 | Dati condivisi su cloud | In corso | Alta | Prima sincronizzazione attiva per profili, librerie, progressi e impostazioni |
-| Fonti dati complete | Da fare | Alta | Trailer, streaming, cinema e dati variabili |
+| Fonti dati complete | In corso | Alta | TVmaze/Wikipedia/Wikidata presenti; proxy TMDB, trailer, streaming e cinema da completare |
 | Filtri e organizzazione libreria | In corso | Media | Prima uniformazione applicata; restano filtri avanzati e viste |
 | Mobile web e app Android | In corso | Alta | Responsive/PWA migliorati; resta audit su smartphone e decisione wrapper |
 | Identita visiva e favicon | In corso | Bassa | Tema Watchverse black e prime proposte di marchio aggiunti |
-| Backup, export e sicurezza | Da aggiungere | Alta | Necessario prima di migrare dati in cloud |
-| Monitoraggio errori e qualita deploy | Da aggiungere | Media | Utile dopo il passaggio cloud |
+| Backup, export e sicurezza | In corso | Alta | Export/restore e security review presenti; restano test VAPT e hardening deploy |
+| Monitoraggio errori e qualita deploy | In corso | Media | Diagnostica metadati, build numerate e test mirati presenti |
 
 ## 1. Autenticazione e login
 
@@ -48,10 +48,10 @@ Attivita:
 
 - [x] creare il progetto Supabase gratuito e configurare URL/chiave pubblica;
 - [x] creare l'utente proprietario Daniela senza signup pubblico;
-- [ ] definire il flusso di primo accesso e cambio password;
-- [ ] collegare recupero password via email Supabase;
+- [x] definire il flusso di primo accesso e cambio password;
+- [x] collegare recupero password via email Supabase;
 - [x] rendere persistente la presenza dell'account cloud tra build e dispositivi;
-- [ ] creare o migrare automaticamente i profili Daniela ed Elena;
+- [x] creare o migrare automaticamente i profili Daniela ed Elena;
 - [ ] verificare che il PIN profilo resti opzionale e separato dalla password account.
 
 Nota operativa: per completare il collegamento cloud servono il progetto Supabase e la sua URL pubblica con chiave anon/publishable. La chiave `service_role` e qualsiasi token privato resteranno fuori dal repository.
@@ -75,11 +75,11 @@ Obiettivo:
 
 Attivita:
 
-- [ ] completare schema Supabase per dati account, profili, librerie, progressi e preferenze;
-- [ ] aggiungere catalogo cloud condiviso per schede film/serie, cast, biografie, stagioni, episodi e fonti;
-- [ ] implementare migrazione dal locale al cloud per il primo accesso;
+- [x] completare schema Supabase per dati account, profili, librerie, progressi e preferenze;
+- [x] aggiungere catalogo cloud condiviso per schede film/serie, cast, biografie, stagioni, episodi e fonti;
+- [x] implementare migrazione dal locale al cloud per il primo accesso;
 - [ ] implementare sync bidirezionale con versioni e risoluzione conflitti;
-- [ ] aggiungere stato visibile di sincronizzazione e gestione errori;
+- [x] aggiungere stato visibile di sincronizzazione e gestione errori;
 - [ ] ridurre IndexedDB a cache/offline, non a fonte primaria;
 - [ ] aggiungere test per accesso multi-dispositivo e multi-profilo.
 
@@ -102,10 +102,10 @@ Obiettivo:
 Attivita:
 
 - [ ] attivare proxy sicuro TMDB/JustWatch tramite backend;
-- [ ] configurare fonte trailer senza esporre token nel client;
+- [x] predisporre fonte trailer senza esporre token nel client;
 - [ ] definire fonte sostenibile per orari cinema italiani;
-- [ ] distinguere chiaramente dato certo, dato stimato e dato non disponibile;
-- [ ] aggiungere refresh manuale per una scheda;
+- [x] distinguere chiaramente dato certo, dato stimato e dato non disponibile;
+- [x] aggiungere refresh manuale per una scheda;
 - [ ] aggiungere test automatici per casi con e senza dati.
 
 Criteri di chiusura:
@@ -127,7 +127,7 @@ Attivita:
 - [x] raccogliere screenshot o descrizione dei filtri Showly da replicare;
 - [x] mappare gli stati attuali Watchverse contro stati Showly;
 - [x] applicare una prima gerarchia coerente per tab, contatori, toolbar e card;
-- [ ] ridisegnare filtri per serie, film, watchlist, completati, in corso, sospesi;
+- [x] ridisegnare filtri per serie, film, watchlist, completati, in corso, sospesi;
 - [ ] aggiungere ordinamenti utili: ultimo visto, ultimo aggiornamento, rating, piattaforma, genere;
 - [ ] testare filtri su libreria piccola e libreria importata grande.
 
@@ -135,20 +135,20 @@ Attivita:
 
 Le seguenti migliorie sono state aggiunte come backlog funzionale, da affrontare una per volta dopo la verifica della nuova UI:
 
-- [ ] vista libreria con tab di stato persistenti e contatori sempre visibili;
+- [x] vista libreria con tab di stato persistenti e contatori sempre visibili;
 - [ ] filtri combinabili per stato, genere, piattaforma, anno e rating;
 - [ ] ordinamento configurabile e memorizzato per ogni sezione;
-- [ ] vista griglia/lista con scelta persistente e densita regolabile;
-- [ ] schede compatte con poster, stato, progresso episodio e azioni rapide;
+- [x] vista griglia/lista con scelta persistente e densita regolabile;
+- [x] schede compatte con poster, stato, progresso episodio e azioni rapide;
 - [ ] pagina dettaglio piu strutturata: hero, riepilogo, cast, episodi, dove vederlo e titoli correlati;
-- [ ] sezioni orizzontali con scorrimento da tastiera, touch e pulsanti freccia accessibili;
+- [x] sezioni orizzontali con scorrimento da tastiera, touch e pulsanti freccia accessibili;
 - [ ] calendario/programmazione con filtri per giorno, piattaforma e tipo di contenuto;
 - [ ] watchlist separata dalla libreria vista, con stato “da iniziare” esplicito;
 - [ ] ricerca globale con risultati raggruppati per film, serie, persone e piattaforme;
-- [ ] azioni rapide da card: visto, preferito, watchlist e apertura dettaglio;
+- [x] azioni rapide da card: visto, preferito, watchlist e apertura dettaglio;
 - [ ] gestione piu chiara degli episodi: stagione, progresso, ultimo episodio e prossimo episodio;
 - [ ] stati vuoti contestuali con suggerimenti realmente azionabili;
-- [ ] accessibilita completa di tab, filtri, rail e dialoghi, inclusa navigazione da tastiera;
+- [x] accessibilita completa di tab, filtri, rail e dialoghi, inclusa navigazione da tastiera;
 - [ ] test e2e dedicati a filtri, ordinamenti, cambio vista e rail orizzontali su desktop/mobile.
 
 Criteri di chiusura:
@@ -170,7 +170,7 @@ Attivita:
 - [ ] audit responsive delle schermate principali;
 - [ ] sistemare login, home, librerie, dettaglio titolo, profilo, import e ricerca su mobile;
 - [ ] migliorare tap target, spaziature, header, menu e rail orizzontali;
-- [ ] verificare installabilita PWA;
+- [x] verificare installabilita PWA;
 - [ ] valutare wrapper Android: Trusted Web Activity, Capacitor o altra soluzione;
 - [ ] aggiungere test e2e mobile viewport.
 
@@ -189,9 +189,9 @@ Obiettivo:
 
 Attivita:
 
-- [ ] definire direzione visiva del marchio Watchverse;
+- [x] definire direzione visiva del marchio Watchverse;
 - [ ] creare favicon, icona 192, icona 512 e maskable icon;
-- [ ] aggiornare manifest e asset;
+- [x] aggiornare manifest e asset;
 - [ ] verificare resa su browser, home screen e GitHub Pages.
 
 Criteri di chiusura:
@@ -210,10 +210,10 @@ Prima di spostare i dati in cloud serve un paracadute chiaro, soprattutto per im
 
 Attivita:
 
-- [ ] export completo account/profili;
-- [ ] restore controllato;
+- [x] export completo account/profili;
+- [x] restore controllato;
 - [ ] migrazione locale -> cloud reversibile o almeno verificabile;
-- [ ] checklist dati sensibili nel repository prima di ogni deploy pubblico.
+- [x] checklist dati sensibili nel repository prima di ogni deploy pubblico.
 
 ### Qualita deploy e osservabilita
 
@@ -223,9 +223,9 @@ Dopo il cloud, gli errori non saranno piu solo locali e vanno resi diagnosticabi
 
 Attivita:
 
-- [ ] stato build/deploy documentato;
-- [ ] pagina o pannello diagnostico con versione, backend configurato e stato sync;
-- [ ] logging errori non sensibile;
+- [x] stato build/deploy documentato;
+- [x] pagina o pannello diagnostico con versione, backend configurato e stato sync;
+- [x] logging errori non sensibile;
 - [ ] test e2e obbligatori prima del commit per flussi critici.
 
 ## Ordine consigliato

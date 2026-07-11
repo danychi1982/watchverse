@@ -1,6 +1,6 @@
 # Watchverse Design System
 
-Versione: 1.0.0 · Build 25
+Versione: 1.0.0 · Build 26
 
 ## Preview visuale
 
