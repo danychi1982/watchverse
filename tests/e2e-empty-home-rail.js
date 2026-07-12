@@ -169,7 +169,10 @@ async function expectScrollable(locator) {
     await page.fill('#loginUser', 'utente');
     await page.fill('#loginPassword', 'abcdef');
     await page.click('#loginForm button[type="submit"]');
-    await page.waitForSelector('[data-profile-choice]', { timeout: 10000 });
+    await page.waitForFunction(() => Boolean(document.querySelector('[data-profile-choice], #authMessage')) , null, { timeout: 10000 });
+    if (!(await page.locator('[data-profile-choice]').count())) {
+      throw new Error(`Gate profili non visualizzato dopo il login: ${await page.locator('#authMessage').textContent()}`);
+    }
     await page.locator('[data-profile-choice]').filter({ hasText: 'Daniela' }).click();
     await page.waitForSelector('#aivengersButton:not(.hidden)', { timeout: 10000 });
     await page.click('#aivengersButton');
