@@ -22,3 +22,6 @@ assert(!app.includes("['paused','In pausa']"), 'Il filtro In pausa deve essere r
 assert(!app.includes("['dropped','Abbandonate']"), 'Il filtro Abbandonate deve essere rimosso');
 assert(app.includes('function scheduleBackgroundMetadataSync('), 'Aggiornamento metadati in background mancante');
 assert(app.includes('matchesMediaSearch(item, query)'), 'Ricerca bilingue titolo/originale mancante');
+assert(app.includes('function ensureLibraryAddedAt('), 'Data di aggiunta persistente mancante');
+assert(app.includes("filter === 'watchlist' ? item => item.addedAt"), 'Ordinamento watchlist per data aggiunta mancante');
+assert(app.includes("state.movieSearch.trim().length===1)return"), 'Soglia minima ricerca film mancante');

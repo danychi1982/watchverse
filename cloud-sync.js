@@ -200,6 +200,13 @@
     return { skipped: false };
   }
 
+  async function clearProfileData(profile) {
+    if (!isEnabled() || !profileId(profile)) return;
+    const cloudId = encodeURIComponent(profile.cloudId);
+    await request(`/library_records?profile_id=eq.${cloudId}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+    await request(`/episode_progress?profile_id=eq.${cloudId}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+  }
+
   async function pullProfile(profile, options = {}) {
     if (!isEnabled() || !profileId(profile)) return null;
     const onlyProgress = options.onlyProgress === true;
@@ -270,5 +277,5 @@
     return { skipped: false };
   }
 
-  root.WatchverseCloudSync = { isEnabled, bootstrapProfiles, saveProfiles, pushRecord, pushRecords, deleteRecord, pullProfile, saveSettings, recordConflict };
+  root.WatchverseCloudSync = { isEnabled, bootstrapProfiles, saveProfiles, pushRecord, pushRecords, deleteRecord, clearProfileData, pullProfile, saveSettings, recordConflict };
 })(window);

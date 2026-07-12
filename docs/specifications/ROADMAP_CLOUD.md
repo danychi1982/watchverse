@@ -30,7 +30,10 @@ Questo file traccia sia le attivita completate sia quelle ancora aperte. Una voc
 | Gestione tastiera virtuale nei form | Alta | Da fare | Condiviso | Alto | Adeguare viewport, focus e scroll automatico affinche la tastiera non copra mai il campo attivo. |
 | Test E2E mobile | Alta | Parzialmente completato | Daniela | Medio | Avviare Chrome in modalità CDP ed eseguire la suite sui flussi critici. |
 | Runner E2E senza blocco `spawn EPERM` | Alta | Parzialmente completato | Codex | Medio | Il runner prova CDP locale e la suite gira automaticamente in GitHub Actions con Chromium isolato; resta verificare il primo workflow e mantenere la suite verde. |
+| Stabilizzazione test E2E su `main` | Alta | Da fare | Codex | Medio | Analizzare i workflow `run failed`, correggere test flaky o non compatibili con GitHub Actions, separare i test bloccati dall’ambiente locale e impedire notifiche di fallimento non azionabili. |
 | Contrasto barra di navigazione mobile | Alta | Da fare | Codex | Basso | Rendere distinguibili sfondo, icona e testo dello stato selezionato su Samsung Galaxy S26+. |
+| Audit contrasto interfaccia e importazione | Alta | Da fare | Codex | Medio | Correggere il contrasto di “Elementi pronti” e del relativo valore nel riepilogo importazione, quindi verificare sistematicamente testi, badge, link, focus e indicatori su tutto il sito. |
+| Conferma sostituzione dati in importazione | Alta | Da fare | Codex | Basso | Mostrare sempre una conferma esplicita prima dell’importazione quando è selezionata la sostituzione del profilo, indicando che il catalogo attuale verrà eliminato. |
 | Responsive schede su Samsung Galaxy S26+ | Alta | Parzialmente completato | Codex | Alto | Eliminare ridondanza banner/locandina su mobile, contenere overflow e ridimensionare il cast; resta la verifica E2E sul dispositivo target. |
 | VAPT e hardening del deploy | Alta | Parzialmente completato | Daniela | Alto | Eseguire una scansione VAPT/headers sul sito pubblicato e verificare i risultati. |
 | Filtri e organizzazione libreria | Media | Completato | Codex | Medio | Nessuna attività tecnica residua. |
@@ -46,9 +49,25 @@ Questo file traccia sia le attivita completate sia quelle ancora aperte. Una voc
 | Prestazioni accesso e caricamento | Alta | Da fare | Codex | Alto | Ridurre il tempo percepito di login e apertura profilo, misurare il bootstrap cloud e spostare i caricamenti non indispensabili in background senza bloccare l’utente. |
 | Ordinamento Film da vedere | Alta | Parzialmente completato | Daniela | Basso | Validare su mobile che il filtro usi `Data aggiunta` in ordine decrescente e che gli altri filtri mantengano il loro ordinamento. |
 | Ricerca Film senza perdita di focus | Alta | Parzialmente completato | Daniela | Medio | Validare su Samsung Galaxy S26+ che la tastiera resti aperta durante la digitazione e che la ricerca parta dopo la pausa o almeno due caratteri. |
+| Rimozione sicura dalla libreria | Alta | Da fare | Codex | Medio | Aggiungere la rimozione nella sola scheda di dettaglio per film e serie, con azione visivamente separata, conferma esplicita e aggiornamento cloud/cache dopo la cancellazione. |
 | Proposte Cerca senza duplicati | Media | Da fare | Codex | Medio | Escludere dalle proposte film e serie già presenti nella libreria del profilo, mantenendo suggerimenti affini basati su generi, preferenze e valutazioni. |
 | Risultati Cerca in lista unica | Media | Da fare | Codex | Medio | Unificare risultati locali e pubblici in un solo elenco, deduplicare i titoli e mostrare `Apri` per quelli già in libreria e `Aggiungi` per quelli nuovi. |
 | Ricerca limitata a film e serie | Media | Da fare | Codex | Medio | Escludere le persone dai risultati catalogabili, correggere l’interpretazione degli anni e aggiungere il filtro `Tutti` / `Film` / `Serie TV`. |
+
+## Aggiornamento stato tecnico — 12 luglio 2026
+
+Le seguenti voci hanno ricevuto un intervento tecnico in questa release. Restano parziali finché Daniela non le conferma sui dispositivi e nel progetto Supabase.
+
+| Nome intervento | Priorita | Stato | Owner | Effort | Cosa resta da fare |
+| --- | --- | --- | --- | --- | --- |
+| Sincronizzazione cloud e sostituzione import | Alta | Parzialmente completato | Daniela | Alto | Ripetere l'import con sostituzione e verificare che i dati cloud siano visibili dopo pulizia cache e su un secondo dispositivo. |
+| Conferma sostituzione dati in importazione | Alta | Parzialmente completato | Daniela | Basso | Confermare il popup quando la checkbox è selezionata e verificare che Annulla non avvii l'import. |
+| Contrasto riepilogo importazione e barra mobile | Alta | Parzialmente completato | Daniela | Basso | Verificare visivamente testo, valore, icona e focus su Samsung Galaxy S26+. |
+| Rimozione sicura dalla libreria | Alta | Parzialmente completato | Daniela | Medio | Verificare il pulsante solo nella scheda dettaglio, la conferma distruttiva e la rimozione sincronizzata su un secondo dispositivo. |
+| Runner E2E senza blocco `spawn EPERM` | Alta | Parzialmente completato | Codex | Medio | La suite locale salta solo i browser E2E quando Windows blocca Chrome; verificare il workflow CI dopo il push. |
+| Prestazioni accesso e caricamento | Alta | Da fare | Codex | Alto | Misurare il bootstrap e spostare ulteriori caricamenti non indispensabili in background senza regressioni cloud. |
+| Responsive schede su Samsung Galaxy S26+ | Alta | Parzialmente completato | Daniela | Alto | Validare dettagli, cast, banner e overflow sul dispositivo target. |
+| Risultati Cerca solo film/serie | Media | Parzialmente completato | Daniela | Medio | Verificare che TMDB non mostri più persone e che i filtri/risultati unificati siano coerenti. |
 
 ## Stato sintetico
 

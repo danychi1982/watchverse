@@ -8,7 +8,7 @@ for (const source of [schema, migration]) {
     if (!source.includes(token)) throw new Error(`Schema sync incompleto: ${token}`);
   }
 }
-for (const token of ['remotePath', 'localWins', 'recordConflict', 'cloud_won', 'on_conflict=profile_id,kind,local_id']) {
+for (const token of ['remotePath', 'localWins', 'recordConflict', 'cloud_won', 'on_conflict=profile_id,kind,local_id', 'clearProfileData', 'DELETE']) {
   if (!cloud.includes(token)) throw new Error(`Contratto sync incompleto: ${token}`);
 }
 console.log('Contratto sincronizzazione bidirezionale verificato');
