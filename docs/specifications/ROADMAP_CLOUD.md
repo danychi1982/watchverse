@@ -13,7 +13,9 @@ Questo file traccia sia le attivita completate sia quelle ancora aperte. Una voc
 | Nome intervento | Priorita | Stato | Owner | Effort | Cosa resta da fare |
 | --- | --- | --- | --- | --- | --- |
 | Autenticazione Supabase e account unico | Alta | Parzialmente completato | Daniela | Basso | Validare su piu dispositivi il nuovo PIN cloud e il link di recupero dopo aver configurato l'URL di redirect in Supabase. |
+| Messaggi di errore autenticazione | Alta | Completato | Codex | Basso | Nessuna attivita tecnica residua; verificare il testo nella prossima pubblicazione. |
 | Visibilita password e PIN | Alta | Completato | Codex | Medio | Nessuna attivita tecnica residua. |
+| Allineamento icone mostra/nascondi | Alta | Parzialmente completato | Codex | Basso | Uniformare tutti i campi password e PIN affinche l’icona resti dentro il bordo del campo, come nella login. |
 | Logout globale dopo cambio password | Alta | Completato | Codex | Medio | Nessuna attivita tecnica residua. |
 | Profili Daniela ed Elena | Alta | Completato | Codex | Basso | Nessuna attività tecnica residua. |
 | Catalogo e prima sincronizzazione cloud | Alta | Completato | Codex | Medio | Nessuna attività tecnica residua. |
