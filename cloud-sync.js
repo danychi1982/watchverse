@@ -85,7 +85,7 @@
       }
     }
     for (const profile of profiles) {
-      if (!profileId(profile)) continue;
+      if (!profileId(profile)) throw new Error(`Il profilo ${profile?.name || ''} non è collegato al cloud.`.trim());
       const updated = await request(`/profiles?id=eq.${encodeURIComponent(profile.cloudId)}`, {
         method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify({
           name: profile.name, avatar_type: profile.avatarType || 'emoji', avatar_value: profile.avatarValue || null,

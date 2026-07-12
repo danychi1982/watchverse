@@ -4034,6 +4034,10 @@
       // Dopo una pulizia della cache il PIN non è disponibile localmente:
       // attendere il bootstrap cloud prima di rendere selezionabili i profili.
       const cloudProfiles = await bootstrapCloudProfilesWithRetry(1);
+      if (window.WatchverseCloudSync?.isEnabled() && !Array.isArray(cloudProfiles)) {
+        showLoginScreen('Impossibile verificare i profili cloud. Per sicurezza accedi di nuovo tra poco.');
+        return;
+      }
       if (Array.isArray(cloudProfiles) && cloudProfiles.length) { state.profiles = cloudProfiles; saveProfiles(false); }
       state.authenticated=true;showProfileGate();
     }catch(e){console.error(e);document.body.innerHTML=`<main style="padding:40px;font-family:system-ui;color:white;background:#111;min-height:100vh"><h1>Watchverse non è riuscita ad avviarsi</h1><p>${esc(e.message)}</p><button id="retryApp" type="button">Riprova</button></main>`;$('#retryApp')?.addEventListener('click',()=>location.reload());}
