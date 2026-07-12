@@ -27,6 +27,9 @@ Questo file traccia sia le attivita completate sia quelle ancora aperte. Una voc
 | Login mobile senza scroll | Alta | Da fare | Condiviso | Medio | Rimuovere la frase non necessaria, riequilibrare gli spazi e verificare la schermata senza scroll su Samsung Galaxy S26+. |
 | Gestione tastiera virtuale nei form | Alta | Da fare | Condiviso | Alto | Adeguare viewport, focus e scroll automatico affinche la tastiera non copra mai il campo attivo. |
 | Test E2E mobile | Alta | Parzialmente completato | Daniela | Medio | Avviare Chrome in modalità CDP ed eseguire la suite sui flussi critici. |
+| Runner E2E senza blocco `spawn EPERM` | Alta | Parzialmente completato | Codex | Medio | Il runner prova CDP locale e la suite gira automaticamente in GitHub Actions con Chromium isolato; resta verificare il primo workflow e mantenere la suite verde. |
+| Contrasto barra di navigazione mobile | Alta | Da fare | Codex | Basso | Rendere distinguibili sfondo, icona e testo dello stato selezionato su Samsung Galaxy S26+. |
+| Responsive schede su Samsung Galaxy S26+ | Alta | Parzialmente completato | Codex | Alto | Eliminare ridondanza banner/locandina su mobile, contenere overflow e ridimensionare il cast; resta la verifica E2E sul dispositivo target. |
 | VAPT e hardening del deploy | Alta | Parzialmente completato | Daniela | Alto | Eseguire una scansione VAPT/headers sul sito pubblicato e verificare i risultati. |
 | Filtri e organizzazione libreria | Media | Completato | Codex | Medio | Nessuna attività tecnica residua. |
 | Indicatori di caricamento | Media | Parzialmente completato | Daniela | Medio | Validare su rete lenta i loader nelle sezioni e nei cambi filtro. |
