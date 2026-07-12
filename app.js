@@ -199,7 +199,7 @@
     detailTab: 'info', tvScheduleFilter: 'today', importPreview: null, gdprPreview: null, deferredInstall: null,
     notifications: [], tmdbResults: [], publicResults: [], catalogResults: [], isLoading: false, pendingAvatarProfileId: null, personFilmographyFilter: 'all', profileSettingsTab: 'identity',
     catalogEntries: [], catalogIndex: new Map(), catalogHydratedThisSession: 0, catalogNetworkAvoidedThisSession: 0,
-    metadataQueue: [], metadataRunning: 0, metadataQueuedIds: new Set(), metadataAutoBudget: 36, metadataRenderPending: false, metadataRerenderTimer: null, metadataBackgroundStarted: false, metadataHeaderTimer: null, metadataCompletedThisSession: 0, metadataFailedThisSession: 0, metadataRecoveryScheduled: false, metadataRecoveryDone: false, wcagStatusFilter: 'all', wcagLevelFilter: 'all', accessibilityTab: 'declaration', searchRecommendationFilter: 'all',
+    metadataQueue: [], metadataRunning: 0, metadataQueuedIds: new Set(), metadataAutoBudget: 36, metadataRenderPending: false, metadataRerenderTimer: null, metadataBackgroundStarted: false, metadataHeaderTimer: null, metadataCompletedThisSession: 0, metadataFailedThisSession: 0, metadataRecoveryScheduled: false, metadataRecoveryDone: false, wcagStatusFilter: 'all', wcagLevelFilter: 'all', accessibilityTab: 'declaration', searchRecommendationFilter: 'all', navigationLoaderToken: 0,
     sidebarCollapsed: localStorage.getItem('watchverse.sidebarCollapsed') === '1', cinemaSearchLocation: null, cinemaSearchQuery: '', cinemaLocationFeedback: null, aivengersInitialized: false, lastRenderedRoute: '', defaultSourceStatus: null, defaultSourceSyncRunning: false, viewActionBusy: false
   };
 
@@ -213,9 +213,10 @@
   function nextFrame() {
     return new Promise(resolve => requestAnimationFrame(resolve));
   }
-  async function runViewAction(button, action) {
+  async function runViewAction(button, action, loaderCopy = null) {
     if (!button || state.viewActionBusy) return;
     state.viewActionBusy = true;
+    let loaderToken = 0;
     const container = button.closest('.tabbar, .view-toggle, .toolbar') || button.parentElement;
     button.disabled = true;
     button.classList.add('view-action-busy');
@@ -227,9 +228,14 @@
     try {
       // Give the browser a frame to paint feedback before a heavy list render starts.
       await nextFrame();
+      if (loaderCopy) {
+        loaderToken = showBlockingLoader(loaderCopy[0], loaderCopy[1]);
+        await nextPaint();
+      }
       await action();
       await nextFrame();
     } finally {
+      if (loaderToken) hideBlockingLoader(loaderToken);
       state.viewActionBusy = false;
       $$('.view-action-busy').forEach(control => {
         control.disabled = false;
@@ -823,11 +829,15 @@
   function seriesProgress(series) {
     const c = computedSeries(series); return { watched: c.watched, total: c.total, percent: c.percent };
   }
+  function seriesIsCompleted(series) {
+    const progress = seriesProgress(series);
+    return series.status === 'completed' || (progress.total > 0 && progress.watched >= progress.total);
+  }
   function nextEpisode(series) { return computedSeries(series).next; }
   function latestReleasedUnwatched(series) { return computedSeries(series).latestReleasedUnwatched; }
   function latestWatchedAt(seriesId) { return state.indexes.latestWatchedBySeries.get(seriesId) || null; }
   function seriesNeedsWatching(series) {
-    if (['completed', 'dropped'].includes(series.status)) return false;
+    if (seriesIsCompleted(series) || series.status === 'dropped') return false;
     const c = computedSeries(series);
     return ['watching', 'paused', 'plan', 'watchlist'].includes(series.status) || c.total === 0 || c.watched < c.total;
   }
@@ -1566,13 +1576,13 @@
     return `${image}<span class="poster-title">${esc(item.title)}</span>`;
   }
   function mediaCard(item, kind = 'series') {
-    const isSeries = kind === 'series'; const prog = isSeries ? seriesProgress(item) : null;
+    const isSeries = kind === 'series'; const prog = isSeries ? seriesProgress(item) : null; const completed = isSeries && seriesIsCompleted(item);
     const meta = isSeries ? `${item.year || '—'} · ${prog.watched}/${prog.total} episodi` : `${item.year || '—'} · ${item.runtime ? minutesToText(item.runtime) : 'Durata n.d.'}`;
     const href = isSeries ? `#/series/${encodeURIComponent(item.id)}` : `#/movie/${encodeURIComponent(item.id)}`;
     return `<article class="media-card" data-id="${esc(item.id)}" data-kind="${kind}">
       <a href="${href}" class="poster" style="background:${item.posterGradient || gradient(item.title)}">
         ${posterInner(item)}
-        <span class="poster-badge">${isSeries ? esc(statusLabel(item.status)) : (item.watched ? 'VISTO' : 'DA VEDERE')}</span>
+        <span class="poster-badge">${isSeries ? esc(completed ? 'COMPLETATA' : statusLabel(item.status)) : (item.watched ? 'VISTO' : 'DA VEDERE')}</span>
       </a>
       <button class="favorite-button ${item.favorite ? 'active' : ''}" data-action="favorite" aria-label="${item.favorite ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'}">♥</button>
       <div class="card-body">
@@ -1821,7 +1831,8 @@
     let loaderToken = 0;
     if (shouldShowLoader) {
       const [title, detail] = loaderCopyForRoute(r);
-      loaderToken = showBlockingLoader(title, detail);
+      loaderToken = state.navigationLoaderToken || showBlockingLoader(title, detail);
+      state.navigationLoaderToken = 0;
       await nextPaint();
     }
     try {
@@ -2167,19 +2178,25 @@
     const profile = currentProfile();
     setMain(`<section class="home-welcome" aria-label="Messaggio di benvenuto"><div><span class="kicker">Profilo attivo · ${esc(profile?.name || 'spettatore')}</span><h2>Bentornata, ${esc(profile?.name || 'spettatore')} 👋</h2><p>Stai consultando la libreria personale di <strong>${esc(profile?.name || 'questo profilo')}</strong>. Riprendi da dove avevi lasciato oppure scegli qualcosa di nuovo.</p></div></section><div class="tabbar"><button class="tab-button ${state.homeTab === 'watch' ? 'active' : ''}" data-home-tab="watch">Da vedere</button><button class="tab-button ${state.homeTab === 'upcoming' ? 'active' : ''}" data-home-tab="upcoming">In arrivo</button></div>${listContent}`);
 
-    $$('[data-home-tab]').forEach(b => b.addEventListener('click', () => runViewAction(b, () => { state.homeTab = b.dataset.homeTab; renderHome(); })));
+    $$('[data-home-tab]').forEach(b => b.addEventListener('click', () => runViewAction(
+      b,
+      () => { state.homeTab = b.dataset.homeTab; renderHome(); },
+      ['Aggiorno la Home', b.dataset.homeTab === 'upcoming' ? 'Carico il calendario delle prossime uscite.' : 'Carico i contenuti da vedere.']
+    )));
     $$('[data-episode-action]').forEach(b => b.addEventListener('click', () => toggleEpisode(b.dataset.series, Number(b.dataset.season), Number(b.dataset.episode), b.dataset.title)));
     if ($('#notifyPermission')) $('#notifyPermission').addEventListener('click', requestNotifications);
     bindHorizontalRails($('#main'));
     bindCommonMediaActions($('#main'));
     const visibleSeries = [...recentlyWatched, ...latestReleased].map(x => x.s);
-    queuePublicMetadata('series', visibleSeries, { silent:true, includeCast:true });
-    queuePublicMetadata('movie', watchFilms.slice(0, 6), { silent:true, includeCast:true });
+    if (!state.metadataBackgroundStarted) {
+      queuePublicMetadata('series', visibleSeries, { silent:true, includeCast:true });
+      queuePublicMetadata('movie', watchFilms.slice(0, 6), { silent:true, includeCast:true });
+    }
   }
 
   function filterTabs(type) {
     if (type === 'series') {
-      const count = value => state.series.filter(series => value === 'unwatched' ? seriesNeedsWatching(series) : value === 'favorite' ? series.favorite : value === 'all' ? true : series.status === value || (value === 'plan' && series.status === 'watchlist')).length;
+      const count = value => state.series.filter(series => value === 'unwatched' ? seriesNeedsWatching(series) : value === 'completed' ? seriesIsCompleted(series) : value === 'favorite' ? series.favorite : value === 'all' ? true : !seriesIsCompleted(series) && (series.status === value || (value === 'plan' && series.status === 'watchlist'))).length;
       // Keep the terminal order explicit: ['favorite','Preferite'],['all','Tutte'].
       return [['unwatched','Da vedere',count('unwatched')],['watching','In corso',count('watching')],['plan','Da iniziare',count('plan')],['completed','Completate',count('completed')],['favorite','Preferite',count('favorite')],['all','Tutte',count('all')]];
     }
@@ -2226,8 +2243,9 @@
     const q = state.seriesSearch.trim();
     let items = state.series.filter(item => matchesMediaSearch(item, q));
     if (state.seriesFilter === 'unwatched') items = items.filter(seriesNeedsWatching);
+    else if (state.seriesFilter === 'completed') items = items.filter(seriesIsCompleted);
     else if (state.seriesFilter === 'favorite') items = items.filter(s => s.favorite);
-    else if (state.seriesFilter !== 'all') items = items.filter(s => (s.status === state.seriesFilter) || (state.seriesFilter === 'plan' && s.status === 'watchlist'));
+    else if (state.seriesFilter !== 'all') items = items.filter(s => !seriesIsCompleted(s) && ((s.status === state.seriesFilter) || (state.seriesFilter === 'plan' && s.status === 'watchlist')));
     items = sortSeriesItems(items, state.seriesSort);
     const view = state.settings.seriesView;
     const visible = items.slice(0, state.seriesVisible);
@@ -3901,6 +3919,14 @@
   function bindShellEvents() {
     if(state.shellBound)return;
     state.shellBound=true;
+    document.addEventListener('click', event => {
+      const link = event.target.closest?.('a.nav-item[href^="#/"]');
+      if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const targetPage = link.getAttribute('href').replace(/^#\//, '').split(/[/?]/)[0] || 'home';
+      if (targetPage === parseRoute().page || state.navigationLoaderToken) return;
+      const [title, detail] = loaderCopyForRoute({ page: targetPage });
+      state.navigationLoaderToken = showBlockingLoader(title, detail);
+    });
     window.addEventListener('hashchange',()=>{if(state.profileSelected)route();});
     window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();state.deferredInstall=event;$('#installButton')?.classList.remove('hidden');});
     $('#skipToContent')?.addEventListener('click',()=>$('#main')?.focus({preventScroll:false}));

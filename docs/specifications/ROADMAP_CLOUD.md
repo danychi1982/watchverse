@@ -1,6 +1,6 @@
 # Piano di lavoro Watchverse
 
-Questo file traccia le attivita ancora aperte. Una voce si considera chiusa solo dopo:
+Questo file traccia sia le attivita completate sia quelle ancora aperte. Una voce si considera completata solo dopo:
 
 - implementazione completata;
 - test automatici eseguiti;
@@ -8,13 +8,38 @@ Questo file traccia le attivita ancora aperte. Una voce si considera chiusa solo
 - pubblicazione su GitHub Pages o ambiente concordato;
 - conferma funzionale di Daniela.
 
+## Registro completo degli interventi
+
+| Nome intervento | Stato | Priorita | Cosa resta da fare |
+| --- | --- | --- | --- |
+| Autenticazione Supabase e account unico | Parzialmente completato | Alta | Verificare definitivamente PIN opzionale e testare recupero password su piu dispositivi. |
+| Profili Daniela ed Elena | Completato | Alta | Nulla di previsto nell'ambito iniziale. |
+| Catalogo e prima sincronizzazione cloud | Completato | Alta | Nulla per la migrazione iniziale; la sincronizzazione avanzata resta separata. |
+| Sincronizzazione cloud bidirezionale | In corso | Alta | Versioni dei record, gestione conflitti e test multi-dispositivo/multi-profilo. |
+| IndexedDB come cache offline | Da fare | Alta | Spostare la fonte primaria su Supabase e usare IndexedDB solo come fallback/cache. |
+| Proxy TMDB/JustWatch | Parzialmente completato | Alta | Proxy e secret sono configurati; restano verifica della copertura, casi incompleti e test di affidabilita. |
+| Trailer e disponibilita streaming | Parzialmente completato | Alta | Verificare copertura reale su un campione di film/serie e stati senza risultato. |
+| Programmazione cinema italiana | In corso | Alta | Rendere piu affidabile la fonte ufficiale e gestire titoli senza orari, come Supergirl. |
+| Retry metadati e scelta dell'utente | Da fare | Alta | Eliminare retry automatico al login e offrire Riprova/Ignora per ora con stato persistente. |
+| Audit responsive mobile | In corso | Alta | Completare Home, librerie, dettagli, profilo, import e ricerca su Samsung Galaxy S26+. |
+| Test E2E mobile | In corso | Alta | Eseguire il test su Chrome; attualmente Windows blocca il processo con spawn EPERM. |
+| VAPT e hardening del deploy | Da fare | Alta | Eseguire verifica applicativa mirata e completare gli header/security controls del deployment. |
+| Filtri e organizzazione libreria | In corso | Media | Filtri combinabili, ordinamenti avanzati e test su librerie grandi. |
+| Indicatori di caricamento | In corso | Media | Audit globale di loader, stati vuoti, errori, rete lenta e aggiornamenti locali. |
+| Schede dettaglio ispirate a Showly | In corso | Media | Completare hero, cast, episodi, provider, trailer e contenuti correlati in mobile. |
+| Progresso serie ed episodi residui | Da fare | Media | Sostituire la percentuale ambigua con episodi residui e avanzamento globale della serie. |
+| Calendario, watchlist e ricerca globale | Da fare | Media | Aggiungere filtri dedicati, watchlist esplicita e risultati raggruppati. |
+| Pacchetto favicon/PWA | In corso | Bassa | Generare/verificare icone 192, 512 e maskable e controllare la resa su Android/GitHub Pages. |
+| Design system e identita visiva | Parzialmente completato | Bassa | Verificare il logo definitivo in tutti i contesti e mantenere preview/documentazione allineate. |
+| Build, versioning e deploy | Completato | Media | Nulla per il flusso base; i test E2E critici devono diventare prerequisito effettivo. |
+
 ## Stato sintetico
 
 | Area | Stato | Priorita | Note |
 | --- | --- | --- | --- |
 | Autenticazione familiare cloud | In corso | Alta | Login cloud verificato; restano recupero password e profili persistenti |
 | Dati condivisi su cloud | In corso | Alta | Prima sincronizzazione attiva per profili, librerie, progressi e impostazioni |
-| Fonti dati complete | In corso | Alta | TVmaze/Wikipedia/Wikidata presenti; proxy TMDB, trailer, streaming e cinema da completare |
+| Fonti dati complete | In corso | Alta | Proxy TMDB/JustWatch e trailer attivi; copertura cinema e titoli problematici da completare |
 | Filtri e organizzazione libreria | In corso | Media | Prima uniformazione applicata; restano filtri avanzati e viste |
 | Mobile web e app Android | In corso | Alta | Responsive/PWA migliorati; resta audit su smartphone e decisione wrapper |
 | Identita visiva e favicon | In corso | Bassa | Tema Watchverse black e prime proposte di marchio aggiunti |
@@ -101,7 +126,7 @@ Obiettivo:
 
 Attivita:
 
-- [ ] attivare proxy sicuro TMDB/JustWatch tramite backend;
+- [x] attivare proxy sicuro TMDB/JustWatch tramite backend;
 - [x] predisporre fonte trailer senza esporre token nel client;
 - [ ] definire fonte sostenibile per orari cinema italiani;
 - [x] distinguere chiaramente dato certo, dato stimato e dato non disponibile;
