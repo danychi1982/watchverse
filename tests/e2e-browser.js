@@ -16,10 +16,10 @@ async function openBrowser(chromium) {
     try { return await chromium.connectOverCDP(endpoint); } catch { /* prova il prossimo endpoint */ }
   }
   const path = executablePath();
-  if (!path) throw new Error('Browser non trovato. Imposta WATCHVERSE_CDP_URL o CHROME_PATH.');
   try {
-    return await chromium.launch({ executablePath: path, headless: true });
+    return await chromium.launch(path ? { executablePath: path, headless: true } : { headless: true });
   } catch (error) {
+    if (!path && !error?.message?.includes('spawn EPERM')) throw new Error(`Browser Playwright non disponibile: ${error.message}`);
     if (error?.message?.includes('spawn EPERM')) throw new Error('Chrome bloccato da Windows (spawn EPERM). Il runner ha già provato le porte CDP locali 9222 e 9223; serve un browser eseguibile o una sessione CDP disponibile, senza privilegi amministrativi.');
     throw error;
   }
