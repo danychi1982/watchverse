@@ -163,7 +163,12 @@ async function expectScrollable(locator) {
       });
       db.close();
     });
+    await page.evaluate(() => { localStorage.removeItem('watchverse.session.v2'); sessionStorage.removeItem('watchverse.session.temporary.v2'); });
     await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#loginForm', { timeout: 10000 });
+    await page.fill('#loginUser', 'utente');
+    await page.fill('#loginPassword', 'abcdef');
+    await page.click('#loginForm button[type="submit"]');
     await page.waitForSelector('[data-profile-choice]', { timeout: 10000 });
     await page.locator('[data-profile-choice]').filter({ hasText: 'Daniela' }).click();
     await page.waitForSelector('#aivengersButton:not(.hidden)', { timeout: 10000 });
