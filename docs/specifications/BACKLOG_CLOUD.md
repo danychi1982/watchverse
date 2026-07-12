@@ -29,8 +29,8 @@ Questo file raccoglie le attivita completate, in corso e ancora aperte. Non rapp
 | Login mobile senza scroll | Alta | Da fare | Condiviso | Medio | Rimuovere la frase non necessaria, riequilibrare gli spazi e verificare la schermata senza scroll su Samsung Galaxy S26+. |
 | Gestione tastiera virtuale nei form | Alta | Da fare | Condiviso | Alto | Adeguare viewport, focus e scroll automatico affinche la tastiera non copra mai il campo attivo. |
 | Test E2E mobile | Alta | Parzialmente completato | Daniela | Medio | Avviare Chrome in modalità CDP ed eseguire la suite sui flussi critici. |
-| Runner E2E senza blocco `spawn EPERM` | Alta | Parzialmente completato | Daniela | Medio | In locale i browser E2E vengono saltati solo quando Windows blocca Chrome con `spawn EPERM`; i test deterministici restano attivi. Verificare il workflow manuale con Chromium su GitHub Actions. |
-| Stabilizzazione test E2E su `main` | Alta | Parzialmente completato | Daniela | Medio | Il workflow sui push è stato disattivato: la suite deterministica gira senza Chromium e il browser E2E è opt-in manuale. Verificare una prima esecuzione manuale su GitHub Actions. |
+| Runner E2E senza blocco `spawn EPERM` | Alta | Da fare | Codex | Medio | Risolvere il fixture browser che non apre il gate profili su GitHub Actions; fino ad allora i browser E2E restano sospesi. |
+| Stabilizzazione test E2E su `main` | Alta | Da fare | Codex | Medio | Correggere il test browser fallito e riattivare il lancio solo dopo una esecuzione completa verde. |
 | Contrasto barra di navigazione mobile | Alta | Da fare | Codex | Basso | Rendere distinguibili sfondo, icona e testo dello stato selezionato su Samsung Galaxy S26+. |
 | Audit contrasto interfaccia e importazione | Alta | Da fare | Codex | Medio | Correggere il contrasto di “Elementi pronti” e del relativo valore nel riepilogo importazione, quindi verificare sistematicamente testi, badge, link, focus e indicatori su tutto il sito. |
 | Conferma sostituzione dati in importazione | Alta | Parzialmente completato | Daniela | Medio | Verificare sulla versione pubblicata il dialog interno, il focus, il blocco dello scroll e i due esiti `Annulla` / `Continua`. |
@@ -64,7 +64,7 @@ Le seguenti voci hanno ricevuto un intervento tecnico in questa release. Restano
 | Conferma sostituzione dati in importazione | Alta | Parzialmente completato | Daniela | Medio | Verificare che il dialog applicativo sia coerente con il design system e che Annulla non avvii l'import. |
 | Contrasto riepilogo importazione e barra mobile | Alta | Parzialmente completato | Daniela | Basso | Verificare visivamente testo, valore, icona e focus su Samsung Galaxy S26+. |
 | Rimozione sicura dalla libreria | Alta | Parzialmente completato | Daniela | Medio | Verificare il pulsante solo nella scheda dettaglio, la conferma distruttiva e la rimozione sincronizzata su un secondo dispositivo. |
-| Runner E2E senza blocco `spawn EPERM` | Alta | Parzialmente completato | Codex | Medio | La suite locale salta solo i browser E2E quando Windows blocca Chrome; verificare il workflow CI dopo il push. |
+| Runner E2E senza blocco `spawn EPERM` | Alta | Da fare | Codex | Medio | Browser E2E sospesi nel workflow; risolvere il gate profili su GitHub Actions prima di riattivarli. |
 | Prestazioni accesso e caricamento | Alta | Da fare | Codex | Alto | Misurare il bootstrap e spostare ulteriori caricamenti non indispensabili in background senza regressioni cloud. |
 | Responsive schede su Samsung Galaxy S26+ | Alta | Parzialmente completato | Daniela | Alto | Validare dettagli, cast, banner e overflow sul dispositivo target. |
 | Risultati Cerca solo film/serie | Media | Parzialmente completato | Daniela | Medio | Verificare che TMDB non mostri più persone e che i filtri/risultati unificati siano coerenti. |
