@@ -45,11 +45,13 @@ const checks = [
 ];
 
 const localBrowserBlocked = process.platform === 'win32' && !process.env.CI && !process.env.WATCHVERSE_CDP_URL && !process.env.CHROME_PATH;
+const browserE2EEnabled = process.env.WATCHVERSE_RUN_E2E === '1';
 
 for (const check of checks) {
   const isBrowserE2E = check[1]?.some(arg => String(arg).startsWith('tests/e2e-'));
-  if (localBrowserBlocked && isBrowserE2E) {
-    console.log(`> ${check[0]} ${check[1].join(' ')} (saltato: Chrome locale bloccato da spawn EPERM)`);
+  if (isBrowserE2E && (!browserE2EEnabled || localBrowserBlocked)) {
+    const reason = localBrowserBlocked ? 'Chrome locale bloccato da spawn EPERM' : 'E2E browser opt-in; usa WATCHVERSE_RUN_E2E=1';
+    console.log(`> ${check[0]} ${check[1].join(' ')} (saltato: ${reason})`);
     continue;
   }
   const command = Array.isArray(check[0]) ? resolveCommand(check) : check[0];

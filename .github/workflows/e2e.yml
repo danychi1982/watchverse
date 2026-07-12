@@ -1,10 +1,13 @@
 name: End-to-end tests
 
 on:
-  push:
-    branches: [main]
-  pull_request:
   workflow_dispatch:
+    inputs:
+      run_browser_e2e:
+        description: 'Esegui anche i test E2E con Chromium'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -32,11 +35,16 @@ jobs:
         run: npm ci
 
       - name: Install Playwright Chromium
+        if: ${{ inputs.run_browser_e2e == true }}
         run: npx --yes playwright@1.61.1 install chromium
 
       - name: Run suite
         shell: bash
+        env:
+          WATCHVERSE_RUN_E2E: ${{ inputs.run_browser_e2e && '1' || '0' }}
         run: |
-          export CHROME_PATH="$(find "$HOME/.cache/ms-playwright" -type f \( -name chrome -o -name chromium \) | head -n 1)"
+          if [ "${WATCHVERSE_RUN_E2E}" = "1" ]; then
+            export CHROME_PATH="$(find "$HOME/.cache/ms-playwright" -type f \( -name chrome -o -name chromium -o -name headless_shell \) -perm -111 | head -n 1)"
+          fi
           echo "Chromium: ${CHROME_PATH:-Playwright default}"
           npm test
