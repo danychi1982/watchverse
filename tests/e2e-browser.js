@@ -11,13 +11,16 @@ function executablePath() {
 }
 
 async function openBrowser(chromium) {
-  if (process.env.WATCHVERSE_CDP_URL) return chromium.connectOverCDP(process.env.WATCHVERSE_CDP_URL);
+  const cdpCandidates = [process.env.WATCHVERSE_CDP_URL, 'http://127.0.0.1:9222', 'http://127.0.0.1:9223'].filter(Boolean);
+  for (const endpoint of cdpCandidates) {
+    try { return await chromium.connectOverCDP(endpoint); } catch { /* prova il prossimo endpoint */ }
+  }
   const path = executablePath();
   if (!path) throw new Error('Browser non trovato. Imposta WATCHVERSE_CDP_URL o CHROME_PATH.');
   try {
     return await chromium.launch({ executablePath: path, headless: true });
   } catch (error) {
-    if (error?.message?.includes('spawn EPERM')) throw new Error('Chrome bloccato da Windows (spawn EPERM). Avvia Chrome con --remote-debugging-port=9222 e imposta WATCHVERSE_CDP_URL=http://127.0.0.1:9222.');
+    if (error?.message?.includes('spawn EPERM')) throw new Error('Chrome bloccato da Windows (spawn EPERM). Il runner ha già provato le porte CDP locali 9222 e 9223; serve un browser eseguibile o una sessione CDP disponibile, senza privilegi amministrativi.');
     throw error;
   }
 }

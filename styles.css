@@ -4192,6 +4192,44 @@ html[data-theme="last-of-us"] .mini-reel {
   .media-card .card-actions > * { font-size:10px; }
 }
 
+/* Samsung/mobile detail pass: keep navigation readable and detail media bounded. */
+@media (max-width:720px) {
+  .bottom-nav .nav-item.active,
+  .bottom-nav .nav-item.active .nav-icon,
+  .bottom-nav .nav-item.active .nav-label {
+    background:var(--accent);
+    color:var(--on-accent);
+  }
+  .bottom-nav .nav-item.active { box-shadow:inset 0 0 0 1px rgba(255,255,255,.16); }
+  .detail-hero,
+  .detail-content,
+  .detail-info,
+  .two-column,
+  .detail-actions,
+  .detail-actions > * { max-width:100%; min-width:0; box-sizing:border-box; }
+  .detail-banner { display:none; }
+  .detail-hero.no-detail-banner .detail-content,
+  .detail-hero.has-detail-banner .detail-content { border-top:0; }
+  .detail-content { overflow:hidden; }
+  .detail-info h2,
+  .detail-info p,
+  .detail-info .original-title { overflow-wrap:anywhere; word-break:break-word; }
+  .cast-strip.cast-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+  .cast-strip.cast-grid .cast-card { overflow:hidden; }
+  .cast-strip.cast-grid .cast-photo { aspect-ratio:4 / 5; max-height:150px; }
+  .cast-strip.cast-grid .cast-photo img { object-fit:cover; object-position:center top; }
+  .cast-strip.cast-grid .cast-copy { overflow:hidden; }
+  .cast-strip.cast-grid .cast-copy strong,
+  .cast-strip.cast-grid .cast-copy small { overflow-wrap:anywhere; word-break:break-word; }
+}
+
+@media (max-width:380px) {
+  .cast-strip.cast-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+  .cast-strip.cast-grid .cast-copy { padding:7px; }
+  .cast-strip.cast-grid .cast-copy strong { font-size:11px; }
+  .cast-strip.cast-grid .cast-copy small { font-size:10px; }
+}
+
 /* Marchio Watchverse: la favicon scelta resta coerente con login e navigazione. */
 .brand-mark {
   color: transparent !important;
