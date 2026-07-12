@@ -436,3 +436,26 @@ La favicon puo essere anticipata se vogliamo una vittoria rapida, ma non sblocca
 | Proposte personalizzate senza duplicati della libreria | Media | Implementato | Daniela | Medio | Test manuale della sezione Cerca. |
 | Redirect dopo rimozione dal dettaglio | Media | Implementato | Daniela | Basso | Test manuale per Film e Serie. |
 | Filtro risultati pubblici senza persone o falsi positivi evidenti | Media | Parzialmente completato | Daniela | Medio | Validare le query reali e rifinire la soglia di pertinenza. |
+
+### Stato consolidato dopo l'ultimo rilascio
+
+Le righe storiche precedenti restano come tracciabilita. Per la gestione corrente fanno fede questi stati:
+
+| Nome intervento | Priorita | Stato | Owner | Effort | Cosa resta da fare |
+|---|---|---|---|---|---|
+| Sincronizzazione cloud di preferiti e modifiche profilo | Alta | Da fare | Codex | Medio | Analizzare il caso in cui un preferito non persiste dopo pulizia cache e correggere il merge cloud/local. |
+| Ricerca automatica senza perdita di focus | Alta | Parzialmente completato | Codex | Medio | La ricerca Serie e' corretta; verificare e uniformare tutti gli altri campi di ricerca automatica. |
+| IndexedDB come sola cache offline | Alta | Da fare | Codex | Medio | Completare la separazione tra dati cloud primari e cache locale. |
+| Retry metadati deciso dall'utente | Alta | Da fare | Codex | Medio | Eliminare il retry automatico al login e introdurre Riprova/Ignora per ora. |
+| Stabilizzazione test E2E GitHub Actions | Alta | Bloccato | Codex | Medio | Risolvere il gate di autenticazione; workflow sospeso per evitare run falliti. |
+| Audit mobile responsive | Alta | Da fare | Codex | Alto | Verifica completa su Samsung Galaxy S26+. |
+| Proposte personalizzate senza duplicati | Media | Parzialmente completato | Daniela | Medio | Il filtro applicativo e' presente; validare risultati reali e aggiungere una fonte di proposte esterna alla libreria. |
+| Ricerca pubblica pertinente | Media | Parzialmente completato | Daniela | Medio | Validare House of Cards e ricerche di persone; rifinire i falsi positivi. |
+| Feedback di caricamento globale | Media | Parzialmente completato | Daniela | Medio | Audit manuale su tutte le azioni asincrone e su rete lenta/mobile. |
+| Stato aggiornamento metadati esplicito | Media | Parzialmente completato | Daniela | Basso | Confermare visivamente stato in corso e completato. |
+| Conferma import sostitutivo applicativa | Media | Parzialmente completato | Daniela | Medio | Validare desktop e mobile. |
+| Contrasto globale | Media | Parzialmente completato | Daniela | Basso | Eseguire controllo a tappeto su temi e dispositivi. |
+| Mostra/nascondi PIN e password | Media | Implementato | Daniela | Basso | Solo verifica manuale dei modali gia' coperti dal componente comune. |
+| Redirect dopo rimozione | Media | Implementato | Daniela | Basso | Test manuale per Film e Serie. |
+| Trasparenza logo login | Bassa | Da fare | Codex | Basso | Uniformare lo sfondo dell'asset SVG con il contenitore. |
+| Favicon/PWA aggiornata | Bassa | Da fare | Codex | Basso | Verificare favicon, icone PWA e cache del service worker. |
