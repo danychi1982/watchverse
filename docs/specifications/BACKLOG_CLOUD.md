@@ -1,5 +1,7 @@
 # Backlog Watchverse
 
+> Stato corrente: la sezione **Stato corrente dopo le attivita autonome** in fondo al documento prevale sulle righe storiche.
+
 Questo file raccoglie le attivita completate, in corso e ancora aperte. Non rappresenta un piano temporale vincolante: priorita, stato, owner ed effort aiutano a decidere il prossimo intervento. Una voce si considera completata solo dopo:
 
 - implementazione completata;
@@ -78,6 +80,35 @@ Le seguenti voci hanno ricevuto un intervento tecnico in questa release. Restano
 | Prestazioni accesso e caricamento | Alta | Da fare | Codex | Alto | Misurare il bootstrap e spostare ulteriori caricamenti non indispensabili in background senza regressioni cloud. |
 | Responsive schede su Samsung Galaxy S26+ | Alta | Parzialmente completato | Daniela | Alto | Validare dettagli, cast, banner e overflow sul dispositivo target. |
 | Risultati Cerca solo film/serie | Media | Parzialmente completato | Daniela | Medio | Verificare che TMDB non mostri più persone e che i filtri/risultati unificati siano coerenti. |
+
+## Stato corrente dopo le attivita autonome — 12 luglio 2026
+
+Questa tabella prevale sulle righe storiche precedenti. Le attivita tecniche senza dipendenze esterne sono state chiuse; restano qui solo verifiche manuali, decisioni di Daniela o problemi che richiedono il dispositivo/ambiente reale.
+
+| Nome intervento | Priorita | Stato | Owner | Effort | Cosa resta da fare |
+|---|---|---|---|---|---|
+| Autenticazione, PIN e recupero password | Alta | Parzialmente completato | Daniela | Basso | Confermare recupero password dopo il rate limit Supabase e PIN su entrambi i dispositivi. |
+| Sincronizzazione cloud bidirezionale e conflitti | Alta | Parzialmente completato | Daniela | Alto | Eseguire il test con due dispositivi contemporanei e un conflitto reale. |
+| IndexedDB come sola cache offline | Alta | Parzialmente completato | Daniela | Alto | Verificare offline/online e disponibilita della libreria dopo refresh offline. |
+| Proxy TMDB/JustWatch, trailer, streaming e cinema | Alta | Parzialmente completato | Daniela | Alto | Verificare un campione reale e segnalare i titoli ancora incompleti. |
+| Audit mobile responsive | Alta | Parzialmente completato | Daniela | Alto | Testare Home, librerie, dettagli, profilo, import e ricerca su Samsung Galaxy S26+. |
+| Gestione tastiera nei campi di ricerca | Alta | Parzialmente completato | Daniela | Medio | Verificare su mobile Serie e Film; il codice preserva il campo, ma serve conferma reale. |
+| Accesso offline dopo refresh | Alta | KO da verificare | Daniela | Medio | Ripetere F5 offline con cache e sessione disponibili; documentare se il blocco resta. |
+| Stabilizzazione test E2E GitHub Actions | Alta | Bloccato | Daniela | Medio | Riattivare il workflow solo con fixture di test non sensibili; i browser E2E restano sospesi. |
+| Prestazioni accesso e caricamento | Alta | Da verificare | Daniela | Alto | Misurare login e apertura profilo su desktop/mobile. |
+| Copertura metadati bloccata su molti titoli | Alta | KO da approfondire | Codex | Medio | Analizzare diagnostica per fonte/titolo: il retry lascia 677 titoli da verificare e ha prodotto un errore. |
+| Contrasto e audit responsive finale | Alta | Parzialmente completato | Daniela | Medio | Verificare testi, focus, barra mobile e riepilogo importazione sui dispositivi reali. |
+| Rimozione non persistente dopo refresh | Alta | KO da approfondire | Codex | Medio | Verificare tombstone, merge cloud/cache e titolo ricomparso dopo Ctrl+F5. |
+| Aggiornamento vista dopo modifiche da altro dispositivo | Media | KO da verificare | Daniela | Medio | Confermare il refresh della sezione senza logout/login dopo modifica cloud esterna. |
+| Ricerca pubblica pertinente | Media | Parzialmente completato | Daniela | Medio | Verificare House of Cards; il catalogo condiviso ora richiede corrispondenza del titolo. |
+| Proposte personalizzate senza duplicati | Media | Parzialmente completato | Daniela | Medio | Verificare che non compaiano titoli gia nella libreria e valutare i suggerimenti esterni. |
+| Feedback di caricamento globale | Media | Parzialmente completato | Daniela | Medio | Verificare cambi sezione, filtri, retry metadati e click ripetuti su rete lenta/mobile. |
+| Stato aggiornamento metadati esplicito | Media | Parzialmente completato | Daniela | Basso | Confermare visivamente aggiornamento in corso e ciclo completato. |
+| Conferma import sostitutivo applicativa | Media | Parzialmente completato | Daniela | Medio | Verificare dialog interno, Annulla, Continua e blocco dello scroll. |
+| Mostra/nascondi password e PIN | Media | Parzialmente completato | Daniela | Basso | Controllare tutti i modali e la posizione interna dell'icona. |
+| Favicon e PWA | Bassa | Parzialmente completato | Daniela | Basso | Verificare favicon, manifest e installazione PWA su Android e GitHub Pages. |
+
+Nota di consolidamento: la fix per la persistenza delle rimozioni ora scrive un tombstone cloud con revisione e timestamp aggiornati; resta solo la verifica manuale. La copertura metadati resta invece un'analisi sui dati reali: il retry non riduce i titoli da verificare e va campionato dal pannello fonti.
 
 ## Stato sintetico
 
@@ -466,3 +497,22 @@ Le righe storiche precedenti restano come tracciabilita. Per la gestione corrent
 |---|---|---|---|---|---|
 | Retry metadati deciso dall'utente | Alta | Parzialmente completato | Daniela | Medio | Il retry automatico viene bloccato quando esistono errori persistenti; verificare il toast e il comando manuale. |
 | Favicon/PWA aggiornata | Bassa | Parzialmente completato | Daniela | Basso | Asset e query versionati; verificare cache PWA e icona installata sul dispositivo. |
+
+### Esito test manuale successivo
+
+| Nome intervento | Priorita | Stato | Owner | Effort | Cosa resta da fare |
+|---|---|---|---|---|---|
+| Accesso offline dopo F5 | Alta | KO da verificare | Codex | Medio | Dopo refresh offline desktop l'app torna ancora alla scelta profili. Ripristinare direttamente sessione, profilo, rotta e cache; verificare poi anche mobile. |
+
+| Ricerca Serie senza perdita di focus | Alta | Parzialmente completato | Daniela | Medio | Test desktop OK; resta da verificare il comportamento su mobile. |
+
+| Aggiornamento metadati senza risultati | Alta | KO da verificare | Codex | Medio | Analizzare perché retry e accessi a Home/Film riavviano o animano il ciclo senza aumentare la copertura. Conservare diagnostica per fonte e titolo. |
+| Interazioni pannello metadati non recepite | Media | KO da verificare | Codex | Basso | Rendere affidabili apertura, chiusura e pulsanti del pannello anche durante aggiornamenti o rerender asincroni. |
+
+| Refresh cloud al cambio sezione | Media | KO da verificare | Codex | Medio | Dopo una modifica su un altro dispositivo, aggiornare o invalidare la vista quando l'utente torna nella sezione senza richiedere logout/login o pulizia cache. |
+
+| Ricerca mobile con tastiera che si chiude | Alta | KO da verificare | Codex | Medio | Correggere il rerender della ricerca Serie che chiude/riapre la tastiera a ogni carattere; applicare la stessa soluzione alla ricerca Film e agli altri campi analoghi. |
+
+| Rimozione non persistente dopo refresh | Alta | KO da verificare | Codex | Medio | Dopo la rimozione, il titolo ricompare con Ctrl+F5. Verificare tombstone, sincronizzazione cloud e merge locale/cloud. |
+| Copertura metadati bloccata su molti titoli | Alta | KO da approfondire | Codex | Medio | Analizzare perché il retry non riduce i titoli da verificare e può aumentare gli errori; distinguere assenza legittima di fonte da errore tecnico. |
+| Ricerca di titoli rimossi dal profilo | Media | KO da verificare | Codex | Medio | Distinguere il catalogo condiviso dal catalogo del profilo: un titolo rimosso non deve essere presentato come già disponibile senza indicare chiaramente che è stato rimosso dal profilo. |

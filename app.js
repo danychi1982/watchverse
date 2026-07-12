@@ -470,9 +470,14 @@
   }
   function dbDelete(store, id) {
     const valuePromise = dbGetAll(store).then(values => values.find(value => value.id === id));
-    const finish = value => { void window.WatchverseCloudSync?.deleteRecord(currentProfile(), store, value).catch(error => console.warn('Watchverse cloud delete sync:', error)); };
-    if (state.db?.memory) { const value = memoryStores[store].get(id); memoryStores[store].delete(id); finish(value); return Promise.resolve(); }
-    return valuePromise.then(value => new Promise((resolve, reject) => { const r = dbTx(store, 'readwrite').delete(id); r.onsuccess = () => { finish(value); resolve(); }; r.onerror = () => reject(r.error); }));
+    const finish = value => {
+      if (!value) return;
+      // Una rimozione esplicita deve vincere sul record cloud precedente e lasciare un tombstone persistente.
+      const deletion = { ...value, revision: Number(value.revision || 0) + 1, updatedAt: new Date().toISOString() };
+      return window.WatchverseCloudSync?.deleteRecord(currentProfile(), store, deletion).catch(error => console.warn('Watchverse cloud delete sync:', error));
+    };
+    if (state.db?.memory) { const value = memoryStores[store].get(id); memoryStores[store].delete(id); return Promise.resolve(finish(value)); }
+    return valuePromise.then(value => new Promise((resolve, reject) => { const r = dbTx(store, 'readwrite').delete(id); r.onsuccess = () => { Promise.resolve(finish(value)).then(resolve, reject); }; r.onerror = () => reject(r.error); }));
   }
   function dbDeleteLocal(store, id) {
     if (state.db?.memory) { memoryStores[store].delete(id); return Promise.resolve(); }
@@ -714,9 +719,17 @@
   }
   function sharedCatalogSearch(query, limit = 12) {
     const q = normalizeSearch(query); if (!q) return [];
+    const queryTokens = q.split(' ').filter(token => token.length >= 2);
+    const matchesCatalogTitle = (data = {}) => {
+      const fields = [data.title, data.originalTitle, ...(data.aliases || [])]
+        .filter(Boolean)
+        .map(value => normalizeSearch(value))
+        .filter(Boolean);
+      return fields.some(field => field === q || (queryTokens.length > 1 && queryTokens.every(token => field.split(' ').includes(token))));
+    };
     return state.catalogEntries.filter(entry => {
       const data = entry.data || {};
-      return normalizeSearch([data.title, data.originalTitle, ...(data.aliases || [])].filter(Boolean).join(' | ')).includes(q);
+      return matchesCatalogTitle(data);
     }).sort((a,b) => String(a.data?.title || '').localeCompare(String(b.data?.title || ''), 'it')).slice(0, limit).map(entry => ({
       kind: entry.kind === 'series' ? 'tv' : 'movie', id: entry.id, catalogEntryId: entry.id, title: entry.data?.title || 'Titolo', originalTitle: entry.data?.originalTitle || null,
       year: entry.data?.year || '', overview: entry.data?.overview || '', poster: entry.data?.poster || null, cached: true
