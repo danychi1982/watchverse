@@ -37,6 +37,6 @@ jobs:
       - name: Run suite
         shell: bash
         run: |
-          export CHROME_PATH="$(find "$HOME/.cache/ms-playwright" -type f -path '*/chrome-linux/chrome' | head -n 1)"
+          export CHROME_PATH="$(find "$HOME/.cache/ms-playwright" -type f -name chrome | head -n 1)"
           test -n "$CHROME_PATH"
           npm test

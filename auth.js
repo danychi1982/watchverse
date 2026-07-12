@@ -169,9 +169,10 @@
 
   async function sendRecoveryEmail(email) {
     if (!cloudConfigured()) throw new Error('Il recupero via email sarà attivo dopo la configurazione Supabase.');
+    const recoveryRedirect = String(config.recoveryRedirectUrl || '').trim() || 'https://danychi1982.github.io/watchverse/';
     await cloudRequest('/recover', {
       method: 'POST',
-      body: JSON.stringify({ email, redirect_to: config.recoveryRedirectUrl || `${location.origin}${location.pathname}` })
+      body: JSON.stringify({ email, redirect_to: recoveryRedirect })
     });
   }
 
