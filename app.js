@@ -66,9 +66,8 @@
   function mediaSearchText(item) { return normalizeSearch([item.title, item.originalTitle, ...(item.aliases || [])].filter(Boolean).join(' | ')); }
   function matchesMediaSearch(item, query) { const q = normalizeSearch(query); return !q || mediaSearchText(item).includes(q); }
   function mergeAliases(...groups) { const seen = new Set(); return groups.flat(Infinity).filter(Boolean).map(String).map(x => x.trim()).filter(x => { const k = normalizeSearch(x); if (!k || seen.has(k)) return false; seen.add(k); return true; }); }
-  // TV Time usa cinque codici interni per il giudizio a 5 livelli.
-  // La conversione mantiene il significato crescente: Brutto → Wow.
-  const TVTIME_LEGACY_RATING_MAP = Object.freeze({ '1': 1, '27': 2, '28': 3, '29': 4, '3': 5 });
+  // TV Time usa cinque codici interni; Watchverse li presenta sulla scala Showly 1–10.
+  const TVTIME_LEGACY_RATING_MAP = Object.freeze({ '1': 2, '27': 4, '28': 6, '29': 8, '3': 10 });
   function legacyVoteCodeToRating(code) { return TVTIME_LEGACY_RATING_MAP[String(code || '').trim()] || 0; }
 
   const DEFAULT_PROFILES = [
@@ -424,6 +423,11 @@
     if (value && typeof value === 'object') Object.assign(value, stamped);
     return stamped;
   }
+  function ensureLibraryAddedAt(item, fallback = null) {
+    if (!item || item.addedAt) return false;
+    item.addedAt = item.createdAt || item.importedAt || (!item.watched ? item.updatedAt : item.watchedAt) || item.updatedAt || fallback || new Date().toISOString();
+    return true;
+  }
   function dbGetAll(store) {
     if (state.db?.memory) return Promise.resolve([...memoryStores[store].values()]);
     return new Promise((resolve, reject) => { const r = dbTx(store).getAll(); r.onsuccess = () => resolve(r.result); r.onerror = () => reject(r.error); });
@@ -713,10 +717,10 @@
     if (!entry) throw new Error('Il titolo condiviso non è più disponibile.');
     const type = entry.kind; const data = entry.data || {}; const base = String(entry.id).replace(/^catalog\|/, '').replace(/[^a-z0-9:_-]+/gi, '-');
     const item = type === 'series' ? {
-      id: profileScoped(`shared-${base}`), profileId:state.profileId, mediaType:'tv', title:data.title || result.title,
+      id: profileScoped(`shared-${base}`), profileId:state.profileId, mediaType:'tv', title:data.title || result.title, addedAt:new Date().toISOString(),
       status:'plan', favorite:false, rating:0, notes:'', seasons:[], providerGroups:{streaming:[],rent:[],buy:[]}
     } : {
-      id: profileScoped(`shared-${base}`), profileId:state.profileId, mediaType:'movie', title:data.title || result.title,
+      id: profileScoped(`shared-${base}`), profileId:state.profileId, mediaType:'movie', title:data.title || result.title, addedAt:new Date().toISOString(),
       watched:false, state:'watchlist', favorite:false, rating:0, notes:'', providerGroups:{streaming:[],rent:[],buy:[]}
     };
     mergeSharedCatalogData(type, item, entry);
@@ -810,6 +814,10 @@
     await migrateLegacyRecordsIntoSharedCatalog(series, movies);
     state.series = series.filter(x => x.profileId === state.profileId);
     state.movies = movies.filter(x => x.profileId === state.profileId);
+    const seriesAddedAtUpdates = state.series.filter(item => ensureLibraryAddedAt(item));
+    const movieAddedAtUpdates = state.movies.filter(item => ensureLibraryAddedAt(item));
+    if (seriesAddedAtUpdates.length) await dbBulkPut('series', seriesAddedAtUpdates);
+    if (movieAddedAtUpdates.length) await dbBulkPut('movies', movieAddedAtUpdates);
     for (const item of state.series) mergeSharedCatalogData('series', item, findSharedCatalogEntry('series', item));
     for (const item of state.movies) mergeSharedCatalogData('movie', item, findSharedCatalogEntry('movie', item));
     state.progress = progress.filter(x => x.profileId === state.profileId);
@@ -1198,7 +1206,7 @@
     return `<p>${onlyToday ? 'Oggi risultano:' : 'Nei prossimi sette giorni risultano:'}</p><ul>${items.map(item => `<li><a href="#/series/${encodeURIComponent(item.seriesId)}"><strong>${esc(item.seriesTitle)}</strong> · S${pad2(item.season)} E${pad2(item.episode)}${item.title ? ` · ${esc(item.title)}` : ''}</a><br><small>${esc(item.schedule.italy?.provider || item.schedule.original?.network || item.network || 'Fonte non indicata')} · ${esc(fmtDate(item.schedule.dateKey))}</small></li>`).join('')}</ul>`;
   }
   function aivengersMovieSuggestion() {
-    const liked = state.movies.filter(movie => movie.favorite || Number(movie.rating || 0) >= 4);
+    const liked = state.movies.filter(movie => movie.favorite || Number(movie.rating || 0) >= 8);
     const genreWeights = new Map();
     liked.forEach(movie => (movie.genres || []).forEach(genre => genreWeights.set(genre, (genreWeights.get(genre) || 0) + 1)));
     const candidates = state.movies.filter(movie => !movie.watched).map(movie => ({
@@ -1604,7 +1612,6 @@
           ${isSeries ? `<button data-action="next">${nextEpisode(item) ? 'Prossimo' : 'Completata'}</button>` : `<button class="${item.watched ? 'watched' : ''}" data-action="watched">${item.watched ? '✓ Visto' : 'Segna visto'}</button>`}
           <a class="secondary" href="${href}" style="display:grid;place-items:center;padding:0 10px">Dettagli</a>
         </div>
-        ${(!isSeries && !item.watched) || (isSeries && !['completed','dropped'].includes(item.status)) ? `<button class="card-remove ghost" data-action="remove" aria-label="Rimuovi ${esc(item.title)} dalla libreria">Rimuovi dalla libreria</button>` : ''}
       </div>
     </article>`;
   }
@@ -1624,9 +1631,10 @@
   function statusLabel(status) {
     return ({ watching: 'IN CORSO', plan: 'DA INIZIARE', watchlist: 'DA INIZIARE', completed: 'COMPLETATA', paused: 'IN PAUSA', dropped: 'ABBANDONATA' })[status] || 'LIBRERIA';
   }
+  // Showly-style 10-point rating control.
   function starRating(value = 0, id = '', editable = true) {
-    const rounded = Math.round(Number(value || 0));
-    return `<div class="star-rating" data-rating-id="${esc(id)}">${[1,2,3,4,5].map(n => `<button type="button" class="${n <= rounded ? 'on' : ''}" data-value="${n}" ${editable ? '' : 'disabled'} aria-label="${n} stelle">★</button>`).join('')}<span class="rating-value">${value ? `${value}/5` : 'Nessun voto'}</span></div>`;
+    const rounded = Math.max(0, Math.min(10, Math.round(Number(value || 0))));
+    return `<div class="star-rating" data-rating-id="${esc(id)}">${Array.from({length:10}, (_, i) => i + 1).map(n => `<button type="button" class="${n <= rounded ? 'on' : ''}" data-value="${n}" ${editable ? '' : 'disabled'} aria-label="${n} stelle su 10">★</button>`).join('')}<span class="rating-value">${value ? `${value}/10` : 'Nessun voto'}</span></div>`;
   }
   function preferredCinemas() {
     return Array.isArray(state.settings.preferredCinemas) && state.settings.preferredCinemas.length ? state.settings.preferredCinemas : structuredClone(DEFAULT_CINEMAS);
@@ -1797,6 +1805,21 @@
     rebuildIndexes();
     showToast('Titolo rimosso dalla libreria', item.title, '×');
     route();
+  }
+  function addDetailRemovalAction(kind, item) {
+    const panel = $('#main aside .content-card');
+    if (!panel || !item) return;
+    const button = document.createElement('button');
+    button.className = 'danger-button detail-remove-button';
+    button.type = 'button';
+    button.textContent = 'Rimuovi dalla libreria';
+    button.setAttribute('aria-describedby', 'detail-remove-help');
+    const help = document.createElement('small');
+    help.id = 'detail-remove-help';
+    help.className = 'danger-help';
+    help.textContent = 'Azione definitiva: richiede conferma.';
+    panel.append(button, help);
+    button.addEventListener('click', () => removeFromLibrary(kind, item.id));
   }
   async function toggleEpisode(seriesId, season, episode, episodeTitle = '') {
     const existing = progressRecord(seriesId, season, episode);
@@ -2149,7 +2172,7 @@
       .slice(0, 12);
 
     const upcoming = upcomingEpisodes(state.homeTab === 'upcoming' ? 30 : 7);
-    const watchFilms = sortMovieItems(state.movies.filter(m => !m.watched), 'recent').slice(0, 8);
+    const watchFilms = sortMovieItems(state.movies.filter(m => !m.watched), 'recent', 'watchlist').slice(0, 8);
 
     const episodeMediaCard = ({ s, ep, watchedAt = null }, kicker = 'Continua a guardare') => {
       const prog = seriesProgress(s);
@@ -2225,12 +2248,12 @@
     });
     return result;
   }
-  function sortMovieItems(items, mode = state.movieSort) {
+  function sortMovieItems(items, mode = state.movieSort, filter = state.movieFilter) {
     const result = [...items];
     result.sort((a, b) => {
       if (mode === 'rating') return Number(b.rating || 0) - Number(a.rating || 0) || dateMs(b.watchedAt) - dateMs(a.watchedAt) || a.title.localeCompare(b.title, 'it');
       if (mode === 'recent') {
-        const timestamp = state.movieFilter === 'watchlist' ? item => item.addedAt : item => item.watchedAt || item.addedAt;
+        const timestamp = filter === 'watchlist' ? item => item.addedAt : item => item.watchedAt || item.addedAt;
         return dateMs(timestamp(b)) - dateMs(timestamp(a)) || a.title.localeCompare(b.title, 'it');
       }
       return a.title.localeCompare(b.title, 'it');
@@ -2331,7 +2354,7 @@
     score += (candidate.cast || []).filter(x => seedCast.has(normalizeSearch(x.name))).length * 3;
     if (seed.year && candidate.year && Math.abs(Number(seed.year)-Number(candidate.year)) <= 5) score += 1;
     if (candidate.favorite) score += 1;
-    if (Number(candidate.rating || 0) >= 4) score += 1;
+    if (Number(candidate.rating || 0) >= 8) score += 1;
     return score;
   }
   function similarSuggestions(item, kind, limit = 8) {
@@ -2339,10 +2362,10 @@
     return pool.map(row=>({...row,score:recommendationScore(item,row.item,kind,row.kind)})).filter(row=>row.score>0).sort((a,b)=>b.score-a.score||String(a.item.title).localeCompare(String(b.item.title),'it')).slice(0,limit);
   }
   function profileRecommendations(limit = 10) {
-    const liked=[...state.series.map(x=>({item:x,kind:'series'})),...state.movies.map(x=>({item:x,kind:'movie'}))].filter(row=>row.item.favorite||Number(row.item.rating||0)>=4);
+    const liked=[...state.series.map(x=>({item:x,kind:'series'})),...state.movies.map(x=>({item:x,kind:'movie'}))].filter(row=>row.item.favorite||Number(row.item.rating||0)>=8);
     if(!liked.length)return [];
     const excluded=new Set(liked.map(row=>row.item.id));
-    const candidates=[...state.series.map(x=>({item:x,kind:'series'})),...state.movies.map(x=>({item:x,kind:'movie'}))].filter(row=>!excluded.has(row.item.id)&&!(row.kind==='movie'&&row.item.watched&&Number(row.item.rating||0)<4));
+    const candidates=[...state.series.map(x=>({item:x,kind:'series'})),...state.movies.map(x=>({item:x,kind:'movie'}))].filter(row=>!excluded.has(row.item.id)&&!(row.kind==='movie'&&row.item.watched&&Number(row.item.rating||0)<8));
     return candidates.map(row=>{let score=0;for(const seed of liked)score=Math.max(score,recommendationScore(seed.item,row.item,seed.kind,row.kind));return{...row,score};}).filter(row=>row.score>0).sort((a,b)=>b.score-a.score||String(a.item.title).localeCompare(String(b.item.title),'it')).slice(0,limit);
   }
   function suggestionReason(seed, candidate) {
@@ -2384,7 +2407,7 @@
       ${ep?`<article class="content-card" style="margin-bottom:18px"><span class="kicker">Continua il monitoraggio</span><h3>S${pad2(ep.season)} E${pad2(ep.episode)} · ${esc(ep.title)}</h3><p>${esc(ep.overview||'')}</p>${ep.airDate?`<p class="season-meta">Uscita: ${fmtDate(ep.airDate)}</p>`:''}<button class="primary" id="continueEpisode">✓ Segna visto</button></article>`:''}
       ${(s.seasons||[]).slice().sort((a,b)=>a.number-b.number).map(season=>{const eps=(season.episodes||[]).slice().sort((a,b)=>a.episode-b.episode);const watched=eps.filter(e=>isEpisodeWatched(s.id,e.season,e.episode)).length;return `<section class="season"><button class="season-head" data-season-toggle="${season.number}" aria-expanded="true" aria-controls="season-body-${season.number}"><span><strong>${esc(season.name||`Stagione ${season.number}`)}</strong><br><span class="season-meta">${watched}/${eps.length} episodi visti</span></span><span>⌄</span></button><div class="episode-list" id="season-body-${season.number}" data-season-body="${season.number}">${eps.map(e=>`<article class="episode-row"><div class="episode-thumb">${e.image?`<img src="${esc(e.image)}" alt="" loading="lazy" decoding="async">`:`S${pad2(e.season)}E${pad2(e.episode)}`}</div><div><h4>${esc(e.title||`Episodio ${e.episode}`)}</h4><p>${e.airDate?fmtDate(e.airDate)+' · ':''}${e.runtime||50} min</p>${e.overview?`<small>${esc(e.overview.slice(0,180))}</small>`:''}</div><button class="watch-check ${isEpisodeWatched(s.id,e.season,e.episode)?'watched':''}" data-ep="${e.episode}" data-season="${e.season}" data-title="${esc(e.title||'')}" aria-label="${isEpisodeWatched(s.id,e.season,e.episode)?'Segna come non visto':'Segna come visto'}: S${pad2(e.season)} E${pad2(e.episode)} ${esc(e.title||'')}">✓</button></article>`).join('')}</div></section>`;}).join('')||'<div class="empty-state"><h3>Nessun episodio disponibile</h3><p>L’aggiornamento pubblico verrà tentato automaticamente quando sei online.</p></div>'}</section>`;
     setMain(`${detailHero(s,'series')}<div class="tabbar"><button class="tab-button ${state.detailTab==='info'?'active':''}" data-detail-tab="info">Info</button><button class="tab-button ${state.detailTab==='episodes'?'active':''}" data-detail-tab="episodes">Episodi</button></div>${state.detailTab==='info'?info:episodes}`);
-    if(state.detailTab==='info'){bindProgrammingActions(s,'series');bindHorizontalRails($('#main'));}
+    if(state.detailTab==='info'){bindProgrammingActions(s,'series');bindHorizontalRails($('#main'));addDetailRemovalAction('series',s);}
     $$('[data-detail-tab]').forEach(b=>b.addEventListener('click',()=>{state.detailTab=b.dataset.detailTab;renderSeriesDetail(id);}));
     $('#detailFavorite').addEventListener('click',()=>toggleFavorite('series',id));
     $('#detailMainAction').addEventListener('click',()=>{const n=nextEpisode(s);if(n)toggleEpisode(s.id,n.season,n.episode,n.title);});
@@ -2415,6 +2438,7 @@
     </div><aside><section class="content-card"><h3>La tua visione</h3><div class="form-field"><label>Voto personale</label>${starRating(m.rating,m.id)}</div><div class="form-field" style="margin-top:16px"><label for="watchedDate">Data visione</label><input id="watchedDate" type="date" value="${m.watchedAt?isoDate(m.watchedAt):''}"></div><div class="form-field" style="margin-top:16px"><label for="movieNotes">Note</label><textarea id="movieNotes" placeholder="Cosa ne pensi?">${esc(m.notes||'')}</textarea></div><button class="primary" id="saveMovieMeta" style="width:100%;margin-top:14px">Salva</button><button class="secondary" id="enrichMoviePublic" style="width:100%;margin-top:10px">↻ Aggiorna locandina, trama e cast</button>${(state.settings.tmdbToken||(window.WATCHVERSE_CONFIG||{}).tmdbProxyUrl)?'<button class="ghost" id="enrichMovieTmdb" style="width:100%;margin-top:10px">Aggiorna dati TMDB/JustWatch</button>':''}</section></aside></div>`);
     bindProgrammingActions(m,'movie');
     bindHorizontalRails($('#main'));
+    addDetailRemovalAction('movies',m);
     $('#detailFavorite').addEventListener('click',()=>toggleFavorite('movies',id));
     $('#detailMainAction').addEventListener('click',()=>toggleMovieWatched(id));
     $('#detailEdit').addEventListener('click',()=>openEditModal(m,'movie'));
@@ -2760,15 +2784,13 @@
 
   async function searchTMDB(query) {
     if (!query.trim()) return [];
-    const [movies,tv,people] = await Promise.all([
+    const [movies,tv] = await Promise.all([
       tmdbFetch('/search/movie',{query,language:'it-IT',region:'IT',include_adult:'false'}),
-      tmdbFetch('/search/tv',{query,language:'it-IT',include_adult:'false'}),
-      tmdbFetch('/search/person',{query,language:'it-IT',include_adult:'false'})
+      tmdbFetch('/search/tv',{query,language:'it-IT',include_adult:'false'})
     ]);
     return [
       ...(movies.results||[]).slice(0,8).map(x=>({kind:'movie',id:x.id,title:x.title,year:(x.release_date||'').slice(0,4),overview:x.overview,poster:tmdbPoster(x.poster_path)})),
       ...(tv.results||[]).slice(0,8).map(x=>({kind:'tv',id:x.id,title:x.name,year:(x.first_air_date||'').slice(0,4),overview:x.overview,poster:tmdbPoster(x.poster_path)})),
-      ...(people.results||[]).slice(0,6).map(x=>({kind:'person',id:x.id,title:x.name,year:'Persona',overview:(x.known_for||[]).map(k=>k.title||k.name).filter(Boolean).join(', '),poster:tmdbPoster(x.profile_path)}))
     ];
   }
 
@@ -2826,7 +2848,7 @@
     const id=kind==='series'?profileScoped(`public-tv-${x.publicProvider||'tvmaze'}-${x.id||slug(x.title)}`):profileScoped(`public-movie-${x.publicProvider||'wiki'}-${x.id||slug(x.title)}`);
     const store=kind==='series'?'series':'movies';
     if((kind==='series'?state.series:state.movies).some(item=>item.id===id||mergeAliases(item.title,item.originalTitle,item.aliases).some(t=>mergeAliases(x.title,x.originalTitle,x.aliases).some(u=>normalizeTitleForMatch(t)===normalizeTitleForMatch(u))))){throw new Error('Il titolo è già presente nella libreria.');}
-    const item=kind==='series'?{id,profileId:state.profileId,mediaType:'tv',title:x.title,originalTitle:x.originalTitle||null,aliases:mergeAliases(x.aliases||[],x.title,x.originalTitle),year:Number(x.year)||null,tvdbId:x.tvdbId||null,publicMetadata:{provider:x.publicProvider||'tvmaze',providerId:x.id,parts:{}},overview:x.overview||'Metadati in aggiornamento.',genres:[],status:'plan',favorite:false,rating:0,poster:x.poster||null,posterGradient:gradient(x.title),backdropGradient:gradient(x.title+' hero'),providerGroups:{streaming:[],rent:[],buy:[]},cast:[],seasons:[]}:{id,profileId:state.profileId,mediaType:'movie',title:x.title,originalTitle:x.originalTitle||null,aliases:mergeAliases(x.aliases||[],x.title,x.originalTitle),year:Number(x.year)||null,publicMetadata:{provider:x.publicProvider||'wikipedia',providerId:x.id,parts:{}},overview:x.overview||'Metadati in aggiornamento.',genres:[],runtime:null,watched:false,state:'watchlist',favorite:false,rating:0,poster:x.poster||null,posterGradient:gradient(x.title),backdropGradient:gradient(x.title+' hero'),providerGroups:{streaming:[],rent:[],buy:[]},cast:[],notes:''};
+    const item=kind==='series'?{id,profileId:state.profileId,mediaType:'tv',title:x.title,addedAt:new Date().toISOString(),originalTitle:x.originalTitle||null,aliases:mergeAliases(x.aliases||[],x.title,x.originalTitle),year:Number(x.year)||null,tvdbId:x.tvdbId||null,publicMetadata:{provider:x.publicProvider||'tvmaze',providerId:x.id,parts:{}},overview:x.overview||'Metadati in aggiornamento.',genres:[],status:'plan',favorite:false,rating:0,poster:x.poster||null,posterGradient:gradient(x.title),backdropGradient:gradient(x.title+' hero'),providerGroups:{streaming:[],rent:[],buy:[]},cast:[],seasons:[]}:{id,profileId:state.profileId,mediaType:'movie',title:x.title,addedAt:new Date().toISOString(),originalTitle:x.originalTitle||null,aliases:mergeAliases(x.aliases||[],x.title,x.originalTitle),year:Number(x.year)||null,publicMetadata:{provider:x.publicProvider||'wikipedia',providerId:x.id,parts:{}},overview:x.overview||'Metadati in aggiornamento.',genres:[],runtime:null,watched:false,state:'watchlist',favorite:false,rating:0,poster:x.poster||null,posterGradient:gradient(x.title),backdropGradient:gradient(x.title+' hero'),providerGroups:{streaming:[],rent:[],buy:[]},cast:[],notes:''};
     await dbPut(store,item);(kind==='series'?state.series:state.movies).push(item);rebuildIndexes();
     await enrichWithPublicMetadata(kind,item,{includeCast:true});
     return item;
@@ -2993,8 +3015,8 @@
     const type=kind==='movie'?'movie':'series';
     const store=type==='movie'?'movies':'series';
     const item=type==='movie'
-      ? {id:profileScoped(`tmdb-movie-${id}`),profileId:state.profileId,mediaType:'movie',tmdbId:Number(id),title:'Film',rating:0,watched:false,favorite:false,state:'watchlist',providerGroups:{streaming:[],rent:[],buy:[]},cast:[],notes:''}
-      : {id:profileScoped(`tmdb-tv-${id}`),profileId:state.profileId,mediaType:'tv',tmdbId:Number(id),title:'Serie TV',status:'plan',favorite:false,rating:0,providerGroups:{streaming:[],rent:[],buy:[]},cast:[],seasons:[]};
+      ? {id:profileScoped(`tmdb-movie-${id}`),profileId:state.profileId,mediaType:'movie',tmdbId:Number(id),title:'Film',addedAt:new Date().toISOString(),rating:0,watched:false,favorite:false,state:'watchlist',providerGroups:{streaming:[],rent:[],buy:[]},cast:[],notes:''}
+      : {id:profileScoped(`tmdb-tv-${id}`),profileId:state.profileId,mediaType:'tv',tmdbId:Number(id),title:'Serie TV',addedAt:new Date().toISOString(),status:'plan',favorite:false,rating:0,providerGroups:{streaming:[],rent:[],buy:[]},cast:[],seasons:[]};
     const collection=type==='movie'?state.movies:state.series;
     if(collection.some(existing=>Number(existing.tmdbId)===Number(id)))throw new Error('Il titolo è già presente nella libreria.');
     const cached=findSharedCatalogEntry(type,item);
@@ -3115,7 +3137,7 @@
   }
   function topMoviesHtml(items) {
     if (!items.length) return '<div class="chart-empty"><strong>Nessun film votato</strong><p>Assegna un voto dalla scheda di dettaglio del film.</p></div>';
-    return `<div class="horizontal-bars">${items.map(item => `<div class="hbar-row"><span>${esc(item.title)}</span><div class="hbar-track"><div class="hbar-fill" style="width:${Number(item.rating) / 5 * 100}%"></div></div><strong>★ ${Number(item.rating).toLocaleString('it-IT', { maximumFractionDigits: 1 })}</strong></div>`).join('')}</div>`;
+    return `<div class="horizontal-bars">${items.map(item => `<div class="hbar-row"><span>${esc(item.title)}</span><div class="hbar-track"><div class="hbar-fill" style="width:${Number(item.rating) / 10 * 100}%"></div></div><strong>★ ${Number(item.rating).toLocaleString('it-IT', { maximumFractionDigits: 1 })}/10</strong></div>`).join('')}</div>`;
   }
   function statCard(label, value, note = '') { return `<article class="stat-card"><span>${esc(label)}</span><strong>${esc(value)}</strong>${note ? `<small>${esc(note)}</small>` : ''}</article>`; }
   function renderStatsOverview(st) {
@@ -3177,7 +3199,7 @@
         if(isMovie){
           const year=Number(r.year)||null,imdb=String(r.imdb_id||r.imdbId||'').trim()||null,tmdb=Number(r.tmdb_id||r.tmdbId)||null;
           const key=imdb?`imdb:${imdb}`:tmdb?`tmdb:${tmdb}`:`title:${slug(title)}:${year||''}`;let m=movieByKey.get(key);
-          if(m){report.duplicates++;}else{m={id:profileScoped(`movie-import-${slug(title)}-${year||'na'}-${imdb||tmdb||uid('m')}`),profileId:state.profileId,mediaType:'movie',title,year,imdbId:imdb,tmdbId:tmdb,overview:'Importato dalla cronologia. Arricchisci con TMDB per ottenere descrizione, cast e piattaforme.',genres:[],runtime:null,posterGradient:gradient(title),backdropGradient:gradient(title+' hero'),providerGroups:{streaming:[],rent:[],buy:[]},cast:[],favorite:String(r.favorite).toLowerCase()==='true',rating:Number(r.rating)||0,watched:true,state:'watched',watchedAt:r.watched_at||r.watchedAt||new Date().toISOString(),notes:r.review||r.notes||''};movieByKey.set(key,m);report.importedMovies++;}
+          if(m){report.duplicates++;}else{m={id:profileScoped(`movie-import-${slug(title)}-${year||'na'}-${imdb||tmdb||uid('m')}`),profileId:state.profileId,mediaType:'movie',title,addedAt:new Date().toISOString(),year,imdbId:imdb,tmdbId:tmdb,overview:'Importato dalla cronologia. Arricchisci con TMDB per ottenere descrizione, cast e piattaforme.',genres:[],runtime:null,posterGradient:gradient(title),backdropGradient:gradient(title+' hero'),providerGroups:{streaming:[],rent:[],buy:[]},cast:[],favorite:String(r.favorite).toLowerCase()==='true',rating:Number(r.rating)||0,watched:true,state:'watched',watchedAt:r.watched_at||r.watchedAt||new Date().toISOString(),notes:r.review||r.notes||''};movieByKey.set(key,m);report.importedMovies++;}
           m.watched=true;m.state='watched';m.watchedAt=r.watched_at||r.watchedAt||m.watchedAt||new Date().toISOString();if(Number(r.rating))m.rating=Number(r.rating);if(r.review)m.notes=r.review;if(String(r.favorite).toLowerCase()==='true')m.favorite=true;changedMovies.set(m.id,m);
         }else if(isEpisode){
           const skey=slug(title);let s=seriesByKey.get(skey);const seasonNo=Number(r.season)||0,episodeNo=Number(r.episode)||0;if(!seasonNo||!episodeNo){report.errors++;continue;}
@@ -3258,7 +3280,7 @@
       ${importCountCard('Film da vedere',c.watchlistMovies,'watchlist')}
       ${importCountCard('Serie preferite',c.favoriteSeries,'preferiti')}
       ${importCountCard('Film preferiti',c.favoriteMovies,'preferiti')}
-      ${importCountCard('Voti storici',c.legacyMovieVotes,'convertiti nella scala 1–5 stelle')}
+      ${importCountCard('Voti storici',c.legacyMovieVotes,'convertiti nella scala 1–10 stelle')}
     </div>`;
   }
   function operationProgressHtml(status='Preparazione…'){
@@ -3290,7 +3312,7 @@
         ${resume?.status==='running'?'<p class="notice success-notice">È stata rilevata un’importazione interrotta dello stesso file. Il prossimo avvio manterrà i dati già salvati e importerà solo gli elementi mancanti.</p>':''}
         <label class="auth-check import-replace-option"><input id="replaceProfileData" type="checkbox" checked> <span><strong>Sostituisci i dati attuali del profilo</strong><small>Consigliato per il primo import: elimina i dati già presenti e le vecchie importazioni del solo profilo ${esc(profile.name)}.</small></span></label>
         <details class="import-details"><summary>Dettagli tecnici e privacy</summary><p>${g.recognizedFiles.length} file utili riconosciuti; ${g.unrecognized.length} file tecnici ignorati.</p><p><strong>File privati esclusi automaticamente (${g.ignoredSensitive.length}):</strong></p><ul class="privacy-file-list">${g.ignoredSensitive.map(n=>`<li>${esc(n)}</li>`).join('')}</ul></details>
-        <p class="notice warning">I codici di voto storici di TV Time vengono conservati come dato originale, ma non trasformati automaticamente in stelle perché lo ZIP non ne documenta la scala.</p>
+        <p class="notice warning">I codici di voto storici di TV Time vengono conservati come dato originale e convertiti nei valori equivalenti della scala Watchverse da 1 a 10.</p>
         <div class="modal-actions import-preview-actions"><button class="ghost" id="cancelGdpr">Annulla</button><button class="primary" id="confirmGdprImport">Importa ${Number(total).toLocaleString('it-IT')} elementi in ${esc(profile.name)}</button></div></div>`:''}
       ${p?`<div class="gdpr-banner" id="genericPreviewCard"><span class="success-kicker">✓ ANALISI COMPLETATA</span><h3>File pronto per l’importazione</h3><div class="import-summary"><article class="mini-card"><span>Righe</span><strong>${p.rows.length.toLocaleString('it-IT')}</strong></article><article class="mini-card"><span>Film</span><strong>${p.movieRows.toLocaleString('it-IT')}</strong></article><article class="mini-card"><span>Episodi</span><strong>${p.episodeRows.toLocaleString('it-IT')}</strong></article><article class="mini-card"><span>Altro</span><strong>${p.other}</strong></article></div><div class="notice">File: <strong>${esc(p.sourceName)}</strong>. Verranno mantenute date di visione, rating, recensioni e identificativi disponibili.</div><div class="modal-actions"><button class="ghost" id="cancelPreview">Annulla</button><button class="primary" id="confirmImport">Importa ora</button></div></div>`:''}</section>
       <section class="content-card section"><div class="section-head"><div><h2>Esporta e backup</h2><p>Formati leggibili e trasferibili, senza paywall.</p></div></div>
@@ -3307,7 +3329,12 @@
     const dz=$('#dropzone');$('#chooseImport').addEventListener('click',()=>$('#importInput').click());
     ['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('drag');}));['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('drag');}));dz.addEventListener('drop',e=>handleImportFile(e.dataTransfer.files[0]));
     if($('#cancelGdpr'))$('#cancelGdpr').addEventListener('click',()=>{state.gdprPreview=null;refreshImportExportView();});
-    if($('#confirmGdprImport'))$('#confirmGdprImport').addEventListener('click',e=>{e.currentTarget.disabled=true;importGdprPlan(g,$('#replaceProfileData').checked);});
+    if($('#confirmGdprImport'))$('#confirmGdprImport').addEventListener('click',e=>{
+      const replace = $('#replaceProfileData').checked;
+      if (replace && !window.confirm('Hai selezionato “Sostituisci i dati attuali del profilo”. Questa operazione cancellerà il catalogo e i progressi cloud del solo profilo corrente prima di importare il file. Vuoi continuare?')) return;
+      e.currentTarget.disabled=true;
+      importGdprPlan(g,replace);
+    });
     if($('#cancelPreview'))$('#cancelPreview').addEventListener('click',()=>{state.importPreview=null;refreshImportExportView();});
     if($('#confirmImport'))$('#confirmImport').addEventListener('click',async()=>{const b=$('#confirmImport');b.disabled=true;b.textContent='Importazione…';try{const report=await importRows(p.rows,p.sourceName);state.importPreview=null;showImportReport(report);}catch(e){showImportFailure(e);}});
     $$('[data-export]').forEach(b=>b.addEventListener('click',()=>runExport(b.dataset.export)));$('#restoreBackup').addEventListener('click',()=>$('#backupInput').click());
@@ -3357,14 +3384,14 @@
     openModal('Importazione TV Time',operationProgressHtml('Preparazione della libreria…')+`<div class="import-live-summary"><span>Profilo</span><strong>${esc(currentProfile()?.name||'')}</strong><span>Elementi previsti</span><strong>${Number(plan.counts?.importableTotal||0).toLocaleString('it-IT')}</strong></div>`,'',{dismissible:false,busy:true});
     try{
       setOperationProgress(2,'Preparazione della libreria…','Controllo dei dati e creazione degli identificativi.');await new Promise(resolve=>setTimeout(resolve,20));
-      if(replace){setOperationProgress(5,'Pulizia dei dati precedenti…','Vengono rimossi solo i dati del profilo corrente.');for(const store of ['series','movies','progress','imports'])await dbClearProfile(store);}
+      if(replace){setOperationProgress(5,'Pulizia dei dati precedenti…','Rimuovo i dati locali e cloud del solo profilo corrente.');if(window.WatchverseCloudSync?.isEnabled())await window.WatchverseCloudSync.clearProfileData(currentProfile());for(const store of ['series','movies','progress','imports'])await dbClearProfile(store);}
       writeGdprResume(plan,{phase:'prepare',resuming});
       const existingSeries=replace?[]:(await dbGetAll('series')).filter(item=>item.profileId===profileId),existingMovies=replace?[]:(await dbGetAll('movies')).filter(item=>item.profileId===profileId),existingProgress=replace?[]:(await dbGetAll('progress')).filter(item=>item.profileId===profileId);
       const existingSeriesIds=new Set(existingSeries.map(item=>item.id)),existingMovieIds=new Set(existingMovies.map(item=>item.id)),existingProgressKeys=new Set(existingProgress.map(item=>`${item.seriesId}|${item.season}|${item.episode}`));
       const sourceToId=new Map();
       const allSeries=plan.series.map(src=>{const base=src.tvdbId?`series-tvtime-tvdb-${src.tvdbId}`:`series-tvtime-${slug(src.title)}`;const id=profileScoped(base,profileId);sourceToId.set(src.sourceKey,id);const normalizedStatus=src.status==='watchlist'?'plan':src.status;return{...src,status:normalizedStatus,id,profileId,posterGradient:gradient(src.title),backdropGradient:gradient(src.title+' hero'),providerGroups:{streaming:[],rent:[],buy:[]},cast:[],seasons:(src.seasons||[]).map(season=>({...season,episodes:(season.episodes||[]).map(ep=>({...ep,id:`${id}:s${season.number}:e${ep.episode}`}))}))};});
       const series=allSeries.filter(item=>!existingSeriesIds.has(item.id));
-      const allMovies=plan.movies.map(src=>({...src,id:profileScoped(`movie-tvtime-${src.sourceUuid||slug(src.title)}`,profileId),profileId,posterGradient:gradient(src.title),backdropGradient:gradient(src.title+' hero'),providerGroups:{streaming:[],rent:[],buy:[]},cast:[]}));
+      const allMovies=plan.movies.map(src=>({...src,id:profileScoped(`movie-tvtime-${src.sourceUuid||slug(src.title)}`,profileId),profileId,addedAt:src.addedAt||new Date().toISOString(),posterGradient:gradient(src.title),backdropGradient:gradient(src.title+' hero'),providerGroups:{streaming:[],rent:[],buy:[]},cast:[]}));
       const movies=allMovies.filter(item=>!existingMovieIds.has(item.id));
       const allProgress=plan.progress.map(src=>{const seriesId=sourceToId.get(src.sourceSeriesKey);return{id:`${profileId}|${String(seriesId).split('|').pop()}:s${src.season}:e${src.episode}`,profileId,seriesId,season:src.season,episode:src.episode,title:src.title,runtime:src.runtime,watched:true,watchedAt:src.watchedAt,tvdbId:src.tvdbId,rewatchCount:src.rewatchCount,source:src.source};}).filter(x=>x.seriesId);
       const progress=allProgress.filter(item=>!existingProgressKeys.has(`${item.seriesId}|${item.season}|${item.episode}`));
@@ -3373,7 +3400,7 @@
       setOperationProgress(31,`Salvataggio di ${movies.length.toLocaleString('it-IT')} film…`,'Inizio importazione film e watchlist.');await dbBulkPutBatched('movies',movies,250,(d,t)=>{writeGdprResume(plan,{phase:'movies',moviesDone:d,moviesTotal:t});setOperationProgress(31+d/Math.max(1,t)*20,`Film: ${d.toLocaleString('it-IT')} di ${t.toLocaleString('it-IT')}`,`${Math.round(d/Math.max(1,t)*100)}% dei film salvato.`);});
       setOperationProgress(52,`Salvataggio di ${progress.length.toLocaleString('it-IT')} episodi…`,'Questa è la fase più lunga.');await dbBulkPutBatched('progress',progress,500,(d,t)=>{writeGdprResume(plan,{phase:'progress',progressDone:d,progressTotal:t});setOperationProgress(52+d/Math.max(1,t)*43,`Episodi: ${d.toLocaleString('it-IT')} di ${t.toLocaleString('it-IT')}`,`${Math.round(d/Math.max(1,t)*100)}% della cronologia episodi salvato.`);});
       setOperationProgress(96,'Creazione del report finale…','Controllo dei conteggi importati.');
-      const report={importedMovies:movies.length,importedEpisodes:progress.length,newSeries:series.length,duplicates:0,errors:0,counts:plan.counts,logs:[{level:'Privacy',text:`Esclusi automaticamente ${plan.ignoredSensitive.length} file sensibili.`},{level:'Watchlist',text:`Importati ${plan.counts.watchlistMovies} film da vedere e ${plan.counts.watchlistSeries||0} serie da iniziare.`},{level:'Preferiti',text:`Importati ${plan.counts.favoriteSeries} serie e ${plan.counts.favoriteMovies} film preferiti.`},{level:'Voti',text:`Convertiti ${plan.counts.legacyMovieVotes} voti TV Time nella scala da 1 a 5 stelle.`}]};
+      const report={importedMovies:movies.length,importedEpisodes:progress.length,newSeries:series.length,duplicates:0,errors:0,counts:plan.counts,logs:[{level:'Privacy',text:`Esclusi automaticamente ${plan.ignoredSensitive.length} file sensibili.`},{level:'Watchlist',text:`Importati ${plan.counts.watchlistMovies} film da vedere e ${plan.counts.watchlistSeries||0} serie da iniziare.`},{level:'Preferiti',text:`Importati ${plan.counts.favoriteSeries} serie e ${plan.counts.favoriteMovies} film preferiti.`},{level:'Voti',text:`Convertiti ${plan.counts.legacyMovieVotes} voti TV Time nella scala da 1 a 10 stelle.`}]};
       await dbPut('imports',{id:`${profileId}|gdpr-${Date.now()}`,profileId,sourceName:plan.sourceFileName||'TV Time GDPR ZIP',date:new Date().toISOString(),report,counts:plan.counts});
       state.settings.demoSeeded=false;state.settings.seriesFilter='unwatched';state.settings.movieFilter='watched';state.settings.seriesSort='latestEpisode';state.settings.movieSort='recent';saveSettings();
       state.seriesFilter='unwatched';state.movieFilter='watched';state.seriesSort='latestEpisode';state.movieSort='recent';state.metadataAutoBudget=36;

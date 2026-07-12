@@ -18,7 +18,8 @@
     'stats-prod-cache.csv', 'user_statistics.csv'
   ];
 
-  const TVTIME_LEGACY_RATING_MAP = Object.freeze({ '1': 1, '27': 2, '28': 3, '29': 4, '3': 5 });
+  // TV Time stores five ordered legacy codes; Watchverse presents them on a 10-point scale.
+  const TVTIME_LEGACY_RATING_MAP = Object.freeze({ '1': 2, '27': 4, '28': 6, '29': 8, '3': 10 });
   function legacyVoteCodeToRating(code) { return TVTIME_LEGACY_RATING_MAP[String(code || '').trim()] || 0; }
 
   const slug = (s = '') => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -63,6 +64,11 @@
     }
     const d = new Date(s.replace(' ', 'T') + (/[zZ]|[+-]\d\d:?\d\d$/.test(s) ? '' : 'Z'));
     return Number.isNaN(d.getTime()) ? null : d.toISOString();
+  }
+  function earliestIso(current, candidate) {
+    if (!candidate) return current || null;
+    if (!current) return candidate;
+    return Date.parse(candidate) < Date.parse(current) ? candidate : current;
   }
 
   function basename(path) { return String(path || '').split('/').pop(); }
@@ -158,6 +164,7 @@
           source: 'tvtime-gdpr',
           sourceFollowed: us?.followed ?? fs?.followed ?? true,
           sourceArchived: fs?.archived ?? false,
+          addedAt: fs?.followedAt || null,
           followedAt: fs?.followedAt || null,
           sourceWatchedCount: us?.watchedCount || 0,
           seasons: []
@@ -186,6 +193,7 @@
         s.status = s.sourceWatchedCount > 0 ? 'watching' : (truthy(row.is_for_later) ? 'watchlist' : 'watchlist');
         s.sourceFollowed = truthy(row.is_followed);
         s.sourceArchived = truthy(row.is_archived);
+        s.addedAt = earliestIso(s.addedAt, toIso(row.created_at) || toIso(row.followed_at));
         s.followedAt = toIso(row.followed_at) || s.followedAt;
       }
     }
@@ -255,7 +263,7 @@
           year: yearFromDate(row.release_date),
           overview: 'Importato dall’esportazione GDPR di TV Time. Collega i metadati per ottenere descrizione, cast e piattaforme.',
           genres: [], runtime: secToMinutes(row.runtime),
-          watched: false, state: 'watchlist', watchedAt: null,
+          watched: false, state: 'watchlist', addedAt: null, watchedAt: null,
           favorite: favoriteMovieUuids.has(id), rating: 0, notes: '',
           source: 'tvtime-gdpr', sourceFollowed: false, sourceToWatch: false
         };
@@ -264,7 +272,9 @@
       if (row.movie_name) m.title = row.movie_name;
       if (!m.year) m.year = yearFromDate(row.release_date);
       if (!m.runtime) m.runtime = secToMinutes(row.runtime);
-      if (row.type === 'follow') { m.sourceFollowed = true; m.addedAt = toIso(row.created_at); }
+      const sourceAddedAt = toIso(row.created_at || row.updated_at);
+      if (sourceAddedAt) m.addedAt = earliestIso(m.addedAt, sourceAddedAt);
+      if (row.type === 'follow') { m.sourceFollowed = true; }
       if (row.type === 'towatch') { m.sourceToWatch = true; m.state = 'watchlist'; }
       if (row.type === 'watch') {
         m.watched = true; m.state = 'watched';

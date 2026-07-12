@@ -30,6 +30,7 @@ const checks = [
   ["node", ["tests/test-pin-cloud-contract.js"]],
   ["node", ["tests/test-proxy-contract.js"]],
   ["node", ["tests/test-security-contract.js"]],
+  ["node", ["tests/test-library-safety.js"]],
   ["node", ["--check", "tests/e2e-browser.js"]],
   ["node", ["tests/test-aivengers-launcher-position.js"]],
   ["node", ["tests/test-metadata-cycle-completion.js"]],
@@ -43,7 +44,14 @@ const checks = [
   ["node", ["tests/e2e-home-card-navigation.js"]]
 ];
 
+const localBrowserBlocked = process.platform === 'win32' && !process.env.CI && !process.env.WATCHVERSE_CDP_URL && !process.env.CHROME_PATH;
+
 for (const check of checks) {
+  const isBrowserE2E = check[1]?.some(arg => String(arg).startsWith('tests/e2e-'));
+  if (localBrowserBlocked && isBrowserE2E) {
+    console.log(`> ${check[0]} ${check[1].join(' ')} (saltato: Chrome locale bloccato da spawn EPERM)`);
+    continue;
+  }
   const command = Array.isArray(check[0]) ? resolveCommand(check) : check[0];
   const args = Array.isArray(check[0]) ? command.args : check[1];
   const executable = Array.isArray(check[0]) ? command.executable : command;
