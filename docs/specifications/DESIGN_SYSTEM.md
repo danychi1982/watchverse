@@ -147,7 +147,7 @@ La scala base è di 4px: `4, 8, 12, 16, 20, 24, 32, 40, 48`. Le sezioni usano no
 - Le icone funzionali devono essere semplici, riconoscibili e coerenti nel tratto.
 - Logo generico: `assets/brand/watchverse-dragon-w.svg`.
 - Tema Buffy: `assets/brand/watchverse-bat-w.svg`.
-- Favicon e icone PWA devono puntare al logo compatto attivo, non a vecchi PNG.
+- Favicon e icone PWA puntano al logo compatto approvato `watchverse-dragon-w.svg`; il wordmark esteso viene usato in header e autenticazione.
 
 ## Verifica prima del rilascio
 

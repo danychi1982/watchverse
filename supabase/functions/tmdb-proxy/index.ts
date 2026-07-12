@@ -34,25 +34,31 @@ Deno.serve(async req => {
     if (typeof path !== 'string' || !allowed.some(re => re.test(path))) {
       return Response.json({ error: 'Endpoint TMDB non consentito' }, { status: 400, headers: cors });
     }
+    const token = Deno.env.get('TMDB_READ_TOKEN');
+    if (!token) return Response.json({ error: 'TMDB proxy non configurato' }, { status: 503, headers: cors });
 
     const url = new URL(`https://api.themoviedb.org/3${path}`);
     for (const [key, value] of Object.entries(params)) {
-      if (value !== undefined && value !== null) url.searchParams.set(key, String(value));
+      if (value !== undefined && value !== null && String(value).length <= 300) url.searchParams.set(key, String(value));
     }
     if (!url.searchParams.has('language') && path !== '/configuration') url.searchParams.set('language', 'it-IT');
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
     const response = await fetch(url, {
       headers: {
-        Authorization: `Bearer ${Deno.env.get('TMDB_READ_TOKEN')}`,
+        Authorization: `Bearer ${token}`,
         accept: 'application/json'
-      }
+      }, signal: controller.signal
     });
+    clearTimeout(timeout);
     const body = await response.text();
     return new Response(body, {
       status: response.status,
       headers: { ...cors, 'Content-Type': 'application/json', 'Cache-Control': 'private, max-age=3600' }
     });
   } catch (error) {
-    return Response.json({ error: error instanceof Error ? error.message : 'Errore inatteso' }, { status: 500, headers: cors });
+    const message = error instanceof Error && error.name === 'AbortError' ? 'Timeout della fonte TMDB' : (error instanceof Error ? error.message : 'Errore inatteso');
+    return Response.json({ error: message }, { status: error instanceof Error && error.name === 'AbortError' ? 504 : 500, headers: cors });
   }
 });
