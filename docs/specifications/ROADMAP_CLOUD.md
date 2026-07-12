@@ -12,24 +12,24 @@ Questo file traccia sia le attivita completate sia quelle ancora aperte. Una voc
 
 | Nome intervento | Priorita | Stato | Owner | Effort | Cosa resta da fare |
 | --- | --- | --- | --- | --- | --- |
-| Autenticazione Supabase e account unico | Alta | Parzialmente completato | Condiviso | Basso | Verificare PIN opzionale e recupero password su piu dispositivi. |
+| Autenticazione Supabase e account unico | Alta | Parzialmente completato | Daniela | Basso | Testare PIN opzionale e recupero password su piu dispositivi. |
 | Profili Daniela ed Elena | Alta | Completato | Codex | Basso | Nulla di previsto nell'ambito iniziale. |
 | Catalogo e prima sincronizzazione cloud | Alta | Completato | Codex | Medio | Nulla per la migrazione iniziale; la sincronizzazione avanzata resta separata. |
-| Sincronizzazione cloud bidirezionale | Alta | Parzialmente completato | Condiviso | Alto | Implementazione, migration SQL e redeploy eseguiti; resta validare due dispositivi contemporanei e un conflitto reale. |
+| Sincronizzazione cloud bidirezionale | Alta | Parzialmente completato | Daniela | Alto | Validare due dispositivi contemporanei e un conflitto reale. |
 | IndexedDB come cache offline | Alta | Da fare | Codex | Alto | Spostare Supabase a fonte primaria e IndexedDB a cache/fallback offline. |
 | Proxy TMDB/JustWatch | Alta | Completato | Condiviso | Alto | Proxy, secret, endpoint e test del contratto completati; resta solo la validazione funzionale dei casi reali. |
-| Trailer e disponibilita streaming | Alta | Parzialmente completato | Condiviso | Medio | Verificare copertura reale su un campione di film/serie e stati senza risultato. |
-| Programmazione cinema italiana | Alta | In corso | Condiviso | Alto | Rendere piu affidabili le fonti ufficiali e gestire titoli senza orari, come Supergirl. |
-| Retry metadati e scelta dell'utente | Alta | Da fare | Codex | Medio | Eliminare retry automatico al login e offrire Riprova/Ignora per ora con stato persistente. |
-| Audit responsive mobile | Alta | In corso | Condiviso | Alto | Completare Home, librerie, dettagli, profilo, import e ricerca su Samsung Galaxy S26+. |
-| Test E2E mobile | Alta | In corso | Codex | Medio | Rendere eseguibili i test senza policy amministrative e validarli su Chrome. |
+| Trailer e disponibilita streaming | Alta | Parzialmente completato | Daniela | Medio | Verificare copertura reale su un campione di film/serie e stati senza risultato. |
+| Programmazione cinema italiana | Alta | Parzialmente completato | Daniela | Alto | Verificare sui cinema configurati i casi con orari mancanti, come Supergirl. |
+| Retry metadati e scelta dell'utente | Alta | Parzialmente completato | Daniela | Medio | Verificare il nuovo flusso manuale `Riprova` / `Ignora per ora`. |
+| Audit responsive mobile | Alta | Parzialmente completato | Daniela | Alto | Validare Home, librerie, dettagli, profilo, import e ricerca su Samsung Galaxy S26+. |
+| Test E2E mobile | Alta | Parzialmente completato | Daniela | Medio | Avviare Chrome in modalità CDP ed eseguire la suite sui flussi critici. |
 | VAPT e hardening del deploy | Alta | Da fare | Codex | Alto | Eseguire verifica applicativa mirata e completare header e controlli di sicurezza. |
-| Filtri e organizzazione libreria | Media | In corso | Codex | Medio | Aggiungere filtri combinabili, ordinamenti avanzati e test su librerie grandi. |
-| Indicatori di caricamento | Media | In corso | Codex | Medio | Audit globale di loader, stati vuoti, errori, rete lenta e aggiornamenti locali. |
-| Schede dettaglio ispirate a Showly | Media | In corso | Codex | Alto | Completare hero, cast, episodi, provider, trailer e contenuti correlati in mobile. |
+| Filtri e organizzazione libreria | Media | Completato | Codex | Medio | Filtri di stato, ricerca, viste e ordinamento sono combinabili; resta solo la validazione su una libreria reale molto grande. |
+| Indicatori di caricamento | Media | Parzialmente completato | Daniela | Medio | Validare su rete lenta i loader nelle sezioni e nei cambi filtro. |
+| Schede dettaglio ispirate a Showly | Media | Parzialmente completato | Daniela | Alto | Validare su mobile hero, cast, episodi, provider, trailer e contenuti correlati. |
 | Progresso serie ed episodi residui | Media | Da fare | Codex | Medio | Sostituire la percentuale ambigua con episodi residui e avanzamento globale della serie. |
 | Calendario, watchlist e ricerca globale | Media | Da fare | Codex | Alto | Aggiungere filtri dedicati, watchlist esplicita e risultati raggruppati. |
-| Pacchetto favicon/PWA | Bassa | In corso | Condiviso | Basso | Verificare icone 192, 512 e maskable su Android e GitHub Pages. |
+| Pacchetto favicon/PWA | Bassa | Parzialmente completato | Daniela | Basso | Verificare icone e installazione PWA su Android e GitHub Pages. |
 | Design system e identita visiva | Bassa | Completato | Codex | Medio | Asset SVG approvati collegati a header, login, profili, favicon, PWA e preview. |
 | Build, versioning e deploy | Media | Completato | Codex | Basso | Nulla per il flusso base; i test E2E critici devono diventare prerequisito effettivo. |
 

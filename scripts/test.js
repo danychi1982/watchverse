@@ -28,6 +28,7 @@ const checks = [
   ["node", ["tests/test-default-sources.js"]],
   ["node", ["tests/test-cloud-sync-contract.js"]],
   ["node", ["tests/test-proxy-contract.js"]],
+  ["node", ["--check", "tests/e2e-browser.js"]],
   ["node", ["tests/test-aivengers-launcher-position.js"]],
   ["node", ["tests/test-metadata-cycle-completion.js"]],
   ["node", ["tests/test-ui-2.0.20.js"]],
