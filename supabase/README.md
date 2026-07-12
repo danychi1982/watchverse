@@ -7,7 +7,7 @@ Questa cartella contiene lo schema e il proxy TMDB necessari per la futura modal
 1. Crea un progetto Supabase.
 2. In **SQL Editor**, esegui `schema.sql`.
 3. In **Authentication → Users**, crea manualmente l'utente proprietario con l'email scelta per l'account e una password nuova e robusta.
-4. In **Authentication → URL Configuration**, imposta l'indirizzo HTTPS definitivo di Watchverse come `Site URL` e tra i redirect consentiti.
+4. In **Authentication → URL Configuration**, imposta `https://danychi1982.github.io/watchverse/` come `Site URL` e aggiungilo anche tra i redirect consentiti. Il percorso `/watchverse/` è obbligatorio per GitHub Pages: senza di esso il link di recupero può finire sulla root e mostrare 404.
 5. Disattiva le registrazioni pubbliche se l'app deve restare familiare.
 
 ## 2. Configura il proxy TMDB

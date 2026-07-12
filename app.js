@@ -384,9 +384,9 @@
     localStorage.setItem(profileKey('settings'), JSON.stringify(state.settings)); applyAppearanceSettings();
     if (syncCloud) void window.WatchverseCloudSync?.saveSettings(currentProfile(), state.settings).catch(error => console.warn('Watchverse cloud settings sync:', error));
   }
-  function saveProfiles(syncCloud = true) {
+  async function saveProfiles(syncCloud = true) {
     localStorage.setItem('watchverse.profiles', JSON.stringify(state.profiles));
-    if (syncCloud) void window.WatchverseCloudSync?.saveProfiles(state.profiles).catch(error => console.warn('Watchverse cloud profile sync:', error));
+    if (syncCloud) await window.WatchverseCloudSync?.saveProfiles(state.profiles).catch(error => console.warn('Watchverse cloud profile sync:', error));
   }
 
   const memoryStores = Object.fromEntries(STORES.map(name => [name, new Map()]));
@@ -1552,6 +1552,7 @@
       $('.modal-backdrop').addEventListener('click', e => { if (e.target.classList.contains('modal-backdrop')) closeModal(); });
       document.addEventListener('keydown', modalKeydown);
     }
+    bindPasswordFieldToggles($('#modalRoot'));
     $('.modal-close, .modal-actions button, .modal-actions a, .modal-body input, .modal-body select, .modal-body textarea, .modal-body [tabindex]:not([tabindex="-1"])')?.focus();
   }
   function modalKeydown(e) {
@@ -3401,7 +3402,7 @@
     return btoa(String.fromCharCode(...new Uint8Array(bits)));
   }
   async function verifyProfilePin(profile,pin){if(!profile?.pinHash||!profile?.pinSalt)return true;return await hashPin(pin,profile.pinSalt)===profile.pinHash;}
-  async function setProfilePin(profile,pin){profile.pinSalt=randomSaltB64();profile.pinHash=await hashPin(pin,profile.pinSalt);profile.updatedAt=new Date().toISOString();saveProfiles();}
+  async function setProfilePin(profile,pin){profile.pinSalt=randomSaltB64();profile.pinHash=await hashPin(pin,profile.pinSalt);profile.updatedAt=new Date().toISOString();await saveProfiles();}
   function themeOptionsHtml(){
     const selected=state.settings.appearanceTheme||'original';
     return APPEARANCE_THEMES.map(theme=>`<button type="button" class="appearance-option appearance-${esc(theme.id)}" role="radio" aria-checked="${theme.id===selected}" data-theme-value="${theme.id}"><span class="theme-option-heading"><span class="theme-option-symbol" aria-hidden="true">${esc(theme.symbol||'◐')}</span><strong>${esc(theme.name)}</strong></span><small>${esc(theme.description)}</small><span class="theme-swatches" aria-hidden="true">${theme.colors.map(c=>`<span style="background:${c}"></span>`).join('')}</span></button>`).join('');
@@ -3775,7 +3776,7 @@
   function showChangePin(profile){openModal('Modifica PIN',`<div class="form-grid"><div class="form-field full"><label for="currentPin">PIN attuale</label><input id="currentPin" type="password" inputmode="numeric" maxlength="6"></div><div class="form-field"><label for="changedPin">Nuovo PIN</label><input id="changedPin" type="password" inputmode="numeric" maxlength="6"></div><div class="form-field"><label for="changedPin2">Ripeti PIN</label><input id="changedPin2" type="password" inputmode="numeric" maxlength="6"></div></div>`,`<button class="primary" id="confirmChangePin">Salva</button>`);$('#confirmChangePin').addEventListener('click',async()=>{if(!(await verifyProfilePin(profile,$('#currentPin').value))){showToast('PIN attuale errato','','!');return;}const pin=$('#changedPin').value;if(!/^\d{4,6}$/.test(pin)||pin!==$('#changedPin2').value){showToast('Nuovo PIN non valido','Controlla le due copie.','!');return;}await setProfilePin(profile,pin);closeModal();showToast('PIN modificato',profile.name);renderSettings();});}
   function showRemovePin(profile){openModal('Elimina PIN',`<p>Inserisci la password dell’account familiare per rimuovere il PIN di ${esc(profile.name)}.</p><div class="form-field"><label for="removePinPassword">Password account</label><input id="removePinPassword" type="password" autocomplete="current-password"></div>`,`<button class="danger-button" id="confirmRemovePin">Elimina PIN</button>`);$('#confirmRemovePin').addEventListener('click',async()=>{if(!(await WatchverseAuth.verifyPassword($('#removePinPassword').value))){showToast('Password non corretta','','!');return;}profile.pinHash=null;profile.pinSalt=null;saveProfiles();closeModal();showToast('PIN eliminato',profile.name);renderSettings();});}
   function showPinRecovery(profile,fromGate=false){openModal('Recupera PIN',`<p>Per proteggere il profilo, verifica la password dell’account principale.</p><div class="form-field"><label for="recoverPinPassword">Password account</label><input id="recoverPinPassword" type="password" autocomplete="current-password"></div><div class="form-grid" style="margin-top:12px"><div class="form-field"><label for="recoveredPin">Nuovo PIN, facoltativo</label><input id="recoveredPin" type="password" inputmode="numeric" maxlength="6" placeholder="Lascia vuoto per eliminarlo"></div><div class="form-field"><label for="recoveredPin2">Ripeti nuovo PIN</label><input id="recoveredPin2" type="password" inputmode="numeric" maxlength="6"></div></div>`,`<button class="primary" id="confirmPinRecovery">Conferma</button>`);$('#confirmPinRecovery').addEventListener('click',async()=>{if(!(await WatchverseAuth.verifyPassword($('#recoverPinPassword').value))){showToast('Password non corretta','','!');return;}const pin=$('#recoveredPin').value;if(pin&&(!/^\d{4,6}$/.test(pin)||pin!==$('#recoveredPin2').value)){showToast('Nuovo PIN non valido','Controlla le due copie.','!');return;}if(pin)await setProfilePin(profile,pin);else{profile.pinHash=null;profile.pinSalt=null;saveProfiles();}closeModal();showToast(pin?'PIN reimpostato':'PIN eliminato',profile.name);if(fromGate)showProfileGate();else renderSettings();});}
-  function showChangePassword(){openModal('Cambia password',`<div class="form-grid"><div class="form-field full"><label for="currentAccountPassword">Password attuale</label><input id="currentAccountPassword" type="password" autocomplete="current-password"></div><div class="form-field"><label for="newAccountPassword">Nuova password</label><input id="newAccountPassword" type="password" minlength="6" autocomplete="new-password"></div><div class="form-field"><label for="newAccountPassword2">Ripeti password</label><input id="newAccountPassword2" type="password" minlength="6" autocomplete="new-password"></div></div>`,`<button class="primary" id="confirmPasswordChange">Cambia password</button>`);$('#confirmPasswordChange').addEventListener('click',async()=>{if($('#newAccountPassword').value!==$('#newAccountPassword2').value){showToast('Le password non coincidono','','!');return;}try{await WatchverseAuth.changePassword($('#currentAccountPassword').value,$('#newAccountPassword').value);closeModal();showToast('Password aggiornata','');}catch(e){showToast('Modifica non riuscita',e.message,'!');}});}
+  function showChangePassword(){openModal('Cambia password',`<div class="form-grid"><div class="form-field full"><label for="currentAccountPassword">Password attuale</label><input id="currentAccountPassword" type="password" autocomplete="current-password"></div><div class="form-field"><label for="newAccountPassword">Nuova password</label><input id="newAccountPassword" type="password" minlength="6" autocomplete="new-password"></div><div class="form-field"><label for="newAccountPassword2">Ripeti password</label><input id="newAccountPassword2" type="password" minlength="6" autocomplete="new-password"></div></div>`,`<button class="primary" id="confirmPasswordChange">Cambia password</button>`);$('#confirmPasswordChange').addEventListener('click',async()=>{if($('#newAccountPassword').value!==$('#newAccountPassword2').value){showToast('Le password non coincidono','','!');return;}try{await WatchverseAuth.changePassword($('#currentAccountPassword').value,$('#newAccountPassword').value);closeModal();state.authenticated=false;state.profileSelected=false;state.profileId=null;localStorage.removeItem('watchverse.currentProfile');showLoginScreen('Password aggiornata. Per sicurezza è stato effettuato il logout su tutti i dispositivi.');}catch(e){showToast('Modifica non riuscita',e.message,'!');}});}
   function showProfileSwitcher(){showProfileGate();}
   function showProfileManager(){openModal('Gestisci profili',`<p class="notice">Ogni profilo ha libreria, preferiti, rating, statistiche e PIN indipendenti.</p><div class="search-results">${state.profiles.map(p=>`<article class="search-result">${avatarHtml(p)}<div><h3>${esc(p.name)}</h3><p>${p.role==='owner'?'Profilo proprietario · ':''}${p.pinHash?'PIN attivo':'Nessun PIN'}</p></div><div class="hero-actions"><button class="secondary" data-open-profile="${p.id}" ${p.id===state.profileId?'disabled':''}>Apri</button>${p.role!=='owner'?`<button class="danger-button" data-delete-profile="${p.id}">Elimina</button>`:''}</div></article>`).join('')}</div>`,`<button class="secondary" id="createProfile">＋ Nuovo profilo</button>`);$('#createProfile').addEventListener('click',showCreateProfile);$$('[data-open-profile]').forEach(b=>b.addEventListener('click',()=>{closeModal();showProfileGate();}));$$('[data-delete-profile]').forEach(b=>b.addEventListener('click',()=>confirmDeleteProfile(b.dataset.deleteProfile)));}
   function showCreateProfile(){const emojis=['🍿','📺','⭐','🎮','📚','🌙'];openModal('Nuovo profilo',`<p>Il nuovo profilo nasce senza PIN. Potrai aggiungerlo dalle sue impostazioni.</p><div class="form-field"><label for="newProfileName">Nome</label><input id="newProfileName" type="text" maxlength="30" placeholder="Nome profilo"></div><div class="avatar-picker">${emojis.map((e,i)=>`<button type="button" class="avatar-option ${i===0?'active':''}" data-new-avatar="${e}" aria-label="Usa avatar ${e}">${e}</button>`).join('')}</div>`,`<button class="ghost" id="cancelNewProfile">Annulla</button><button class="primary" id="saveNewProfile">Crea</button>`);let selected=emojis[0];$$('[data-new-avatar]').forEach(b=>b.addEventListener('click',()=>{selected=b.dataset.newAvatar;$$('[data-new-avatar]').forEach(x=>x.classList.toggle('active',x===b));}));$('#cancelNewProfile').addEventListener('click',closeModal);$('#saveNewProfile').addEventListener('click',()=>{const name=$('#newProfileName').value.trim();if(!name){showToast('Inserisci un nome','','!');return;}const p={id:uid('profile'),name,initial:name[0].toUpperCase(),role:'member',avatarType:'emoji',avatarValue:selected,pinHash:null,pinSalt:null,createdAt:new Date().toISOString()};state.profiles.push(p);saveProfiles();closeModal();showToast('Profilo creato',name);renderSettings();});}
@@ -3804,6 +3805,29 @@
   function authBrand(subtitle) {
     return `<div class="auth-brand"><img class="auth-wordmark" src="assets/brand/watchverse-dragon-wordmark.svg" alt="Watchverse. Scegli cosa guardare. Ricorda cosa hai visto."><p class="auth-subtitle">${esc(subtitle)}</p></div>`;
   }
+  function bindPasswordFieldToggles(root = document) {
+    if (!root) return;
+    $$('input[type="password"]', root).forEach(input => {
+      if (input.closest('.password-field')) return;
+      const wrapper = document.createElement('div');
+      wrapper.className = 'password-field';
+      input.parentNode.insertBefore(wrapper, input);
+      wrapper.appendChild(input);
+      const button = document.createElement('button');
+      button.type = 'button'; button.className = 'password-toggle';
+      button.setAttribute('aria-label', 'Mostra password o PIN'); button.title = 'Mostra password o PIN';
+      const eye = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.6"/></svg>';
+      const eyeOff = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 6.2A10.8 10.8 0 0 1 12 6c6 0 9.5 6 9.5 6a17.6 17.6 0 0 1-3.1 3.5M6.2 6.9C3.9 8.3 2.5 12 2.5 12s3.5 6 9.5 6a10 10 0 0 0 3.7-.7M10 10a2.8 2.8 0 0 0 4 4"/></svg>';
+      button.innerHTML = `${eye}<span class="sr-only">Mostra password o PIN</span>`;
+      button.addEventListener('click', () => {
+        const visible = input.type === 'text'; input.type = visible ? 'password' : 'text';
+        const label = visible ? 'Mostra password o PIN' : 'Nascondi password o PIN';
+        button.setAttribute('aria-label', label); button.title = label; button.setAttribute('aria-pressed', String(!visible));
+        button.innerHTML = `${visible ? eye : eyeOff}<span class="sr-only">${label}</span>`; input.focus();
+      });
+      wrapper.appendChild(button);
+    });
+  }
   function showSetupScreen() {
     hideAppShell();
     const d = WatchverseAuth.defaults;
@@ -3826,6 +3850,7 @@
         await WatchverseAuth.signIn($('#setupUsername').value,password,true); state.authenticated=true; showProfileGate();
       }catch(err){msg.textContent=err.message;}
     });
+    bindPasswordFieldToggles($('#authRoot'));
   }
   function showLoginScreen(message='') {
     hideAppShell(); const account=WatchverseAuth.readAccount(); if(!account){showSetupScreen();return;}
@@ -3842,6 +3867,7 @@
     $('#toggleLoginPassword').addEventListener('click',()=>{const input=$('#loginPassword');const button=$('#toggleLoginPassword');const visible=input.type==='text';input.type=visible?'password':'text';const nextLabel=visible?'Mostra password':'Nascondi password';button.setAttribute('aria-label',nextLabel);button.title=nextLabel;button.setAttribute('aria-pressed',String(!visible));button.innerHTML=visible?'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.6"/></svg><span class="sr-only">Mostra password</span>':'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 6.2A10.8 10.8 0 0 1 12 6c6 0 9.5 6 9.5 6a17.6 17.6 0 0 1-3.1 3.5M6.2 6.9C3.9 8.3 2.5 12 2.5 12s3.5 6 9.5 6a10 10 0 0 0 3.7-.7M10 10a2.8 2.8 0 0 0 4 4"/></svg><span class="sr-only">Nascondi password</span>';input.focus();});
     requestAnimationFrame(()=>{const input=$('#loginUser');if(input)input.value='';});
     $('#loginForm').addEventListener('submit',async e=>{e.preventDefault();const msg=$('#authMessage');msg.textContent='';try{await WatchverseAuth.signIn($('#loginUser').value,$('#loginPassword').value,$('#rememberLogin').checked);state.authenticated=true;showProfileGate();}catch(err){msg.textContent=err.message;}});
+    bindPasswordFieldToggles($('#authRoot'));
   }
   function showForgotPasswordScreen() {
     hideAppShell(); const cloud=WatchverseAuth.cloudConfigured();
@@ -3854,6 +3880,17 @@
       </form></div></section>`;
     $('#backLogin').addEventListener('click',()=>showLoginScreen());
     $('#resetForm').addEventListener('submit',async e=>{e.preventDefault();const msg=$('#authMessage');msg.textContent='';try{if(cloud){await WatchverseAuth.sendRecoveryEmail($('#resetEmail').value);msg.style.color='var(--success)';msg.textContent='Email inviata. Controlla anche la cartella Spam.';}else{if($('#resetPassword').value!==$('#resetPassword2').value)throw new Error('Le due password non coincidono.');await WatchverseAuth.localReset($('#resetEmail').value,$('#resetPassword').value);showLoginScreen('Password reimpostata. Ora puoi accedere.');}}catch(err){msg.textContent=err.message;}});
+    bindPasswordFieldToggles($('#authRoot'));
+  }
+  function showRecoveryPasswordScreen() {
+    hideAppShell();
+    $('#authRoot').innerHTML = `<section class="auth-shell"><div class="auth-card">${authBrand('Recupero accesso')}<h2>Imposta una nuova password</h2><p>Il link è valido per una sola reimpostazione. Scegli una password di almeno 6 caratteri.</p><form id="recoveryForm" class="auth-form"><div class="form-field"><label for="recoveryPassword">Nuova password</label><input id="recoveryPassword" type="password" minlength="6" autocomplete="new-password" required></div><div class="form-field"><label for="recoveryPassword2">Ripeti la password</label><input id="recoveryPassword2" type="password" minlength="6" autocomplete="new-password" required></div><button class="primary" type="submit">Salva nuova password</button><div id="authMessage" class="auth-message" role="alert"></div></form></div></section>`;
+    bindPasswordFieldToggles($('#authRoot'));
+    $('#recoveryForm').addEventListener('submit', async event => {
+      event.preventDefault(); const message = $('#authMessage'); message.textContent = '';
+      if ($('#recoveryPassword').value !== $('#recoveryPassword2').value) { message.textContent = 'Le due password non coincidono.'; return; }
+      try { await WatchverseAuth.updatePassword($('#recoveryPassword').value); showLoginScreen('Password aggiornata. Ora puoi accedere.'); } catch (error) { message.textContent = error.message; }
+    });
   }
   function showProfileGate() {
     state.profileSelected=false; hideAppShell();
@@ -3870,6 +3907,7 @@
     $('#gatePinBack').addEventListener('click',showProfileGate);
     $('#gatePinForgot').addEventListener('click',()=>showPinRecovery(p,true));
     $('#gatePinForm').addEventListener('submit',async e=>{e.preventDefault();const ok=await verifyProfilePin(p,$('#gatePin').value);if(ok)await activateProfile(id);else $('#authMessage').textContent='PIN errato.';});
+    bindPasswordFieldToggles($('#authRoot'));
   }
   async function activateProfile(id) {
     const profile = state.profiles.find(item => item.id === id);
@@ -3965,6 +4003,9 @@
     try{
       applyAppearanceSettings();
       state.db=await openDB();
+      const recovery = WatchverseAuth.acceptRecoveryRedirect();
+      if (!recovery.ok) { showLoginScreen('Il link di recupero non è valido o è scaduto. Richiedi una nuova email.'); return; }
+      if (recovery.recovery) { showRecoveryPasswordScreen(); return; }
       // Completa i campi dei profili creati con versioni precedenti.
       state.profiles=state.profiles.map((p,i)=>Object.assign({role:i===0?'owner':'member',avatarType:'emoji',avatarValue:i===0?'🎬':'📚',pinHash:null,pinSalt:null},p));
       if(!state.profiles.some(p=>p.name==='Elena') && !storedProfiles) state.profiles=structuredClone(DEFAULT_PROFILES);

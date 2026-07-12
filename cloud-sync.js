@@ -72,7 +72,8 @@
 
   async function saveProfiles(profiles = []) {
     if (!isEnabled()) return;
-    for (const profile of profiles) {
+    const resolved = profiles.some(profile => !profileId(profile)) ? await bootstrapProfiles(profiles) : profiles;
+    for (const profile of resolved) {
       if (!profileId(profile)) continue;
       await request(`/profiles?id=eq.${encodeURIComponent(profile.cloudId)}`, {
         method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({
