@@ -47,15 +47,15 @@ async function seedAccount(page) {
   await page.evaluate(async () => {
     localStorage.clear(); sessionStorage.clear();
     await new Promise(resolve => { const request = indexedDB.deleteDatabase('watchverse-db'); request.onsuccess = resolve; request.onerror = resolve; request.onblocked = resolve; });
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const saltB64 = btoa(String.fromCharCode(...salt));
+    const key = await crypto.subtle.importKey('raw', new TextEncoder().encode('abcdef'), 'PBKDF2', false, ['deriveBits']);
+    const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt, iterations: 160000, hash: 'SHA-256' }, key, 256);
+    const passwordHash = btoa(String.fromCharCode(...new Uint8Array(bits)));
+    localStorage.setItem('watchverse.account.v2', JSON.stringify({ username: 'utente', email: 'utente@example.com', passwordHash, salt: saltB64, iterations: 160000 }));
   });
   await page.reload({ waitUntil:'domcontentloaded' });
-  await page.fill('#setupUsername','utente');
-  await page.fill('#setupEmail','utente@example.com');
-  await page.fill('#setupPassword','abcdef');
-  await page.fill('#setupPassword2','abcdef');
-  await page.click('#setupForm button[type="submit"]');
-  await page.waitForSelector('[data-profile-choice]');
-  await page.click('#logoutFromGate');
+  await page.waitForSelector('#loginForm');
   await page.fill('#loginUser','utente');
   await page.fill('#loginPassword','abcdef');
   await page.click('#loginForm button[type="submit"]');
