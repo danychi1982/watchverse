@@ -43,6 +43,8 @@ Questo file traccia sia le attivita completate sia quelle ancora aperte. Una voc
 | Design system e identita visiva | Bassa | Completato | Codex | Medio | Nessuna attività tecnica residua. |
 | Build, versioning e deploy | Media | Completato | Codex | Basso | Nessuna attività tecnica residua. |
 
+| Prestazioni accesso e caricamento | Alta | Da fare | Codex | Alto | Ridurre il tempo percepito di login e apertura profilo, misurare il bootstrap cloud e spostare i caricamenti non indispensabili in background senza bloccare l’utente. |
+
 ## Stato sintetico
 
 | Area | Stato | Priorita | Note |

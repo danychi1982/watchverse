@@ -3865,7 +3865,7 @@
       if(password!==confirm){msg.textContent='Le due password non coincidono.';return;}
       try{
         await WatchverseAuth.setup({username:$('#setupUsername').value,email:$('#setupEmail').value,password});
-        await WatchverseAuth.signIn($('#setupUsername').value,password,true); state.authenticated=true; showProfileGate();
+        await WatchverseAuth.signIn($('#setupUsername').value,password,true); await enterProfileGateAfterAuth();
       }catch(err){msg.textContent=authErrorMessage(err);}
     });
     bindPasswordFieldToggles($('#authRoot'));
@@ -3884,7 +3884,7 @@
     $('#forgotPassword').addEventListener('click',showForgotPasswordScreen);
     $('#toggleLoginPassword').addEventListener('click',()=>{const input=$('#loginPassword');const button=$('#toggleLoginPassword');const visible=input.type==='text';input.type=visible?'password':'text';const nextLabel=visible?'Mostra password':'Nascondi password';button.setAttribute('aria-label',nextLabel);button.title=nextLabel;button.setAttribute('aria-pressed',String(!visible));button.innerHTML=visible?'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.6"/></svg><span class="sr-only">Mostra password</span>':'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 6.2A10.8 10.8 0 0 1 12 6c6 0 9.5 6 9.5 6a17.6 17.6 0 0 1-3.1 3.5M6.2 6.9C3.9 8.3 2.5 12 2.5 12s3.5 6 9.5 6a10 10 0 0 0 3.7-.7M10 10a2.8 2.8 0 0 0 4 4"/></svg><span class="sr-only">Nascondi password</span>';input.focus();});
     requestAnimationFrame(()=>{const input=$('#loginUser');if(input)input.value='';});
-    $('#loginForm').addEventListener('submit',async e=>{e.preventDefault();const msg=$('#authMessage');msg.textContent='';try{await WatchverseAuth.signIn($('#loginUser').value,$('#loginPassword').value,$('#rememberLogin').checked);state.authenticated=true;showProfileGate();}catch(err){msg.textContent=authErrorMessage(err);}});
+    $('#loginForm').addEventListener('submit',async e=>{e.preventDefault();const msg=$('#authMessage');msg.textContent='';try{await WatchverseAuth.signIn($('#loginUser').value,$('#loginPassword').value,$('#rememberLogin').checked);await enterProfileGateAfterAuth();}catch(err){msg.textContent=authErrorMessage(err);}});
     bindPasswordFieldToggles($('#authRoot'));
   }
   function showForgotPasswordScreen() {
@@ -4016,6 +4016,23 @@
     return null;
   }
 
+  async function enterProfileGateAfterAuth() {
+    const sync = window.WatchverseCloudSync;
+    if (sync?.isEnabled()) {
+      const cloudProfiles = await bootstrapCloudProfilesWithRetry(1);
+      if (!Array.isArray(cloudProfiles) || !cloudProfiles.length) {
+        state.authenticated = false;
+        showLoginScreen('Impossibile verificare i profili cloud. Riprova tra poco.');
+        return false;
+      }
+      state.profiles = cloudProfiles;
+      saveProfiles(false);
+    }
+    state.authenticated = true;
+    showProfileGate();
+    return true;
+  }
+
 
   async function init(){
     try{
@@ -4033,13 +4050,7 @@
       if(!(await WatchverseAuth.restoreSession())){showLoginScreen();return;}
       // Dopo una pulizia della cache il PIN non è disponibile localmente:
       // attendere il bootstrap cloud prima di rendere selezionabili i profili.
-      const cloudProfiles = await bootstrapCloudProfilesWithRetry(1);
-      if (window.WatchverseCloudSync?.isEnabled() && !Array.isArray(cloudProfiles)) {
-        showLoginScreen('Impossibile verificare i profili cloud. Per sicurezza accedi di nuovo tra poco.');
-        return;
-      }
-      if (Array.isArray(cloudProfiles) && cloudProfiles.length) { state.profiles = cloudProfiles; saveProfiles(false); }
-      state.authenticated=true;showProfileGate();
+      await enterProfileGateAfterAuth();
     }catch(e){console.error(e);document.body.innerHTML=`<main style="padding:40px;font-family:system-ui;color:white;background:#111;min-height:100vh"><h1>Watchverse non è riuscita ad avviarsi</h1><p>${esc(e.message)}</p><button id="retryApp" type="button">Riprova</button></main>`;$('#retryApp')?.addEventListener('click',()=>location.reload());}
   }
 
