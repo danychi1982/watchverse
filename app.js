@@ -189,7 +189,7 @@
     authenticated: false,
     profileSelected: false,
     profileId: localStorage.getItem('watchverse.currentProfile') || null,
-    profiles: Array.isArray(storedProfiles) && storedProfiles.length ? storedProfiles : structuredClone(DEFAULT_PROFILES),
+    profiles: orderedProfiles(Array.isArray(storedProfiles) && storedProfiles.length ? storedProfiles : structuredClone(DEFAULT_PROFILES)),
     series: [], movies: [], progress: [], people: [],
     settings: {}, indexes: { progressByEpisode: new Map(), latestWatchedBySeries: new Map(), seriesComputed: new Map() },
     homeTab: 'watch', seriesFilter: 'unwatched', movieFilter: 'watched', statsView: 'overview', statsPeriod: 'all',
@@ -198,7 +198,7 @@
     detailTab: 'info', tvScheduleFilter: 'today', importPreview: null, gdprPreview: null, deferredInstall: null,
     notifications: [], tmdbResults: [], publicResults: [], catalogResults: [], isLoading: false, pendingAvatarProfileId: null, personFilmographyFilter: 'all', profileSettingsTab: 'identity',
     catalogEntries: [], catalogIndex: new Map(), catalogHydratedThisSession: 0, catalogNetworkAvoidedThisSession: 0,
-    metadataQueue: [], metadataRunning: 0, metadataQueuedIds: new Set(), metadataAutoBudget: 36, metadataRenderPending: false, metadataRerenderTimer: null, metadataBackgroundStarted: false, metadataHeaderTimer: null, metadataCompletedThisSession: 0, metadataFailedThisSession: 0, metadataRecoveryScheduled: false, metadataRecoveryDone: false, wcagStatusFilter: 'all', wcagLevelFilter: 'all', accessibilityTab: 'declaration', searchRecommendationFilter: 'all', navigationLoaderToken: 0,
+    metadataQueue: [], metadataRunning: 0, metadataQueuedIds: new Set(), metadataAutoBudget: 36, metadataRenderPending: false, metadataRerenderTimer: null, metadataBackgroundStarted: false, metadataContinuationTimer: null, metadataHeaderTimer: null, metadataCompletedThisSession: 0, metadataFailedThisSession: 0, metadataRecoveryScheduled: false, metadataRecoveryDone: false, wcagStatusFilter: 'all', wcagLevelFilter: 'all', accessibilityTab: 'declaration', searchRecommendationFilter: 'all', navigationLoaderToken: 0,
     sidebarCollapsed: localStorage.getItem('watchverse.sidebarCollapsed') === '1', cinemaSearchLocation: null, cinemaSearchQuery: '', cinemaLocationFeedback: null, aivengersInitialized: false, lastRenderedRoute: '', defaultSourceStatus: null, defaultSourceSyncRunning: false, viewActionBusy: false
   };
 
@@ -307,6 +307,15 @@
     return `<div class="inline-cinema-loader" role="status"><span class="mini-reel" aria-hidden="true"><i></i><i></i><i></i></span><span><strong>${esc(title)}</strong>${detail ? `<small>${esc(detail)}</small>` : ''}</span></div>`;
   }
 
+  function profileOrder(a, b) {
+    const rank = profile => {
+      if (profile?.id === 'profile-daniela' || String(profile?.name || '').toLowerCase() === 'daniela') return 0;
+      if (profile?.role === 'owner') return 0;
+      return 1;
+    };
+    return rank(a) - rank(b) || String(a?.name || '').localeCompare(String(b?.name || ''), 'it');
+  }
+  function orderedProfiles(profiles = []) { return [...profiles].sort(profileOrder); }
   function profileKey(key) { return `watchverse.${state.profileId || 'none'}.${key}`; }
   function currentProfile() { return state.profiles.find(p => p.id === state.profileId) || null; }
   function profileScoped(base, profileId = state.profileId) { return `${profileId}|${String(base).replace(/^.*?\|/, '')}`; }
@@ -384,6 +393,7 @@
     if (syncCloud) void window.WatchverseCloudSync?.saveSettings(currentProfile(), state.settings).catch(error => console.warn('Watchverse cloud settings sync:', error));
   }
   async function saveProfiles(syncCloud = true, strictCloud = false) {
+    state.profiles = orderedProfiles(state.profiles);
     localStorage.setItem('watchverse.profiles', JSON.stringify(state.profiles));
     if (!syncCloud || !window.WatchverseCloudSync?.saveProfiles) return;
     try {
@@ -1534,8 +1544,7 @@
   function showMetadataStatus() {
     const s = metadataGlobalStatus();
     const groups=syncSourceGroups(s);
-    const cycleText = s.active ? `Ciclo in corso · ${s.cyclePercent}%` : (s.batchCompleted ? 'Ciclo terminato' : 'Ciclo non ancora avviato');
-    openModal('Stato aggiornamento fonti', `<div class="metadata-status-detail"><div class="metadata-status-big"><strong>${s.coveragePercent}%</strong><span>Copertura effettiva dei metadati</span><small>${cycleText}</small></div><div class="progress-track metadata-progress large"><div class="progress-fill" style="width:${s.coveragePercent}%"></div></div><div class="metadata-recap-grid"><div><strong>${s.totalTitles.toLocaleString('it-IT')}</strong><span>Titoli del profilo</span></div><div><strong>${s.essentialIncomplete.toLocaleString('it-IT')}</strong><span>Titoli da verificare</span></div><div><strong>${s.failed.toLocaleString('it-IT')}</strong><span>Errori tecnici</span></div></div><div class="sync-source-groups">${groups.map(syncGroupHtml).join('')}</div>${s.active ? `<p class="metadata-live-line"><span class="inline-spinner" aria-hidden="true"></span>${s.running} elaborazioni attive e ${s.queued} titoli in coda. Puoi continuare a usare l’app.</p>` : ''}</div>`, `<button class="ghost" id="openSourceDetails">Vedi fonti</button><button class="ghost" id="openMetadataIssues">Dettaglio titoli</button><button class="secondary" id="retryMetadata">Riprova non riusciti</button><button class="primary" id="resumeMetadata">Aggiorna ora</button>`);
+    openModal('Stato aggiornamento fonti', `<div class="metadata-status-detail"><div class="metadata-status-big"><strong>${s.coveragePercent}%</strong><span>Copertura effettiva dei metadati</span></div><div class="progress-track metadata-progress large"><div class="progress-fill" style="width:${s.coveragePercent}%"></div></div><div class="metadata-recap-grid"><div><strong>${s.totalTitles.toLocaleString('it-IT')}</strong><span>Titoli del profilo</span></div><div><strong>${s.essentialIncomplete.toLocaleString('it-IT')}</strong><span>Titoli da verificare</span></div><div><strong>${s.failed.toLocaleString('it-IT')}</strong><span>Errori tecnici</span></div></div><div class="sync-source-groups">${groups.map(syncGroupHtml).join('')}</div>${s.active ? `<p class="metadata-live-line"><span class="inline-spinner" aria-hidden="true"></span>Aggiornamento in corso: ${s.running} elaborazioni attive e ${s.queued} titoli in coda. Puoi continuare a usare l’app.</p>` : ''}</div>`, `<button class="ghost" id="openSourceDetails">Vedi fonti</button><button class="ghost" id="openMetadataIssues">Dettaglio titoli</button><button class="secondary" id="retryMetadata">Riprova non riusciti</button><button class="primary" id="resumeMetadata">Aggiorna ora</button>`);
     $('#openSourceDetails')?.addEventListener('click',()=>{closeModal();state.profileSettingsTab='data';location.hash='#/settings';route();});
     $('#openMetadataIssues')?.addEventListener('click',()=>showMetadataIssues('all'));
     $('#retryMetadata')?.addEventListener('click',()=>{for(const item of [...state.series,...state.movies])if(item.publicMetadata?.failedAt||item.publicMetadata?.error)item.publicMetadata={...item.publicMetadata,failedAt:null,error:null,parts:{...(item.publicMetadata?.parts||{}),coreComplete:false}};state.metadataBackgroundStarted=false;state.metadataRecoveryScheduled=false;state.metadataRecoveryDone=false;state.metadataAutoBudget+=50;scheduleBackgroundMetadataSync(true);syncDefaultPublicSources(true);closeModal();showToast('Nuovo tentativo avviato','Le fonti non riuscite verranno ricontrollate.','↻');});
@@ -2674,6 +2683,24 @@
     showToast('Metadati da verificare', `${failedSeries.length + failedMovies.length} titoli richiedono un nuovo tentativo manuale.`, '!', 5200, { kind:'warning' });
   }
 
+  function scheduleNextMetadataBatch() {
+    if (state.metadataContinuationTimer || !state.metadataBackgroundStarted || !navigator.onLine || !state.settings.publicMetadataEnabled || libraryIsEmpty()) return;
+    const remaining = [...state.series, ...state.movies].some(item => {
+      const kind = state.series.includes(item) ? 'series' : 'movie';
+      return needsPublicMetadata(item, kind, true);
+    });
+    if (!remaining) {
+      state.metadataBackgroundStarted = false;
+      return;
+    }
+    state.metadataContinuationTimer = setTimeout(() => {
+      state.metadataContinuationTimer = null;
+      state.metadataAutoBudget = 36;
+      state.metadataBackgroundStarted = false;
+      scheduleBackgroundMetadataSync();
+    }, 1500);
+  }
+
   function pumpMetadataQueue() {
     scheduleMetadataHeaderUpdate();
     while (state.metadataRunning < 2 && state.metadataQueue.length) {
@@ -2702,7 +2729,10 @@
           state.metadataRunning--;
           state.metadataQueuedIds.delete(`${task.kind}:${task.item.id}`);
           scheduleMetadataHeaderUpdate();
-          if (state.metadataRunning === 0 && state.metadataQueue.length === 0) scheduleMetadataRecoveryPass();
+          if (state.metadataRunning === 0 && state.metadataQueue.length === 0) {
+            scheduleMetadataRecoveryPass();
+            scheduleNextMetadataBatch();
+          }
           setTimeout(pumpMetadataQueue, 180);
         });
     }
@@ -3331,6 +3361,12 @@
     if($('#cancelGdpr'))$('#cancelGdpr').addEventListener('click',()=>{state.gdprPreview=null;refreshImportExportView();});
     if($('#confirmGdprImport'))$('#confirmGdprImport').addEventListener('click',e=>{
       const replace = $('#replaceProfileData').checked;
+      if (replace) {
+        openModal('Conferma sostituzione dati', '<div class="destructive-confirmation"><div class="import-error-icon" aria-hidden="true">!</div><div><h3>Il catalogo attuale verrà sostituito</h3><p>Verranno cancellati il catalogo e i progressi cloud del solo profilo corrente prima di importare il file.</p><p class="notice warning">L’operazione non può essere annullata. Vuoi continuare?</p></div></div>', '<button class="ghost" id="cancelReplacement">Annulla</button><button class="danger-button" id="continueReplacement">Continua e sostituisci</button>');
+        $('#cancelReplacement')?.addEventListener('click', closeModal);
+        $('#continueReplacement')?.addEventListener('click', () => { closeModal(); e.currentTarget.disabled = true; importGdprPlan(g, true); });
+        return;
+      }
       if (replace && !window.confirm('Hai selezionato “Sostituisci i dati attuali del profilo”. Questa operazione cancellerà il catalogo e i progressi cloud del solo profilo corrente prima di importare il file. Vuoi continuare?')) return;
       e.currentTarget.disabled=true;
       importGdprPlan(g,replace);
@@ -3967,7 +4003,7 @@
       void window.WatchverseCloudSync?.saveSettings(profile, state.settings).catch(error => console.warn('Watchverse cloud settings sync:', error));
       state.seriesFilter=state.settings.seriesFilter||'unwatched';state.movieFilter=state.settings.movieFilter||'watched';
       state.seriesSort=state.settings.seriesSort||'latestEpisode';state.movieSort=state.settings.movieSort||'recent';
-      state.seriesVisible=60;state.movieVisible=60;state.metadataAutoBudget=36;state.metadataQueue=[];state.metadataQueuedIds.clear();state.metadataBackgroundStarted=false;state.metadataCompletedThisSession=0;state.metadataFailedThisSession=0;state.metadataRecoveryScheduled=false;state.metadataRecoveryDone=false;
+      state.seriesVisible=60;state.movieVisible=60;state.metadataAutoBudget=36;state.metadataQueue=[];state.metadataQueuedIds.clear();clearTimeout(state.metadataContinuationTimer);state.metadataContinuationTimer=null;state.metadataBackgroundStarted=false;state.metadataCompletedThisSession=0;state.metadataFailedThisSession=0;state.metadataRecoveryScheduled=false;state.metadataRecoveryDone=false;
       // Dalla 2.0.3 i profili partono vuoti. Rimuove automaticamente eventuali demo create da versioni precedenti.
       if(state.settings.demoSeeded){
         for(const store of ['series','movies','progress','imports']) await dbClearProfile(store);
@@ -4055,7 +4091,7 @@
         showLoginScreen('Impossibile verificare i profili cloud. Riprova tra poco.');
         return false;
       }
-      state.profiles = cloudProfiles;
+      state.profiles = orderedProfiles(cloudProfiles);
       saveProfiles(false);
     }
     state.authenticated = true;

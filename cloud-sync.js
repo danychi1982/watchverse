@@ -62,7 +62,10 @@
       rows = await request(`/profiles?select=id,account_id,local_id,name,role,avatar_type,avatar_value,pin_hash,pin_salt,created_at,updated_at&account_id=eq.${encodeURIComponent(account)}&order=created_at.asc`);
     }
     const localById = new Map(localProfiles.map(profile => [profile.id, profile]));
-    return rows.map(row => ({
+    return rows.sort((a, b) => {
+      const rank = row => row.local_id === 'profile-daniela' || String(row.name || '').toLowerCase() === 'daniela' || row.role === 'owner' ? 0 : 1;
+      return rank(a) - rank(b) || String(a.name || '').localeCompare(String(b.name || ''), 'it');
+    }).map(row => ({
       ...(localById.get(row.local_id) || {}), id: row.local_id, cloudId: row.id, accountId: row.account_id,
       name: row.name, initial: row.name?.[0]?.toUpperCase() || '?', role: row.role,
       avatarType: row.avatar_type, avatarValue: row.avatar_value, pinHash: row.pin_hash, pinSalt: row.pin_salt,
