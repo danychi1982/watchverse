@@ -12,7 +12,9 @@ Questo file traccia sia le attivita completate sia quelle ancora aperte. Una voc
 
 | Nome intervento | Priorita | Stato | Owner | Effort | Cosa resta da fare |
 | --- | --- | --- | --- | --- | --- |
-| Autenticazione Supabase e account unico | Alta | Parzialmente completato | Daniela | Basso | Testare PIN opzionale e recupero password su piu dispositivi. |
+| Autenticazione Supabase e account unico | Alta | Parzialmente completato | Daniela | Basso | Validare su piu dispositivi il nuovo PIN cloud e il link di recupero dopo aver configurato l'URL di redirect in Supabase. |
+| Visibilita password e PIN | Alta | Completato | Codex | Medio | Nessuna attivita tecnica residua. |
+| Logout globale dopo cambio password | Alta | Completato | Codex | Medio | Nessuna attivita tecnica residua. |
 | Profili Daniela ed Elena | Alta | Completato | Codex | Basso | Nessuna attività tecnica residua. |
 | Catalogo e prima sincronizzazione cloud | Alta | Completato | Codex | Medio | Nessuna attività tecnica residua. |
 | Sincronizzazione cloud bidirezionale | Alta | Parzialmente completato | Daniela | Alto | Validare due dispositivi contemporanei e un conflitto reale. |
@@ -22,6 +24,8 @@ Questo file traccia sia le attivita completate sia quelle ancora aperte. Una voc
 | Programmazione cinema italiana | Alta | Parzialmente completato | Daniela | Alto | Verificare sui cinema configurati i casi con orari mancanti, come Supergirl. |
 | Retry metadati e scelta dell'utente | Alta | Parzialmente completato | Daniela | Medio | Verificare il nuovo flusso manuale `Riprova` / `Ignora per ora`. |
 | Audit responsive mobile | Alta | Parzialmente completato | Daniela | Alto | Validare Home, librerie, dettagli, profilo, import e ricerca su Samsung Galaxy S26+. |
+| Login mobile senza scroll | Alta | Da fare | Condiviso | Medio | Rimuovere la frase non necessaria, riequilibrare gli spazi e verificare la schermata senza scroll su Samsung Galaxy S26+. |
+| Gestione tastiera virtuale nei form | Alta | Da fare | Condiviso | Alto | Adeguare viewport, focus e scroll automatico affinche la tastiera non copra mai il campo attivo. |
 | Test E2E mobile | Alta | Parzialmente completato | Daniela | Medio | Avviare Chrome in modalità CDP ed eseguire la suite sui flussi critici. |
 | VAPT e hardening del deploy | Alta | Parzialmente completato | Daniela | Alto | Eseguire una scansione VAPT/headers sul sito pubblicato e verificare i risultati. |
 | Filtri e organizzazione libreria | Media | Completato | Codex | Medio | Nessuna attività tecnica residua. |
@@ -30,6 +34,7 @@ Questo file traccia sia le attivita completate sia quelle ancora aperte. Una voc
 | Progresso serie ed episodi residui | Media | Parzialmente completato | Daniela | Medio | Verificare la resa delle card e dei dettagli con serie reali. |
 | Calendario, watchlist e ricerca globale | Media | Completato | Codex | Alto | Nessuna attività tecnica residua. |
 | Pacchetto favicon/PWA | Bassa | Parzialmente completato | Daniela | Basso | Verificare icone e installazione PWA su Android e GitHub Pages. |
+| Trasparenza del logo nella login | Media | Da fare | Codex | Basso | Rendere trasparente lo sfondo dell'asset o integrarlo correttamente con lo sfondo del box della login. |
 | Design system e identita visiva | Bassa | Completato | Codex | Medio | Nessuna attività tecnica residua. |
 | Build, versioning e deploy | Media | Completato | Codex | Basso | Nessuna attività tecnica residua. |
 

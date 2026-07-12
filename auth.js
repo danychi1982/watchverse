@@ -142,6 +142,9 @@
       const session = await restoreSession();
       if (!session?.access_token) throw new Error('Sessione scaduta: accedi di nuovo.');
       await cloudRequest('/user', { method: 'PUT', headers: { Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify({ password: newPassword }) });
+      // Supabase revoca i refresh token di tutte le sessioni con lo scope globale.
+      await cloudRequest('/logout', { method: 'POST', headers: { Authorization: `Bearer ${session.access_token}` } });
+      signOut();
       return;
     }
     if (!(await verifyPassword(currentPassword))) throw new Error('La password attuale non è corretta.');
@@ -168,13 +171,33 @@
     if (!cloudConfigured()) throw new Error('Il recupero via email sarà attivo dopo la configurazione Supabase.');
     await cloudRequest('/recover', {
       method: 'POST',
-      body: JSON.stringify({ email, redirect_to: location.origin + location.pathname })
+      body: JSON.stringify({ email, redirect_to: config.recoveryRedirectUrl || `${location.origin}${location.pathname}` })
     });
+  }
+
+  function acceptRecoveryRedirect() {
+    const hash = new URLSearchParams(String(location.hash || '').replace(/^#/, ''));
+    if (hash.get('error')) return { ok: false, error: hash.get('error_description') || hash.get('error') };
+    const accessToken = hash.get('access_token');
+    const refreshToken = hash.get('refresh_token');
+    if (!accessToken || !refreshToken || hash.get('type') !== 'recovery') return { ok: true, recovery: false };
+    storeSession({ mode: 'cloud', access_token: accessToken, refresh_token: refreshToken, token_type: hash.get('token_type') || 'bearer', expires_in: Number(hash.get('expires_in') || 3600), expires_at: Number(hash.get('expires_at') || Math.floor(Date.now() / 1000) + 3600), createdAt: Date.now(), remember: true }, true);
+    history.replaceState(null, '', `${location.pathname}${location.search}`);
+    return { ok: true, recovery: true };
+  }
+
+  async function updatePassword(newPassword) {
+    if (String(newPassword || '').length < 6) throw new Error('La nuova password deve avere almeno 6 caratteri.');
+    const session = await restoreSession();
+    if (!session?.access_token) throw new Error('Il link di recupero non è più valido. Richiedi una nuova email.');
+    await cloudRequest('/user', { method: 'PUT', headers: { Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify({ password: newPassword }) });
+    await cloudRequest('/logout', { method: 'POST', headers: { Authorization: `Bearer ${session.access_token}` } }).catch(() => {});
+    signOut();
   }
 
   root.WatchverseAuth = {
     readAccount, setup, signIn, signOut, getSession, restoreSession, verifyPassword, changePassword, localReset,
-    sendRecoveryEmail, cloudConfigured, defaults: {
+    sendRecoveryEmail, acceptRecoveryRedirect, updatePassword, cloudConfigured, defaults: {
       username: config.accountUsername || '',
       email: config.recoveryEmail || ''
     }
