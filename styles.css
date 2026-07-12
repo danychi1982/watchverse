@@ -976,6 +976,40 @@ main:focus { outline: none; }
   .metadata-status-button.is-working .metadata-status-symbol { animation:none; }
 }
 
+/* Stato metadati compatto: il dettaglio resta nel pop-up e non compete con il wordmark. */
+.metadata-status-button {
+  position:relative;
+  min-width:48px;
+  width:48px;
+  height:48px;
+  min-height:48px;
+  padding:0;
+  display:grid;
+  place-items:center;
+  grid-template-columns:1fr;
+  grid-template-rows:1fr;
+  border-radius:14px;
+}
+.metadata-status-button .metadata-status-symbol {
+  grid-row:auto;
+  width:30px;
+  height:30px;
+  margin:0;
+}
+.metadata-status-button .metadata-status-copy,
+.metadata-status-button .metadata-status-track { display:none; }
+.metadata-status-dot {
+  position:absolute;
+  top:5px;
+  right:5px;
+  width:9px;
+  height:9px;
+  border:2px solid var(--surface);
+  border-radius:50%;
+  background:var(--danger);
+}
+.metadata-status-dot[hidden] { display:none; }
+
 
 /* Watchverse 2.0.8: statistiche separate per Film e Serie TV */
 .stats-head { align-items:center; }

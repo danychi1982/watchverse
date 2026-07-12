@@ -56,9 +56,10 @@
           <img class="topbar-wordmark" src="assets/brand/watchverse-dragon-wordmark.svg" alt="Watchverse. Scegli cosa guardare. Ricorda cosa hai visto.">
         </a>
         <div class="top-actions">
-          <button id="metadataStatusButton" class="metadata-status-button hidden" type="button" title="Stato aggiornamento metadati">
+          <button id="metadataStatusButton" class="metadata-status-button hidden" type="button" title="Stato aggiornamento metadati" aria-label="Stato aggiornamento metadati">
             <span class="metadata-status-symbol" aria-hidden="true">↻</span>
-            <span class="metadata-status-copy"><strong id="metadataStatusLabel">Metadati</strong><small id="metadataStatusSummary">Aggiornamento libreria</small></span>
+            <span id="metadataStatusDot" class="metadata-status-dot" aria-hidden="true"></span>
+            <span class="metadata-status-copy" aria-hidden="true"><strong id="metadataStatusLabel">Metadati</strong><small id="metadataStatusSummary">Aggiornamento libreria</small></span>
             <span class="metadata-status-track" aria-hidden="true"><span id="metadataStatusBar"></span></span>
           </button>
           <button id="installButton" class="icon-button hidden" type="button" title="Installa Watchverse" aria-label="Installa Watchverse"><svg class="control-icon install-app-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="13" rx="2"></rect><path d="M8 21h8M12 16v5M8.5 12.5 12 15.5l3.5-3"></path></svg></button>

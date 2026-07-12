@@ -1379,7 +1379,9 @@
     const status = metadataGlobalStatus();
     button.classList.remove('hidden');
     button.classList.toggle('is-working', status.active);
-    button.classList.toggle('has-errors', status.failed > 0 && !status.active);
+    const hasIssues = !status.active && (status.failed > 0 || status.incomplete > 0);
+    button.classList.toggle('has-errors', hasIssues);
+    $('#metadataStatusDot')?.toggleAttribute('hidden', !hasIssues);
     const label = $('#metadataStatusLabel');
     const summary = $('#metadataStatusSummary');
     const fill = $('#metadataStatusBar');
