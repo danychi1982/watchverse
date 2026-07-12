@@ -20,5 +20,8 @@ if (!app.includes("location.hash = kind === 'series' ? '#/series' : '#/movies';"
 if (!app.includes("const excluded=new Set([...state.series, ...state.movies].map(item=>item.id));")) {
   throw new Error('Le proposte non escludono la libreria gia\u0027 presente.');
 }
+if (!app.includes('scheduleMetadataRecoveryPass();\n      return;')) {
+  throw new Error('I retry metadati persistenti non richiedono una scelta manuale.');
+}
 
 console.log('Watchverse 1.0.0: refresh e fallback offline verificati');
