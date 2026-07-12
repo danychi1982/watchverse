@@ -1,5 +1,6 @@
 const fs=require('fs');
 const app=fs.readFileSync('app.js','utf8');
+if(!app.includes('metadata-cycle-state')) throw new Error('Stato del ciclo metadati non visibile nel riepilogo');
 const html=fs.readFileSync('index.html','utf8');
 const css=fs.readFileSync('styles.css','utf8');
 function assert(v,m){if(!v)throw new Error(m)}

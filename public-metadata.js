@@ -75,6 +75,15 @@
     return score;
   }
 
+  function looksLikePersonDescription(value = '') {
+    return /\b(è un[’']?|e un[’']?|is an?|was an?|attrice|attore|actor|actress|regista|director|scrittor[ec]|writer|nato il|nata il|born)\b/i.test(String(value));
+  }
+
+  function relevantCatalogResult(title, overview, query) {
+    if (!title || looksLikePersonDescription(overview)) return false;
+    return titleScore(title, query) >= 48;
+  }
+
   function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
   async function fetchJson(url, options = {}, attempt = 0) {
@@ -700,11 +709,11 @@
           poster: show.image?.medium || show.image?.original || null,
           tvdbId: show.externals?.thetvdb || null, score: row.score || 0
         };
-      }));
+      }).filter(row => relevantCatalogResult(row.title, row.overview, query)));
     } catch { /* Wikipedia fallback below */ }
     try {
       const wiki = await wikipediaSearchLanguage({ title: query, kind: 'tv', language: 'it' });
-      if (wiki) results.unshift({ kind: 'tv', publicProvider: 'wikipedia', id: `itwiki-${wiki.pageid}`, title: wiki.title, originalTitle: query, aliases: unique([wiki.title, query]), year: yearOf(wiki.pageTitle + ' ' + wiki.overview), overview: wiki.overview, poster: wiki.poster, wikidataId: wiki.wikidataId, score: 1 });
+      if (wiki && relevantCatalogResult(wiki.title, wiki.overview, query)) results.unshift({ kind: 'tv', publicProvider: 'wikipedia', id: `itwiki-${wiki.pageid}`, title: wiki.title, originalTitle: query, aliases: unique([wiki.title, query]), year: yearOf(wiki.pageTitle + ' ' + wiki.overview), overview: wiki.overview, poster: wiki.poster, wikidataId: wiki.wikidataId, score: 1 });
     } catch {}
     return [...new Map(results.map(x => [`${normalize(x.title)}:${x.year || ''}`, x])).values()].slice(0, 12);
   }
@@ -724,7 +733,7 @@
         aliases: [cleanWikiTitle(page.title)], year: yearOf(page.title + ' ' + (page.extract || '')),
         overview: stripHtml(page.extract || ''), poster: page.thumbnail?.source || null,
         wikidataId: page.pageprops?.wikibase_item || null, wikipediaPageId: page.pageid, language
-      }));
+      })).filter(row => relevantCatalogResult(row.title, row.overview, query));
   }
 
   async function searchMovies(query) {

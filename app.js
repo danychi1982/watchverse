@@ -1544,7 +1544,7 @@
   function showMetadataStatus() {
     const s = metadataGlobalStatus();
     const groups=syncSourceGroups(s);
-    openModal('Stato aggiornamento fonti', `<div class="metadata-status-detail"><div class="metadata-status-big"><strong>${s.coveragePercent}%</strong><span>Copertura effettiva dei metadati</span></div><div class="progress-track metadata-progress large"><div class="progress-fill" style="width:${s.coveragePercent}%"></div></div><div class="metadata-recap-grid"><div><strong>${s.totalTitles.toLocaleString('it-IT')}</strong><span>Titoli del profilo</span></div><div><strong>${s.essentialIncomplete.toLocaleString('it-IT')}</strong><span>Titoli da verificare</span></div><div><strong>${s.failed.toLocaleString('it-IT')}</strong><span>Errori tecnici</span></div></div><div class="sync-source-groups">${groups.map(syncGroupHtml).join('')}</div>${s.active ? `<p class="metadata-live-line"><span class="inline-spinner" aria-hidden="true"></span>Aggiornamento in corso: ${s.running} elaborazioni attive e ${s.queued} titoli in coda. Puoi continuare a usare l’app.</p>` : ''}</div>`, `<button class="ghost" id="openSourceDetails">Vedi fonti</button><button class="ghost" id="openMetadataIssues">Dettaglio titoli</button><button class="secondary" id="retryMetadata">Riprova non riusciti</button><button class="primary" id="resumeMetadata">Aggiorna ora</button>`);
+    openModal('Stato aggiornamento fonti', `<div class="metadata-status-detail"><div class="metadata-status-big"><strong>${s.coveragePercent}%</strong><div><span>Copertura effettiva dei metadati</span><small class="metadata-cycle-state">${s.active ? 'Aggiornamento in corso' : 'Ciclo completato'}</small></div></div><div class="progress-track metadata-progress large"><div class="progress-fill" style="width:${s.coveragePercent}%"></div></div><div class="metadata-recap-grid"><div><strong>${s.totalTitles.toLocaleString('it-IT')}</strong><span>Titoli del profilo</span></div><div><strong>${s.essentialIncomplete.toLocaleString('it-IT')}</strong><span>Titoli da verificare</span></div><div><strong>${s.failed.toLocaleString('it-IT')}</strong><span>Errori tecnici</span></div></div><div class="sync-source-groups">${groups.map(syncGroupHtml).join('')}</div>${s.active ? `<p class="metadata-live-line"><span class="inline-spinner" aria-hidden="true"></span>Aggiornamento in corso: ${s.running} elaborazioni attive e ${s.queued} titoli in coda. Puoi continuare a usare l’app.</p>` : ''}</div>`, `<button class="ghost" id="openSourceDetails">Vedi fonti</button><button class="ghost" id="openMetadataIssues">Dettaglio titoli</button><button class="secondary" id="retryMetadata">Riprova non riusciti</button><button class="primary" id="resumeMetadata">Aggiorna ora</button>`);
     $('#openSourceDetails')?.addEventListener('click',()=>{closeModal();state.profileSettingsTab='data';location.hash='#/settings';route();});
     $('#openMetadataIssues')?.addEventListener('click',()=>showMetadataIssues('all'));
     $('#retryMetadata')?.addEventListener('click',()=>{for(const item of [...state.series,...state.movies])if(item.publicMetadata?.failedAt||item.publicMetadata?.error)item.publicMetadata={...item.publicMetadata,failedAt:null,error:null,parts:{...(item.publicMetadata?.parts||{}),coreComplete:false}};state.metadataBackgroundStarted=false;state.metadataRecoveryScheduled=false;state.metadataRecoveryDone=false;state.metadataAutoBudget+=50;scheduleBackgroundMetadataSync(true);syncDefaultPublicSources(true);closeModal();showToast('Nuovo tentativo avviato','Le fonti non riuscite verranno ricontrollate.','↻');});
@@ -1801,7 +1801,7 @@
     const store = kind === 'series' ? 'series' : 'movies';
     const list = kind === 'series' ? state.series : state.movies;
     const item = list.find(x => x.id === id);
-    if (!item || !window.confirm(`Rimuovere “${item.title}” dalla libreria?`)) return;
+    if (!item || !(await confirmLibraryRemoval(item.title))) return;
     await dbDelete(store, id);
     if (kind === 'series') {
       const related = state.progress.filter(x => x.seriesId === id);
@@ -1813,7 +1813,17 @@
     }
     rebuildIndexes();
     showToast('Titolo rimosso dalla libreria', item.title, '×');
-    route();
+    location.hash = kind === 'series' ? '#/series' : '#/movies';
+    await route({ loader:false });
+  }
+  function confirmLibraryRemoval(title) {
+    return new Promise(resolve => {
+      let settled = false;
+      const finish = value => { if (settled) return; settled = true; closeModal(); resolve(value); };
+      openModal('Conferma rimozione', `<div class="destructive-confirmation"><div class="import-error-icon" aria-hidden="true">!</div><div><h3>Rimuovere il titolo dalla libreria?</h3><p><strong>${esc(title)}</strong> e i relativi progressi verranno rimossi dal profilo corrente.</p><p class="notice warning">Questa operazione non può essere annullata.</p></div></div>`, '<button class="ghost" id="cancelLibraryRemoval">Annulla</button><button class="danger-button" id="confirmLibraryRemoval">Rimuovi definitivamente</button>');
+      $('#cancelLibraryRemoval')?.addEventListener('click', () => finish(false));
+      $('#confirmLibraryRemoval')?.addEventListener('click', () => finish(true));
+    });
   }
   function addDetailRemovalAction(kind, item) {
     const panel = $('#main aside .content-card');
@@ -2304,7 +2314,7 @@
       ${items.length ? `<div class="${view==='grid'?'media-grid':'media-list'}">${visible.map(s => view==='grid'?mediaCard(s,'series'):mediaRow(s,'series')).join('')}</div>${visible.length < items.length ? `<div class="load-more"><button class="secondary" id="loadMoreSeries">Mostra altre ${Math.min(60, items.length-visible.length)} serie</button><span>${visible.length} di ${items.length}</span></div>` : ''}` : `<div class="empty-state"><div class="empty-icon">▣</div><h3>Nessuna serie trovata</h3><p>Cambia filtro o importa la tua cronologia.</p><a class="primary" href="#/import">Importa dati</a></div>`}`);
 
     $$('[data-filter]').forEach(b => b.addEventListener('click', () => runViewAction(b, () => { state.seriesFilter=b.dataset.filter; state.seriesVisible=60; state.settings.seriesFilter=state.seriesFilter; saveSettings(); renderSeriesLibrary(); })));
-    $('#seriesSearch').addEventListener('input', debounce(e => { state.seriesSearch=e.target.value; state.seriesVisible=60; renderSeriesLibrary(); }, 180));
+    $('#seriesSearch').addEventListener('input', debounce(e => { const input=e.target; state.seriesSearch=input.value; state.seriesVisible=60; const hadFocus=document.activeElement===input; const selection=input.selectionStart; renderSeriesLibrary(); if(hadFocus){const next=$('#seriesSearch'); next?.focus({preventScroll:true}); if(selection!==null) next?.setSelectionRange(selection,selection);} }, 360));
     $$('[data-view]').forEach(b => b.addEventListener('click', () => runViewAction(b, () => { state.settings.seriesView=b.dataset.view; saveSettings(); renderSeriesLibrary(); })));
     $('#seriesSort').addEventListener('change', e => { state.seriesSort=e.target.value; state.settings.seriesSort=state.seriesSort; state.seriesVisible=60; saveSettings(); renderSeriesLibrary(); });
     $('#loadMoreSeries')?.addEventListener('click',()=>{state.seriesVisible+=60;renderSeriesLibrary();});
@@ -2373,7 +2383,8 @@
   function profileRecommendations(limit = 10) {
     const liked=[...state.series.map(x=>({item:x,kind:'series'})),...state.movies.map(x=>({item:x,kind:'movie'}))].filter(row=>row.item.favorite||Number(row.item.rating||0)>=8);
     if(!liked.length)return [];
-    const excluded=new Set(liked.map(row=>row.item.id));
+    // Le proposte devono essere titoli nuovi per il profilo.
+    const excluded=new Set([...state.series, ...state.movies].map(item=>item.id));
     const candidates=[...state.series.map(x=>({item:x,kind:'series'})),...state.movies.map(x=>({item:x,kind:'movie'}))].filter(row=>!excluded.has(row.item.id)&&!(row.kind==='movie'&&row.item.watched&&Number(row.item.rating||0)<8));
     return candidates.map(row=>{let score=0;for(const seed of liked)score=Math.max(score,recommendationScore(seed.item,row.item,seed.kind,row.kind));return{...row,score};}).filter(row=>row.score>0).sort((a,b)=>b.score-a.score||String(a.item.title).localeCompare(String(b.item.title),'it')).slice(0,limit);
   }
@@ -2847,6 +2858,9 @@
       const localMatches=local.filter(x=>matchesMediaSearch(x,q)).slice(0,10);
       const localCatalogIds=new Set(local.map(item=>findSharedCatalogEntry(item.kind,item)?.id).filter(Boolean));
       const sharedMatches=sharedCatalogSearch(q,12).filter(row=>!localCatalogIds.has(row.catalogEntryId));
+      const resultKey = row => `${row.kind}|${normalizeTitleForMatch(row.title)}`;
+      const localKeys = new Set(local.map(resultKey));
+      const sharedKeys = new Set(sharedMatches.map(resultKey));
       state.catalogResults=sharedMatches;
       const localHtml=`${localMatches.length?'<h3>Già nella libreria del profilo</h3>':''}${localMatches.map(x=>searchResultHtml({kind:x.kind,id:x.id,title:x.title,originalTitle:x.originalTitle,year:x.year,overview:x.overview,poster:x.poster},true)).join('')}`;
       const sharedHtml=sharedMatches.length?`<h3 style="margin-top:20px">Già scaricati sul dispositivo</h3>${sharedMatches.map(x=>searchResultHtml(x,false,'catalog')).join('')}`:'';
@@ -2857,10 +2871,13 @@
         const tasks=[api?.searchSeries(q)||Promise.resolve([]),api?.searchMovies(q)||Promise.resolve([])];
         if(tmdbReady)tasks.push(searchTMDB(q));
         const values=await Promise.allSettled(tasks);
-        const publicRows=[...(values[0].status==='fulfilled'?values[0].value:[]),...(values[1].status==='fulfilled'?values[1].value:[])];
-        const tmdbRows=tmdbReady&&values[2]?.status==='fulfilled'?values[2].value:[];
-        state.publicResults=publicRows;state.tmdbResults=tmdbRows;
-        result.innerHTML=`${localHtml}${sharedHtml}<h3 style="margin-top:20px">Risultati pubblici</h3>${publicRows.map(x=>searchResultHtml(x,false)).join('')||'<p class="notice">Nessun ulteriore risultato pubblico.</p>'}${tmdbRows.length?`<h3 style="margin-top:20px">Risultati TMDB</h3>${tmdbRows.map(x=>searchResultHtml(x,false,'tmdb')).join('')}`:''}`;
+        const publicRows=[...(values[0].status==='fulfilled'?values[0].value:[]),...(values[1].status==='fulfilled'?values[1].value:[])].filter(row=>row.kind==='tv'||row.kind==='movie');
+        const tmdbRows=(tmdbReady&&values[2]?.status==='fulfilled'?values[2].value:[]).filter(row=>row.kind==='tv'||row.kind==='movie');
+        const seenPublic=new Set([...localKeys,...sharedKeys]);
+        const uniquePublic=publicRows.filter(row=>{const key=resultKey(row);if(seenPublic.has(key))return false;seenPublic.add(key);return true;});
+        const uniqueTmdb=tmdbRows.filter(row=>{const key=resultKey(row);if(seenPublic.has(key))return false;seenPublic.add(key);return true;});
+        state.publicResults=uniquePublic;state.tmdbResults=uniqueTmdb;
+        result.innerHTML=`${localHtml}${sharedHtml}<h3 style="margin-top:20px">Risultati disponibili</h3>${uniquePublic.map(x=>searchResultHtml(x,false)).join('')}${uniqueTmdb.map(x=>searchResultHtml(x,false,'tmdb')).join('')||(!uniquePublic.length?'<p class="notice">Nessun risultato disponibile da aggiungere.</p>':'')}`;
         bindSearchActions();
       }catch(e){result.innerHTML+=`<p class="notice danger">${esc(e.message)}</p>`;}
     },420);input.addEventListener('input',run);
@@ -3367,7 +3384,6 @@
         $('#continueReplacement')?.addEventListener('click', () => { closeModal(); e.currentTarget.disabled = true; importGdprPlan(g, true); });
         return;
       }
-      if (replace && !window.confirm('Hai selezionato “Sostituisci i dati attuali del profilo”. Questa operazione cancellerà il catalogo e i progressi cloud del solo profilo corrente prima di importare il file. Vuoi continuare?')) return;
       e.currentTarget.disabled=true;
       importGdprPlan(g,replace);
     });
@@ -3995,6 +4011,7 @@
   }
   async function activateProfile(id) {
     const profile = state.profiles.find(item => item.id === id);
+    const requestedHash = location.hash && location.hash !== '#/' ? location.hash : '#/home';
     const loaderToken = showBlockingLoader(`Apro il profilo di ${profile?.name || 'Watchverse'}`, 'Carico libreria, preferenze e catalogo condiviso.');
     await nextPaint();
     try {
@@ -4011,17 +4028,18 @@
       }
       // Online il cloud viene riallineato prima di leggere la cache IndexedDB;
       // offline la cache resta il fallback per permettere comunque l'accesso.
-      if (window.WatchverseCloudSync?.isEnabled()) await syncCloudProfile(profile);
+      // Offline la cache locale resta leggibile; il cloud viene riallineato solo online.
+      if (window.WatchverseCloudSync?.isEnabled() && navigator.onLine) await syncCloudProfile(profile);
       await reloadData();
       showAppShell();
       renderNav('home');
       state.lastRenderedRoute = '';
-      location.hash='#/home';
+      location.hash=requestedHash;
       await route({ loader:false });
       if (window.WatchverseCloudSync?.isEnabled()) showToast('Sincronizzazione in corso', 'La libreria si aggiorna in background.', '↻', 7000, { kind:'sync' });
       idle(async () => {
         let backgroundProfile = state.profiles.find(item => item.id === id);
-        if (!backgroundProfile || state.profileId !== id) return;
+        if (!backgroundProfile || state.profileId !== id || !navigator.onLine) return;
         await syncCloudProfile(backgroundProfile, { onlyProgress: true });
         if (state.profileId === id) {
           await reloadData();
@@ -4087,14 +4105,28 @@
     if (sync?.isEnabled()) {
       const cloudProfiles = await bootstrapCloudProfilesWithRetry(1);
       if (!Array.isArray(cloudProfiles) || !cloudProfiles.length) {
-        state.authenticated = false;
-        showLoginScreen('Impossibile verificare i profili cloud. Riprova tra poco.');
-        return false;
+        if (navigator.onLine || !state.profiles.length) {
+          state.authenticated = false;
+          showLoginScreen('Impossibile verificare i profili cloud. Riprova tra poco.');
+          return false;
+        }
+        // Offline: usa i profili locali e lascia il riallineamento al prossimo accesso online.
+      } else {
+        state.profiles = orderedProfiles(cloudProfiles);
+        saveProfiles(false);
       }
-      state.profiles = orderedProfiles(cloudProfiles);
-      saveProfiles(false);
     }
     state.authenticated = true;
+    const savedProfileId = localStorage.getItem('watchverse.currentProfile');
+    const savedProfile = state.profiles.find(profile => profile.id === savedProfileId);
+    if (savedProfile && !savedProfile.pinHash) {
+      try {
+        await activateProfile(savedProfile.id);
+        return true;
+      } catch (error) {
+        console.warn('Watchverse: ripristino profilo dopo refresh non riuscito:', error);
+      }
+    }
     showProfileGate();
     return true;
   }
