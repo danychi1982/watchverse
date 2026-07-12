@@ -43,6 +43,16 @@ Questo file raccoglie le attivita completate, in corso e ancora aperte. Non rapp
 | Calendario, watchlist e ricerca globale | Media | Completato | Codex | Alto | Nessuna attività tecnica residua. |
 | Pacchetto favicon/PWA | Bassa | Parzialmente completato | Daniela | Basso | Verificare icone e installazione PWA su Android e GitHub Pages. |
 | Trasparenza del logo nella login | Media | Da fare | Codex | Basso | Rendere trasparente lo sfondo dell'asset o integrarlo correttamente con lo sfondo del box della login. |
+| Redirect dopo rimozione dalla libreria | Media | Da fare | Codex | Basso | Dopo la rimozione dal dettaglio, reindirizzare alla lista Film/Serie oppure alla Home invece di lasciare la rotta del titolo eliminato. |
+| Refix test ricerca persone | Media | Da fare | Codex | Basso | Correggere il test funzionale e il contratto della ricerca per impedire l'inserimento delle persone nel catalogo. |
+| Proposte basate sui gusti senza titoli duplicati | Media | Da fare | Codex | Medio | Escludere sempre film e serie già presenti nella libreria dalle proposte personalizzate. |
+| Ricerca House of Cards più pertinente | Media | Da fare | Codex | Medio | Limitare i risultati ai titoli film/serie pertinenti, filtrare le persone e ridurre i falsi positivi restituiti dai provider. |
+| Sincronizzazione cloud preferiti e modifiche profilo | Alta | Da fare | Codex | Medio | Correggere il salvataggio cloud dei preferiti e verificare persistenza dopo pulizia cache e su più dispositivi. |
+| Ricerca Serie e tastiera mobile | Alta | Da fare | Codex | Medio | Verificare a tappeto tutti i campi di ricerca automatica e mantenere la tastiera durante la digitazione. |
+| Refresh senza perdere la pagina corrente | Media | Da fare | Codex | Medio | Dopo F5 o pull-to-refresh mantenere rotta, sezione, filtri e tab correnti invece di tornare alla scelta profilo. |
+| Accesso offline dopo refresh | Alta | Da fare | Codex | Medio | Consentire il rientro nel profilo e la lettura della cache dopo F5 offline, senza bloccare la scelta profilo. |
+| Ricerca con perdita di focus desktop/mobile | Alta | Da fare | Codex | Medio | Evitare il rerender del campo a ogni carattere: mantenere focus desktop e tastiera mobile durante la ricerca automatica. |
+| Stato aggiornamento metadati sempre esplicito | Media | Da fare | Codex | Basso | Mostrare chiaramente nella parte alta del dialog se il ciclo è in corso o completato, senza reintrodurre la percentuale interna dei lotti. |
 | Design system e identita visiva | Bassa | Completato | Codex | Medio | Nessuna attività tecnica residua. |
 | Build, versioning e deploy | Media | Completato | Codex | Basso | Nessuna attività tecnica residua. |
 
@@ -78,6 +88,21 @@ Le seguenti voci hanno ricevuto un intervento tecnico in questa release. Restano
 | Fonti dati complete | In corso | Alta | Proxy TMDB/JustWatch e trailer attivi; copertura cinema e titoli problematici da completare |
 | Filtri e organizzazione libreria | In corso | Media | Prima uniformazione applicata; restano filtri avanzati e viste |
 | Mobile web e app Android | In corso | Alta | Responsive/PWA migliorati; resta audit su smartphone e decisione wrapper |
+
+## Aggiornamento tecnico successivo — 12 luglio 2026
+
+Queste righe integrano lo stato del registro precedente e prevalgono sulle voci omonime quando indicano un intervento più recente.
+
+| Nome intervento | Priorita | Stato | Owner | Effort | Cosa resta da fare |
+| --- | --- | --- | --- | --- | --- |
+| Allineamento icone mostra/nascondi | Alta | Parzialmente completato | Daniela | Basso | Verificare su tutti i dialog password e PIN che l'icona sia interna al campo e che cambi correttamente tra mostra e nascondi. |
+| Contrasto barra di navigazione mobile | Alta | Parzialmente completato | Daniela | Basso | Verificare su Samsung Galaxy S26+ testo, icona, sfondo e focus dello stato selezionato. |
+| Audit contrasto interfaccia e importazione | Alta | Parzialmente completato | Daniela | Medio | Verificare visivamente testi, badge, link, focus e indicatori, incluso il riepilogo importazione. |
+| Rimozione sicura dalla libreria | Alta | Parzialmente completato | Daniela | Medio | Verificare su film e serie il pulsante solo nel dettaglio, il dialog applicativo e la rimozione sincronizzata. |
+| Risultati Cerca in lista unica | Media | Parzialmente completato | Daniela | Medio | Verificare lista unificata, deduplicazione e azioni Apri/Aggiungi su risultati locali, catalogo e fonti pubbliche. |
+| Ricerca limitata a film e serie | Media | Parzialmente completato | Daniela | Medio | Verificare esclusione delle persone e coerenza dei filtri Tutti/Film/Serie TV. |
+| Proposte Cerca senza duplicati | Media | Da fare | Codex | Medio | Escludere dalle proposte i titoli già presenti, mantenendo suggerimenti affini basati sui gusti. |
+| Trasparenza del logo nella login | Media | Da fare | Codex | Basso | Rendere trasparente lo sfondo dell'asset o integrarlo correttamente con il box della login. |
 | Identita visiva e favicon | In corso | Bassa | Tema Watchverse black e prime proposte di marchio aggiunti |
 | Backup, export e sicurezza | In corso | Alta | Export/restore e security review presenti; restano test VAPT e hardening deploy |
 | Monitoraggio errori e qualita deploy | In corso | Media | Diagnostica metadati, build numerate e test mirati presenti |
@@ -373,3 +398,41 @@ La favicon puo essere anticipata se vogliamo una vittoria rapida, ma non sblocca
 - completare il pacchetto favicon/PWA con icone 192, 512 e maskable;
 - verificare la resa finale del nuovo logo su browser, login, profili, header e home screen;
 - rifinire stati vuoti e dettagli estetici dopo la validazione funzionale delle priorita alte e medie.
+
+## Stato aggiornato dopo il ciclo di fix — 12 luglio 2026
+
+| Nome intervento | Priorita | Stato | Owner | Effort | Cosa resta da fare |
+|---|---|---|---|---|---|
+| Refresh senza perdere pagina e filtro | Media | Parzialmente completato | Daniela | Medio | Verificare online e offline su Home, Serie e Film; i profili protetti da PIN devono continuare a richiedere il PIN. |
+| Ricerca con perdita di focus desktop/mobile | Alta | Da fare | Codex | Medio | Correggere il rerender dei campi di ricerca e verificare tutti i campi con ricerca automatica. |
+| Accesso offline dopo refresh | Alta | Parzialmente completato | Daniela | Medio | Confermare manualmente F5 offline con sessione e cache già disponibili. |
+| Sincronizzazione cloud di preferiti e modifiche profilo | Alta | Da fare | Codex | Medio | Verificare e correggere la persistenza cloud dei preferiti dopo pulizia cache e su più dispositivi. |
+| Sincronizzazione bidirezionale con conflitti | Alta | Parzialmente completato | Daniela | Medio | Eseguire i test multi-dispositivo e confermare i casi di conflitto. |
+| IndexedDB come sola cache offline | Alta | Da fare | Codex | Medio | Completare la separazione tra dati cloud primari e cache locale. |
+| Proxy TMDB/JustWatch, trailer, streaming e cinema | Alta | Parzialmente completato | Daniela | Medio | Verificare i titoli incompleti e correggere le fonti/proxy che restituiscono errori o dati mancanti. |
+| Retry metadati deciso dall'utente | Alta | Da fare | Codex | Medio | Evitare il retry automatico al login e offrire Riprova/Ignora per ora con stato persistente. |
+| Stabilizzazione test E2E GitHub Actions | Alta | Bloccato | Codex | Medio | Correggere il gate di autenticazione del test; il workflow resta sospeso per evitare notifiche di run falliti. |
+| Audit mobile responsive | Alta | Da fare | Codex | Alto | Completare verifica su Samsung Galaxy S26+ e sistemare dettagli, cast, header e navigazione mobile. |
+| Risultati ricerca pertinenti e senza persone | Media | Parzialmente completato | Daniela | Medio | Validare House of Cards e ricerche di persone; ridurre ulteriormente i falsi positivi. |
+| Proposte basate sui gusti senza duplicati | Media | Da fare | Codex | Medio | Escludere sempre film e serie già presenti nella libreria. |
+| Feedback di caricamento globale | Media | Parzialmente completato | Daniela | Medio | Audit manuale di tutte le azioni asincrone e verifica su rete lenta/mobile. |
+| Stato aggiornamento metadati esplicito | Media | Parzialmente completato | Daniela | Basso | Confermare visivamente “Aggiornamento in corso” e “Ciclo completato” nel pannello. |
+| Rimozione dal dettaglio con redirect | Media | Da fare | Codex | Basso | Reindirizzare alla lista Film/Serie o alla Home dopo la rimozione definitiva. |
+| Conferma import sostitutivo aderente al design system | Media | Parzialmente completato | Daniela | Medio | Confermare manualmente il dialog applicativo su desktop e mobile. |
+| Ricerca risultati in lista unica | Media | Parzialmente completato | Daniela | Medio | Validare la presenza di una sola riga per titolo e i comandi Apri/Aggiungi. |
+| Contrasto colori e controllo globale | Media | Parzialmente completato | Daniela | Basso | Eseguire un controllo a tappeto dopo l'ultimo ciclo di import e sui temi disponibili. |
+| Mostra/nascondi per tutti i campi password e PIN | Media | Da fare | Codex | Basso | Ricontrollare che l'icona sia sempre interna al campo e coerente con lo stato. |
+| Redirect dopo rimozione dalla libreria | Media | Da fare | Codex | Basso | Evitare la pagina “Film/Serie non trovato” dopo la rimozione. |
+| Trasparenza logo in login | Bassa | Da fare | Codex | Basso | Eliminare la differenza di sfondo dell'asset senza alterare gli SVG approvati. |
+| Favicon/PWA aggiornata | Bassa | Da fare | Codex | Basso | Generare e verificare favicon 192/512, maskable e cache PWA. |
+
+### Delta implementato nello stesso ciclo
+
+| Nome intervento | Priorita | Stato | Owner | Effort | Cosa resta da fare |
+|---|---|---|---|---|---|
+| Refresh con ripristino della rotta | Media | Implementato | Daniela | Medio | Test manuale online/offline. |
+| Fallback cache dopo refresh offline | Alta | Implementato | Daniela | Medio | Test manuale con sessione autenticata e cache disponibile. |
+| Ricerca Serie senza perdita di focus | Alta | Implementato | Daniela | Medio | Test manuale desktop e Samsung; estendere lo stesso controllo agli altri campi di ricerca automatica. |
+| Proposte personalizzate senza duplicati della libreria | Media | Implementato | Daniela | Medio | Test manuale della sezione Cerca. |
+| Redirect dopo rimozione dal dettaglio | Media | Implementato | Daniela | Basso | Test manuale per Film e Serie. |
+| Filtro risultati pubblici senza persone o falsi positivi evidenti | Media | Parzialmente completato | Daniela | Medio | Validare le query reali e rifinire la soglia di pertinenza. |
