@@ -27,6 +27,7 @@ const checks = [
   ["node", ["tests/test-cinema-location-spacing.js"]],
   ["node", ["tests/test-default-sources.js"]],
   ["node", ["tests/test-cloud-sync-contract.js"]],
+  ["node", ["tests/test-pin-cloud-contract.js"]],
   ["node", ["tests/test-proxy-contract.js"]],
   ["node", ["tests/test-security-contract.js"]],
   ["node", ["--check", "tests/e2e-browser.js"]],
