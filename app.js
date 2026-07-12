@@ -424,19 +424,20 @@
   }
   function dbPut(store, value) {
     const prepared = ['series','movies','progress','settings'].includes(store) ? stampLocalValue(value) : value;
-    const finish = () => { void window.WatchverseCloudSync?.pushRecord(currentProfile(), store, prepared).catch(error => console.warn('Watchverse cloud record sync:', error)); return value; };
-    if (state.db?.memory) { memoryStores[store].set(prepared.id, structuredClone(prepared)); return Promise.resolve(finish()); }
-    return new Promise((resolve, reject) => { const r = dbTx(store, 'readwrite').put(prepared); r.onsuccess = () => resolve(finish()); r.onerror = () => reject(r.error); });
+    const cloudPrimary = navigator.onLine && window.WatchverseCloudSync?.isEnabled() && ['series','movies','progress'].includes(store);
+    const syncFirst = cloudPrimary ? window.WatchverseCloudSync.pushRecord(currentProfile(), store, prepared).catch(error => { console.warn('Watchverse cloud record sync:', error); state.cloudSyncPending = true; }) : Promise.resolve();
+    if (state.db?.memory) return syncFirst.then(() => { memoryStores[store].set(prepared.id, structuredClone(prepared)); return value; });
+    return syncFirst.then(() => new Promise((resolve, reject) => { const r = dbTx(store, 'readwrite').put(prepared); r.onsuccess = () => resolve(value); r.onerror = () => reject(r.error); }));
   }
   function dbBulkPut(store, values, syncCloud = true) {
     const prepared = syncCloud && ['series','movies','progress','settings'].includes(store) ? values.map(stampLocalValue) : values;
-    const sync = syncCloud ? Promise.resolve(window.WatchverseCloudSync?.pushRecords(currentProfile(), store, prepared)) : Promise.resolve();
+    const sync = syncCloud && window.WatchverseCloudSync?.pushRecords ? window.WatchverseCloudSync.pushRecords(currentProfile(), store, prepared).catch(error => { console.warn('Watchverse cloud batch sync:', error); state.cloudSyncPending = true; }) : Promise.resolve();
     const finish = () => prepared.length;
-    if (state.db?.memory) { prepared.forEach(v => memoryStores[store].set(v.id, structuredClone(v))); return sync.then(finish); }
-    return new Promise((resolve, reject) => {
+    if (state.db?.memory) return sync.then(() => { prepared.forEach(v => memoryStores[store].set(v.id, structuredClone(v))); return finish(); });
+    return sync.then(() => new Promise((resolve, reject) => {
       const tx = state.db.transaction(store, 'readwrite'); const os = tx.objectStore(store); prepared.forEach(v => os.put(v));
-      tx.oncomplete = () => sync.then(() => resolve(finish())).catch(reject); tx.onerror = () => reject(tx.error);
-    });
+      tx.oncomplete = () => resolve(finish()); tx.onerror = () => reject(tx.error);
+    }));
   }
   async function dbBulkPutBatched(store, values, batchSize = 600, onProgress = null) {
     let done = 0;
@@ -780,6 +781,7 @@
       episodes,
       watched,
       total: episodes.length,
+      remaining: Math.max(0, episodes.length - watched),
       percent: episodes.length ? Math.round(watched / episodes.length * 100) : 0,
       next: unwatched[0] || null,
       latestReleasedUnwatched: releasedUnwatched[0] || null,
@@ -827,7 +829,7 @@
   }
   function isEpisodeWatched(seriesId, season, episode) { return !!progressRecord(seriesId, season, episode)?.watched; }
   function seriesProgress(series) {
-    const c = computedSeries(series); return { watched: c.watched, total: c.total, percent: c.percent };
+    const c = computedSeries(series); return { watched: c.watched, total: c.total, remaining: c.remaining, percent: c.percent };
   }
   function seriesIsCompleted(series) {
     const progress = seriesProgress(series);
@@ -1577,7 +1579,7 @@
   }
   function mediaCard(item, kind = 'series') {
     const isSeries = kind === 'series'; const prog = isSeries ? seriesProgress(item) : null; const completed = isSeries && seriesIsCompleted(item);
-    const meta = isSeries ? `${item.year || '—'} · ${prog.watched}/${prog.total} episodi` : `${item.year || '—'} · ${item.runtime ? minutesToText(item.runtime) : 'Durata n.d.'}`;
+    const meta = isSeries ? `${item.year || '—'} · ${prog.remaining} episodi residui` : `${item.year || '—'} · ${item.runtime ? minutesToText(item.runtime) : 'Durata n.d.'}`;
     const href = isSeries ? `#/series/${encodeURIComponent(item.id)}` : `#/movie/${encodeURIComponent(item.id)}`;
     return `<article class="media-card" data-id="${esc(item.id)}" data-kind="${kind}">
       <a href="${href}" class="poster" style="background:${item.posterGradient || gradient(item.title)}">
@@ -1603,7 +1605,7 @@
     return `<article class="media-row" data-id="${esc(item.id)}" data-kind="${kind}">
       <a href="${href}" class="row-poster" style="background:${item.posterGradient || gradient(item.title)}">${item.poster ? `<img class="poster-img" src="${esc(item.poster)}" alt="" decoding="async">` : esc(item.title)}</a>
       <div class="row-main"><h3><a href="${href}">${esc(item.title)}</a></h3>${item.originalTitle && normalizeSearch(item.originalTitle)!==normalizeSearch(item.title)?`<small class="row-original-title">${esc(item.originalTitle)}</small>`:''}<p>${esc((item.overview || 'Nessuna descrizione disponibile.').slice(0, 180))}</p>
-        <div class="row-meta"><span>${item.year || '—'}</span><span>${isSeries ? `${prog.watched}/${prog.total} episodi` : item.watched ? `Visto ${fmtDate(item.watchedAt)}` : 'Da vedere'}</span>${item.rating ? `<span>★ ${item.rating}</span>` : ''}${item.favorite ? '<span>♥ Preferito</span>' : ''}</div>
+        <div class="row-meta"><span>${item.year || '—'}</span><span>${isSeries ? `${prog.remaining} episodi residui` : item.watched ? `Visto ${fmtDate(item.watchedAt)}` : 'Da vedere'}</span>${item.rating ? `<span>★ ${item.rating}</span>` : ''}${item.favorite ? '<span>♥ Preferito</span>' : ''}</div>
         ${isSeries ? `<div class="progress-track"><div class="progress-fill" style="width:${prog.percent}%"></div></div>` : ''}
       </div>
       <div class="row-actions"><button class="favorite-button ${item.favorite ? 'active' : ''}" data-action="favorite" style="position:static" aria-label="Preferito">♥</button>
@@ -2152,7 +2154,7 @@
         <div class="card-body">
           <p class="card-title"><a href="${href}" title="${esc(s.title)}">${esc(s.title)}</a></p>
           <div class="episode-title-row"><span class="episode-code">${esc(episodeCode)}</span><p class="episode-card-title">${esc(ep.title || 'Titolo episodio non disponibile')}</p></div>
-          <div class="card-meta"><span>${ep.runtime || 50} min</span><span>${prog.percent}%</span></div>
+          <div class="card-meta"><span>${ep.runtime || 50} min</span><span>${prog.remaining} episodi residui</span></div>
           <div class="progress-track" aria-label="Avanzamento ${prog.percent}%"><div class="progress-fill" style="width:${prog.percent}%"></div></div>
           <p class="episode-card-timing">${esc(timing)}</p>
           <div class="card-actions">
