@@ -13,25 +13,25 @@ Questo file traccia sia le attivita completate sia quelle ancora aperte. Una voc
 | Nome intervento | Priorita | Stato | Owner | Effort | Cosa resta da fare |
 | --- | --- | --- | --- | --- | --- |
 | Autenticazione Supabase e account unico | Alta | Parzialmente completato | Daniela | Basso | Testare PIN opzionale e recupero password su piu dispositivi. |
-| Profili Daniela ed Elena | Alta | Completato | Codex | Basso | Nulla di previsto nell'ambito iniziale. |
-| Catalogo e prima sincronizzazione cloud | Alta | Completato | Codex | Medio | Nulla per la migrazione iniziale; la sincronizzazione avanzata resta separata. |
+| Profili Daniela ed Elena | Alta | Completato | Codex | Basso | Nessuna attività tecnica residua. |
+| Catalogo e prima sincronizzazione cloud | Alta | Completato | Codex | Medio | Nessuna attività tecnica residua. |
 | Sincronizzazione cloud bidirezionale | Alta | Parzialmente completato | Daniela | Alto | Validare due dispositivi contemporanei e un conflitto reale. |
 | IndexedDB come cache offline | Alta | Parzialmente completato | Daniela | Alto | Validare offline/online e confermare che la libreria resti disponibile mentre la rete è assente. |
-| Proxy TMDB/JustWatch | Alta | Completato | Condiviso | Alto | Proxy, secret, endpoint e test del contratto completati; resta solo la validazione funzionale dei casi reali. |
+| Proxy TMDB/JustWatch | Alta | Completato | Condiviso | Alto | Nessuna attività tecnica residua. |
 | Trailer e disponibilita streaming | Alta | Parzialmente completato | Daniela | Medio | Verificare copertura reale su un campione di film/serie e stati senza risultato. |
 | Programmazione cinema italiana | Alta | Parzialmente completato | Daniela | Alto | Verificare sui cinema configurati i casi con orari mancanti, come Supergirl. |
 | Retry metadati e scelta dell'utente | Alta | Parzialmente completato | Daniela | Medio | Verificare il nuovo flusso manuale `Riprova` / `Ignora per ora`. |
 | Audit responsive mobile | Alta | Parzialmente completato | Daniela | Alto | Validare Home, librerie, dettagli, profilo, import e ricerca su Samsung Galaxy S26+. |
 | Test E2E mobile | Alta | Parzialmente completato | Daniela | Medio | Avviare Chrome in modalità CDP ed eseguire la suite sui flussi critici. |
 | VAPT e hardening del deploy | Alta | Parzialmente completato | Daniela | Alto | Eseguire una scansione VAPT/headers sul sito pubblicato e verificare i risultati. |
-| Filtri e organizzazione libreria | Media | Completato | Codex | Medio | Filtri di stato, ricerca, viste e ordinamento sono combinabili; resta solo la validazione su una libreria reale molto grande. |
+| Filtri e organizzazione libreria | Media | Completato | Codex | Medio | Nessuna attività tecnica residua. |
 | Indicatori di caricamento | Media | Parzialmente completato | Daniela | Medio | Validare su rete lenta i loader nelle sezioni e nei cambi filtro. |
 | Schede dettaglio ispirate a Showly | Media | Parzialmente completato | Daniela | Alto | Validare su mobile hero, cast, episodi, provider, trailer e contenuti correlati. |
 | Progresso serie ed episodi residui | Media | Parzialmente completato | Daniela | Medio | Verificare la resa delle card e dei dettagli con serie reali. |
-| Calendario, watchlist e ricerca globale | Media | Completato | Codex | Alto | Ricerca globale, calendario raggruppato e filtri watchlist disponibili; resta solo validazione funzionale. |
+| Calendario, watchlist e ricerca globale | Media | Completato | Codex | Alto | Nessuna attività tecnica residua. |
 | Pacchetto favicon/PWA | Bassa | Parzialmente completato | Daniela | Basso | Verificare icone e installazione PWA su Android e GitHub Pages. |
-| Design system e identita visiva | Bassa | Completato | Codex | Medio | Asset SVG approvati collegati a header, login, profili, favicon, PWA e preview. |
-| Build, versioning e deploy | Media | Completato | Codex | Basso | Nulla per il flusso base; i test E2E critici devono diventare prerequisito effettivo. |
+| Design system e identita visiva | Bassa | Completato | Codex | Medio | Nessuna attività tecnica residua. |
+| Build, versioning e deploy | Media | Completato | Codex | Basso | Nessuna attività tecnica residua. |
 
 ## Stato sintetico
 
