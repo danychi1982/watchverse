@@ -32,11 +32,11 @@ jobs:
         run: npm ci
 
       - name: Install Playwright Chromium
-        run: npx playwright-core install chromium
+        run: npx --yes playwright@1.61.1 install chromium
 
       - name: Run suite
         shell: bash
         run: |
-          export CHROME_PATH="$(find "$HOME/.cache/ms-playwright" -type f -name chrome | head -n 1)"
-          test -n "$CHROME_PATH"
+          export CHROME_PATH="$(find "$HOME/.cache/ms-playwright" -type f \( -name chrome -o -name chromium \) | head -n 1)"
+          echo "Chromium: ${CHROME_PATH:-Playwright default}"
           npm test
