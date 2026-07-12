@@ -2229,7 +2229,10 @@
     const result = [...items];
     result.sort((a, b) => {
       if (mode === 'rating') return Number(b.rating || 0) - Number(a.rating || 0) || dateMs(b.watchedAt) - dateMs(a.watchedAt) || a.title.localeCompare(b.title, 'it');
-      if (mode === 'recent') return dateMs(b.watchedAt || b.addedAt) - dateMs(a.watchedAt || a.addedAt) || a.title.localeCompare(b.title, 'it');
+      if (mode === 'recent') {
+        const timestamp = state.movieFilter === 'watchlist' ? item => item.addedAt : item => item.watchedAt || item.addedAt;
+        return dateMs(timestamp(b)) - dateMs(timestamp(a)) || a.title.localeCompare(b.title, 'it');
+      }
       return a.title.localeCompare(b.title, 'it');
     });
     return result;
@@ -2299,10 +2302,10 @@
       ${metadataLibraryBanner('movies', state.movies)}
       <div class="tabbar" role="tablist" aria-label="Filtri film">${filterTabs('movies').map(([v,l,count])=>`<button class="tab-button ${state.movieFilter===v?'active':''}" data-filter="${v}" role="tab" aria-selected="${state.movieFilter===v}">${l}<span class="filter-count">${count}</span></button>`).join('')}</div>
       <div class="toolbar"><div class="toolbar-left"><label class="search-box"><span>⌕</span><input id="movieSearch" type="search" placeholder="Cerca nei tuoi film" value="${esc(state.movieSearch)}" aria-label="Cerca film"></label>
-      <select id="movieSort" aria-label="Ordina film"><option value="recent" ${state.movieSort==='recent'?'selected':''}>Data visione</option><option value="rating" ${state.movieSort==='rating'?'selected':''}>Voto</option><option value="title" ${state.movieSort==='title'?'selected':''}>Titolo</option></select></div><div class="toolbar-right"><div class="view-toggle" aria-label="Vista film"><button data-view="grid" class="${view==='grid'?'active':''}" aria-label="Vista locandine" aria-pressed="${view==='grid'}">▦</button><button data-view="list" class="${view==='list'?'active':''}" aria-label="Vista elenco" aria-pressed="${view==='list'}">☷</button></div></div></div>
+      <select id="movieSort" aria-label="Ordina film"><option value="recent" ${state.movieSort==='recent'?'selected':''}>${state.movieFilter==='watchlist'?'Data aggiunta':'Data visione'}</option><option value="rating" ${state.movieSort==='rating'?'selected':''}>Voto</option><option value="title" ${state.movieSort==='title'?'selected':''}>Titolo</option></select></div><div class="toolbar-right"><div class="view-toggle" aria-label="Vista film"><button data-view="grid" class="${view==='grid'?'active':''}" aria-label="Vista locandine" aria-pressed="${view==='grid'}">▦</button><button data-view="list" class="${view==='list'?'active':''}" aria-label="Vista elenco" aria-pressed="${view==='list'}">☷</button></div></div></div>
       ${items.length?`<div class="${view==='grid'?'media-grid':'media-list'}">${visible.map(m=>view==='grid'?mediaCard(m,'movie'):mediaRow(m,'movie')).join('')}</div>${visible.length<items.length?`<div class="load-more"><button class="secondary" id="loadMoreMovies">Mostra altri ${Math.min(60,items.length-visible.length)} film</button><span>${visible.length} di ${items.length}</span></div>`:''}`:`<div class="empty-state"><div class="empty-icon">🎬</div><h3>Nessun film trovato</h3><p>Aggiungi un titolo o cambia filtro.</p></div>`}`);
     $$('[data-filter]').forEach(b=>b.addEventListener('click',()=>runViewAction(b,()=>{state.movieFilter=b.dataset.filter;state.movieVisible=60;state.settings.movieFilter=state.movieFilter;saveSettings();renderMovieLibrary();})));
-    $('#movieSearch').addEventListener('input',debounce(e=>{state.movieSearch=e.target.value;state.movieVisible=60;renderMovieLibrary();},180));
+    $('#movieSearch').addEventListener('input',debounce(e=>{const input=e.target;state.movieSearch=input.value;state.movieVisible=60;if(state.movieSearch.trim().length===1)return;const hadFocus=document.activeElement===input;const selection=input.selectionStart;renderMovieLibrary();if(hadFocus){const next=$('#movieSearch');next?.focus({preventScroll:true});if(selection!==null)next?.setSelectionRange(selection,selection);}},360));
     $$('[data-view]').forEach(b=>b.addEventListener('click',()=>runViewAction(b,()=>{state.settings.movieView=b.dataset.view;saveSettings();renderMovieLibrary();})));
     $('#movieSort').addEventListener('change',e=>{state.movieSort=e.target.value;state.settings.movieSort=state.movieSort;state.movieVisible=60;saveSettings();renderMovieLibrary();});
     $('#loadMoreMovies')?.addEventListener('click',()=>{state.movieVisible+=60;renderMovieLibrary();});
