@@ -44,6 +44,11 @@ Questo file traccia sia le attivita completate sia quelle ancora aperte. Una voc
 | Build, versioning e deploy | Media | Completato | Codex | Basso | Nessuna attività tecnica residua. |
 
 | Prestazioni accesso e caricamento | Alta | Da fare | Codex | Alto | Ridurre il tempo percepito di login e apertura profilo, misurare il bootstrap cloud e spostare i caricamenti non indispensabili in background senza bloccare l’utente. |
+| Ordinamento Film da vedere | Alta | Parzialmente completato | Daniela | Basso | Validare su mobile che il filtro usi `Data aggiunta` in ordine decrescente e che gli altri filtri mantengano il loro ordinamento. |
+| Ricerca Film senza perdita di focus | Alta | Parzialmente completato | Daniela | Medio | Validare su Samsung Galaxy S26+ che la tastiera resti aperta durante la digitazione e che la ricerca parta dopo la pausa o almeno due caratteri. |
+| Proposte Cerca senza duplicati | Media | Da fare | Codex | Medio | Escludere dalle proposte film e serie già presenti nella libreria del profilo, mantenendo suggerimenti affini basati su generi, preferenze e valutazioni. |
+| Risultati Cerca in lista unica | Media | Da fare | Codex | Medio | Unificare risultati locali e pubblici in un solo elenco, deduplicare i titoli e mostrare `Apri` per quelli già in libreria e `Aggiungi` per quelli nuovi. |
+| Ricerca limitata a film e serie | Media | Da fare | Codex | Medio | Escludere le persone dai risultati catalogabili, correggere l’interpretazione degli anni e aggiungere il filtro `Tutti` / `Film` / `Serie TV`. |
 
 ## Stato sintetico
 
