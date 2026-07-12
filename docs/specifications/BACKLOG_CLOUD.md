@@ -459,3 +459,10 @@ Le righe storiche precedenti restano come tracciabilita. Per la gestione corrent
 | Redirect dopo rimozione | Media | Implementato | Daniela | Basso | Test manuale per Film e Serie. |
 | Trasparenza logo login | Bassa | Da fare | Codex | Basso | Uniformare lo sfondo dell'asset SVG con il contenitore. |
 | Favicon/PWA aggiornata | Bassa | Da fare | Codex | Basso | Verificare favicon, icone PWA e cache del service worker. |
+
+### Delta successivo
+
+| Nome intervento | Priorita | Stato | Owner | Effort | Cosa resta da fare |
+|---|---|---|---|---|---|
+| Retry metadati deciso dall'utente | Alta | Parzialmente completato | Daniela | Medio | Il retry automatico viene bloccato quando esistono errori persistenti; verificare il toast e il comando manuale. |
+| Favicon/PWA aggiornata | Bassa | Parzialmente completato | Daniela | Basso | Asset e query versionati; verificare cache PWA e icona installata sul dispositivo. |

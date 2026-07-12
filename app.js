@@ -2767,6 +2767,10 @@
   }
   function scheduleBackgroundMetadataSync(force = false) {
     if ((!force && state.metadataBackgroundStarted) || !navigator.onLine || !state.settings.publicMetadataEnabled || libraryIsEmpty()) return;
+    if (!force && [...state.series, ...state.movies].some(item => item.publicMetadata?.failedAt || item.publicMetadata?.error)) {
+      scheduleMetadataRecoveryPass();
+      return;
+    }
     if (force) {
       for (const item of [...state.series, ...state.movies]) {
         if (item.publicMetadata?.failedAt) item.publicMetadata = { ...item.publicMetadata, failedAt: null, error: null, nextRetryAt: null };
