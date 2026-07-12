@@ -2630,16 +2630,10 @@
     const failedSeries = state.series.filter(item => item.publicMetadata?.failedAt);
     const failedMovies = state.movies.filter(item => item.publicMetadata?.failedAt);
     if (!failedSeries.length && !failedMovies.length) return;
-    state.metadataRecoveryScheduled = true;
-    setTimeout(() => {
-      state.metadataRecoveryScheduled = false;
-      if (!navigator.onLine || state.metadataRunning || state.metadataQueue.length) return;
-      state.metadataRecoveryDone = true;
-      [...failedSeries, ...failedMovies].forEach(item => { item.publicMetadata = { ...(item.publicMetadata || {}), failedAt: null, error: null, nextRetryAt: null }; });
-      queuePublicMetadata('series', failedSeries, { force: true, unlimited: true, silent: true, includeCast: true });
-      queuePublicMetadata('movie', failedMovies, { force: true, unlimited: true, silent: true, includeCast: true });
-      showToast('Recupero metadati', `Nuovo tentativo per ${failedSeries.length + failedMovies.length} titoli da verificare.`, '↻', 3600);
-    }, 12000);
+    // Gli errori persistenti non vengono ritentati automaticamente all'accesso:
+    // l'utente decide dal pannello fonti quando consumare nuove richieste.
+    state.metadataRecoveryDone = true;
+    showToast('Metadati da verificare', `${failedSeries.length + failedMovies.length} titoli richiedono un nuovo tentativo manuale.`, '!', 5200, { kind:'warning' });
   }
 
   function pumpMetadataQueue() {

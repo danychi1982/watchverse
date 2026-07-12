@@ -1,4 +1,5 @@
 const { chromium } = require('playwright-core');
+const { openBrowser } = require('./e2e-browser');
 const assert = require('node:assert');
 const http = require('node:http');
 const fs = require('node:fs');
@@ -118,13 +119,10 @@ async function expectScrollable(locator) {
 }
 
 (async () => {
-  const executablePath = chromeExecutablePath();
-  if (!executablePath) throw new Error('Chrome o Edge non trovato per il test e2e.');
-
   const { server, url } = await startStaticServer();
 
   try {
-    const browser = await chromium.launch({ executablePath, headless: true });
+    const browser = await openBrowser(chromium);
     const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
     await useLocalTestConfig(page, url);
     await page.goto(url, { waitUntil: 'domcontentloaded' });

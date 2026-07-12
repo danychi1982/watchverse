@@ -7,6 +7,6 @@ assert(app.includes('Copertura effettiva dei metadati'), 'La copertura non è pr
 assert(app.includes('Titoli da verificare'), 'Gli elementi non risolti non sono indicati separatamente');
 assert(app.includes('Errori tecnici'), 'Gli errori tecnici non sono distinti dai titoli incompleti');
 assert(app.includes('function scheduleMetadataRecoveryPass()'), 'Manca il recupero automatico dei metadati falliti');
-assert(app.includes("queuePublicMetadata('series', failedSeries, { force: true"), 'Manca il retry automatico delle serie');
-assert(app.includes("queuePublicMetadata('movie', failedMovies, { force: true"), 'Manca il retry automatico dei film');
+assert(app.includes('tentativo manuale'), "Manca l'indicazione per il nuovo tentativo manuale");
+assert(app.includes("$('#retryMetadata')"), "Manca l'azione esplicita di retry dei metadati");
 console.log('✓ ciclo e copertura metadati separati e coerenti');
