@@ -163,12 +163,8 @@ async function expectScrollable(locator) {
       });
       db.close();
     });
-    await page.evaluate(() => { localStorage.removeItem('watchverse.session.v2'); sessionStorage.removeItem('watchverse.session.temporary.v2'); });
+    await page.evaluate(() => { localStorage.setItem('watchverse.session.v2', JSON.stringify({ mode: 'local', createdAt: Date.now() })); sessionStorage.removeItem('watchverse.session.temporary.v2'); });
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('#loginForm', { timeout: 10000 });
-    await page.fill('#loginUser', 'utente');
-    await page.fill('#loginPassword', 'abcdef');
-    await page.click('#loginForm button[type="submit"]');
     await page.waitForFunction(() => Boolean(document.querySelector('[data-profile-choice], #authMessage')) , null, { timeout: 10000 });
     if (!(await page.locator('[data-profile-choice]').count())) {
       throw new Error(`Gate profili non visualizzato dopo il login: ${await page.locator('#authMessage').textContent()}`);
