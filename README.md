@@ -29,7 +29,7 @@ La documentazione tecnica è organizzata in `docs/specifications/`.
 - [Documentazione di progetto](docs/specifications/DOCUMENTAZIONE_PROGETTO.md)
 - [Design system](docs/specifications/DESIGN_SYSTEM.md)
 - [Architettura dati](docs/specifications/ARCHITETTURA_DATI.md)
-- [Roadmap cloud](docs/specifications/ROADMAP_CLOUD.md)
+- [Backlog cloud](docs/specifications/BACKLOG_CLOUD.md)
 - [Dichiarazione di accessibilità](docs/specifications/DICHIARAZIONE_ACCESSIBILITA.md)
 - [Proposte logo](docs/specifications/LOGHI_PROPOSTE.md)
 - [Preview visuale del design system](docs/design-system-preview.html)
