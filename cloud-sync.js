@@ -72,16 +72,31 @@
 
   async function saveProfiles(profiles = []) {
     if (!isEnabled()) return;
-    const resolved = profiles.some(profile => !profileId(profile)) ? await bootstrapProfiles(profiles) : profiles;
-    for (const profile of resolved) {
+    // Risolviamo solo l'identita' cloud mancante, preservando i valori locali
+    // appena modificati (in particolare pin_hash e pin_salt).
+    if (profiles.some(profile => !profileId(profile))) {
+      const resolved = await bootstrapProfiles(profiles);
+      const localById = new Map(profiles.map(profile => [profile.id, profile]));
+      for (const cloudProfile of resolved) {
+        const localProfile = localById.get(cloudProfile.id);
+        if (!localProfile || profileId(localProfile)) continue;
+        localProfile.cloudId = cloudProfile.cloudId;
+        localProfile.accountId = cloudProfile.accountId;
+      }
+    }
+    for (const profile of profiles) {
       if (!profileId(profile)) continue;
-      await request(`/profiles?id=eq.${encodeURIComponent(profile.cloudId)}`, {
-        method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({
+      const updated = await request(`/profiles?id=eq.${encodeURIComponent(profile.cloudId)}`, {
+        method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify({
           name: profile.name, avatar_type: profile.avatarType || 'emoji', avatar_value: profile.avatarValue || null,
           pin_hash: profile.pinHash || null, pin_salt: profile.pinSalt || null
         })
       });
+      if (Array.isArray(updated) && updated.length === 0) {
+        throw new Error('Il profilo cloud non e\u0027 stato aggiornato. Verifica il collegamento del profilo in Supabase.');
+      }
     }
+    return profiles;
   }
 
   function libraryPayload(value) {
