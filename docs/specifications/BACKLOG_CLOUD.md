@@ -33,7 +33,7 @@ Questo file raccoglie le attivita completate, in corso e ancora aperte. Non rapp
 | Stabilizzazione test E2E su `main` | Alta | Da fare | Codex | Medio | Analizzare i workflow `run failed`, correggere test flaky o non compatibili con GitHub Actions, separare i test bloccati dall’ambiente locale e impedire notifiche di fallimento non azionabili. |
 | Contrasto barra di navigazione mobile | Alta | Da fare | Codex | Basso | Rendere distinguibili sfondo, icona e testo dello stato selezionato su Samsung Galaxy S26+. |
 | Audit contrasto interfaccia e importazione | Alta | Da fare | Codex | Medio | Correggere il contrasto di “Elementi pronti” e del relativo valore nel riepilogo importazione, quindi verificare sistematicamente testi, badge, link, focus e indicatori su tutto il sito. |
-| Conferma sostituzione dati in importazione | Alta | Da fare | Codex | Basso | Mostrare sempre una conferma esplicita prima dell’importazione quando è selezionata la sostituzione del profilo, indicando che il catalogo attuale verrà eliminato. |
+| Conferma sostituzione dati in importazione | Alta | Parzialmente completato | Codex | Medio | Sostituire `window.confirm` con un dialog interno all'applicazione, aderente al design system, con focus gestito, blocco dello scroll sottostante, testo esplicativo e azioni `Annulla` / `Continua`. |
 | Responsive schede su Samsung Galaxy S26+ | Alta | Parzialmente completato | Codex | Alto | Eliminare ridondanza banner/locandina su mobile, contenere overflow e ridimensionare il cast; resta la verifica E2E sul dispositivo target. |
 | VAPT e hardening del deploy | Alta | Parzialmente completato | Daniela | Alto | Eseguire una scansione VAPT/headers sul sito pubblicato e verificare i risultati. |
 | Filtri e organizzazione libreria | Media | Completato | Codex | Medio | Nessuna attività tecnica residua. |
@@ -61,7 +61,7 @@ Le seguenti voci hanno ricevuto un intervento tecnico in questa release. Restano
 | Nome intervento | Priorita | Stato | Owner | Effort | Cosa resta da fare |
 | --- | --- | --- | --- | --- | --- |
 | Sincronizzazione cloud e sostituzione import | Alta | Parzialmente completato | Daniela | Alto | Ripetere l'import con sostituzione e verificare che i dati cloud siano visibili dopo pulizia cache e su un secondo dispositivo. |
-| Conferma sostituzione dati in importazione | Alta | Parzialmente completato | Daniela | Basso | Confermare il popup quando la checkbox è selezionata e verificare che Annulla non avvii l'import. |
+| Conferma sostituzione dati in importazione | Alta | Parzialmente completato | Codex | Medio | Implementare il dialog applicativo al posto della conferma nativa del browser; poi verificare che Annulla non avvii l'import e che Continua avvii l'operazione solo dopo la conferma. |
 | Contrasto riepilogo importazione e barra mobile | Alta | Parzialmente completato | Daniela | Basso | Verificare visivamente testo, valore, icona e focus su Samsung Galaxy S26+. |
 | Rimozione sicura dalla libreria | Alta | Parzialmente completato | Daniela | Medio | Verificare il pulsante solo nella scheda dettaglio, la conferma distruttiva e la rimozione sincronizzata su un secondo dispositivo. |
 | Runner E2E senza blocco `spawn EPERM` | Alta | Parzialmente completato | Codex | Medio | La suite locale salta solo i browser E2E quando Windows blocca Chrome; verificare il workflow CI dopo il push. |

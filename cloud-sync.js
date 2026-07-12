@@ -202,12 +202,15 @@
 
   async function clearProfileData(profile) {
     if (!isEnabled() || !profileId(profile)) return;
+    await request('/rpc/clear_profile_data', {
+      method: 'POST',
+      body: JSON.stringify({ target_profile: profile.cloudId })
+    });
     const cloudId = encodeURIComponent(profile.cloudId);
     for (const table of ['library_records', 'episode_progress']) {
-      await request(`/${table}?profile_id=eq.${cloudId}`, { method: 'DELETE', headers: { Prefer: 'return=representation' } });
       const remaining = await request(`/${table}?select=*&profile_id=eq.${cloudId}&limit=1`);
       if (Array.isArray(remaining) && remaining.length) {
-        throw new Error(`Impossibile svuotare i dati cloud del profilo (${table}). Verifica le policy RLS di Supabase.`);
+        throw new Error(`Impossibile svuotare i dati cloud del profilo (${table}). Verifica la funzione clear_profile_data in Supabase.`);
       }
     }
   }
