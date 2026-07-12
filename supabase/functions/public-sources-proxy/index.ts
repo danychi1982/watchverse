@@ -22,6 +22,18 @@ function normalize(value: string) {
 function slugify(value: string) { return normalize(value).replace(/\s+/g, '-'); }
 function stripHtml(value: string) { return value.replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&').replace(/\s+/g, ' ').trim(); }
 
+async function trailerResult(title: string, year: string, kind: string) {
+  const query = `${title} ${year || ''} trailer ufficiale ${kind === 'series' ? 'serie tv' : 'film'}`.trim();
+  const response = await fetch(`https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`, {
+    headers: { 'user-agent': 'Watchverse/1.0 (+https://danychi1982.github.io/watchverse/)', accept: 'text/html' }, redirect: 'follow'
+  });
+  if (!response.ok) throw new Error(`Ricerca trailer ${response.status}`);
+  const html = await response.text();
+  const ids = [...html.matchAll(/"videoId":"([A-Za-z0-9_-]{11})"/g)].map(match => match[1]);
+  const key = [...new Set(ids)][0];
+  return key ? { site: 'YouTube', key, name: `Trailer di ${title}`, official: false, source: 'public-youtube', url: `https://www.youtube.com/watch?v=${key}` } : null;
+}
+
 async function fetchOfficial(url: string) {
   const response = await fetch(url, { headers: { 'user-agent': 'Watchverse/1.0 (+https://danychi1982.github.io/watchverse/)', accept: 'text/html,application/xhtml+xml' }, redirect: 'follow' });
   if (!response.ok) throw new Error(`Fonte cinema ${response.status}`);
@@ -71,7 +83,12 @@ Deno.serve(async request => {
     const body = await request.json();
     const path = body?.path;
     const params = body?.params || {};
-    if (path !== '/api/cinema' || typeof params.title !== 'string' || !params.title.trim()) return Response.json({ error: 'Endpoint pubblico non consentito' }, { status: 400, headers: cors });
+    if (typeof params.title !== 'string' || !params.title.trim()) return Response.json({ error: 'Titolo obbligatorio' }, { status: 400, headers: cors });
+    if (path === '/api/trailer') {
+      const trailer = await trailerResult(params.title.trim(), String(params.year || ''), String(params.kind || 'movie'));
+      return Response.json({ title: params.title.trim(), trailer, checkedAt: new Date().toISOString() }, { headers: { ...cors, 'Cache-Control': 'private, max-age=2592000' } });
+    }
+    if (path !== '/api/cinema') return Response.json({ error: 'Endpoint pubblico non consentito' }, { status: 400, headers: cors });
     const selected = String(params.cinemas || '').split(',').filter(id => Object.hasOwn(cinemas, id));
     const data = { title: params.title, cinemas: await cinemaResults(params.title.trim(), selected), checkedAt: new Date().toISOString() };
     return Response.json(data, { headers: { ...cors, 'Cache-Control': 'private, max-age=21600' } });

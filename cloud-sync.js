@@ -113,10 +113,37 @@
     const rows = rowsForStore(profile, store, values);
     if (!rows.length) return;
     const path = store === 'progress' ? '/episode_progress?on_conflict=profile_id,series_local_id,season,episode' : '/library_records?on_conflict=profile_id,kind,local_id';
-    const chunkSize = store === 'progress' ? 300 : 80;
-    for (let i = 0; i < rows.length; i += chunkSize) {
-      await request(path, { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(rows.slice(i, i + chunkSize)) });
+    const key = row => store === 'progress'
+      ? `${row.series_local_id}|${row.season}|${row.episode}`
+      : `${row.kind}|${row.local_id}`;
+    const remotePath = store === 'progress'
+      ? `/episode_progress?select=local_id,series_local_id,season,episode,revision,updated_at,deleted_at&profile_id=eq.${encodeURIComponent(profile.cloudId)}`
+      : `/library_records?select=local_id,kind,revision,updated_at,deleted_at&profile_id=eq.${encodeURIComponent(profile.cloudId)}`;
+    const remote = await requestAll(remotePath);
+    const remoteByKey = new Map(remote.map(row => [key(row), row]));
+    const upload = [];
+    for (const row of rows) {
+      const current = remoteByKey.get(key(row));
+      if (!current) {
+        upload.push(row);
+        continue;
+      }
+      const localTime = Date.parse(row.updated_at || '') || 0;
+      const cloudTime = Date.parse(current.updated_at || '') || 0;
+      const localRevision = Number(row.revision || 1);
+      const cloudRevision = Number(current.revision || 1);
+      const localWins = localTime > cloudTime || (localTime === cloudTime && localRevision > cloudRevision);
+      if (localWins) upload.push(row);
+      else if (localRevision !== cloudRevision || Boolean(row.deleted_at) !== Boolean(current.deleted_at)) {
+        await recordConflict(profile, store, { id: row.local_id, revision: localRevision }, { id: row.local_id, revision: cloudRevision }, 'cloud_won');
+      }
     }
+    if (!upload.length) return { uploaded: 0, skipped: rows.length };
+    const chunkSize = store === 'progress' ? 300 : 80;
+    for (let i = 0; i < upload.length; i += chunkSize) {
+      await request(path, { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(upload.slice(i, i + chunkSize)) });
+    }
+    return { uploaded: upload.length, skipped: rows.length - upload.length };
   }
 
   async function recordConflict(profile, store, localValue, cloudValue, resolution) {
@@ -142,10 +169,19 @@
     const deletedAt = new Date().toISOString();
     const revision = Number(value.revision || 0) + 1;
     if (store === 'series' || store === 'movies') {
-      await request(`/library_records?profile_id=eq.${encodeURIComponent(profile.cloudId)}&kind=eq.${store === 'series' ? 'series' : 'movie'}&local_id=eq.${encodeURIComponent(value.id)}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ deleted_at: deletedAt, revision, updated_at: deletedAt }) });
+      const kind = store === 'series' ? 'series' : 'movie';
+      const existing = await request(`/library_records?select=revision,updated_at&profile_id=eq.${encodeURIComponent(profile.cloudId)}&kind=eq.${kind}&local_id=eq.${encodeURIComponent(value.id)}`);
+      const remote = existing?.[0];
+      if (remote && (Date.parse(remote.updated_at || '') || 0) > (Date.parse(value.updatedAt || '') || 0)) return { skipped: true };
+      await request('/library_records?on_conflict=profile_id,kind,local_id', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ profile_id: profile.cloudId, kind, local_id: value.id, payload: libraryPayload(value), deleted_at: deletedAt, revision, updated_at: deletedAt }) });
     } else if (store === 'progress') {
-      await request(`/episode_progress?profile_id=eq.${encodeURIComponent(profile.cloudId)}&series_local_id=eq.${encodeURIComponent(value.seriesId || '')}&season=eq.${Number(value.season || 0)}&episode=eq.${Number(value.episode || 0)}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ deleted_at: deletedAt, revision, updated_at: deletedAt }) });
+      const seriesId = value.seriesId || '';
+      const existing = await request(`/episode_progress?select=revision,updated_at&profile_id=eq.${encodeURIComponent(profile.cloudId)}&series_local_id=eq.${encodeURIComponent(seriesId)}&season=eq.${Number(value.season || 0)}&episode=eq.${Number(value.episode || 0)}`);
+      const remote = existing?.[0];
+      if (remote && (Date.parse(remote.updated_at || '') || 0) > (Date.parse(value.updatedAt || '') || 0)) return { skipped: true };
+      await request('/episode_progress?on_conflict=profile_id,series_local_id,season,episode', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ profile_id: profile.cloudId, local_id: value.id, series_local_id: seriesId, season: Number(value.season || 0), episode: Number(value.episode || 0), watched: false, payload: libraryPayload(value), deleted_at: deletedAt, revision, updated_at: deletedAt }) });
     }
+    return { skipped: false };
   }
 
   async function pullProfile(profile, options = {}) {
@@ -202,7 +238,20 @@
 
   async function saveSettings(profile, settings) {
     if (!isEnabled() || !profileId(profile)) return;
-    await request('/profile_settings?on_conflict=profile_id', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ profile_id: profile.cloudId, payload: structuredClone(settings), revision: Number(settings.revision || 1), updated_at: new Date().toISOString() }) });
+    const localRevision = Number(settings.revision || 1);
+    const localUpdatedAt = settings.updatedAt || new Date().toISOString();
+    const remote = await request(`/profile_settings?select=revision,updated_at&profile_id=eq.${encodeURIComponent(profile.cloudId)}`);
+    const current = remote?.[0];
+    if (current) {
+      const localTime = Date.parse(localUpdatedAt) || 0;
+      const cloudTime = Date.parse(current.updated_at || '') || 0;
+      if (cloudTime > localTime || (cloudTime === localTime && Number(current.revision || 1) >= localRevision)) {
+        if (Number(current.revision || 1) !== localRevision) await recordConflict(profile, 'settings', { id: 'settings', revision: localRevision }, { id: 'settings', revision: Number(current.revision || 1) }, 'cloud_won');
+        return { skipped: true };
+      }
+    }
+    await request('/profile_settings?on_conflict=profile_id', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ profile_id: profile.cloudId, payload: structuredClone(settings), revision: localRevision, updated_at: localUpdatedAt }) });
+    return { skipped: false };
   }
 
   root.WatchverseCloudSync = { isEnabled, bootstrapProfiles, saveProfiles, pushRecord, pushRecords, deleteRecord, pullProfile, saveSettings, recordConflict };

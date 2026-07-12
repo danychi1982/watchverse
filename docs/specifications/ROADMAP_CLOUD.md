@@ -10,28 +10,28 @@ Questo file traccia sia le attivita completate sia quelle ancora aperte. Una voc
 
 ## Registro completo degli interventi
 
-| Nome intervento | Stato | Priorita | Cosa resta da fare |
-| --- | --- | --- | --- |
-| Autenticazione Supabase e account unico | Parzialmente completato | Alta | Verificare definitivamente PIN opzionale e testare recupero password su piu dispositivi. |
-| Profili Daniela ed Elena | Completato | Alta | Nulla di previsto nell'ambito iniziale. |
-| Catalogo e prima sincronizzazione cloud | Completato | Alta | Nulla per la migrazione iniziale; la sincronizzazione avanzata resta separata. |
-| Sincronizzazione cloud bidirezionale | In corso | Alta | Versioni dei record, gestione conflitti e test multi-dispositivo/multi-profilo. |
-| IndexedDB come cache offline | Da fare | Alta | Spostare la fonte primaria su Supabase e usare IndexedDB solo come fallback/cache. |
-| Proxy TMDB/JustWatch | Parzialmente completato | Alta | Proxy e secret sono configurati; restano verifica della copertura, casi incompleti e test di affidabilita. |
-| Trailer e disponibilita streaming | Parzialmente completato | Alta | Verificare copertura reale su un campione di film/serie e stati senza risultato. |
-| Programmazione cinema italiana | In corso | Alta | Rendere piu affidabile la fonte ufficiale e gestire titoli senza orari, come Supergirl. |
-| Retry metadati e scelta dell'utente | Da fare | Alta | Eliminare retry automatico al login e offrire Riprova/Ignora per ora con stato persistente. |
-| Audit responsive mobile | In corso | Alta | Completare Home, librerie, dettagli, profilo, import e ricerca su Samsung Galaxy S26+. |
-| Test E2E mobile | In corso | Alta | Eseguire il test su Chrome; attualmente Windows blocca il processo con spawn EPERM. |
-| VAPT e hardening del deploy | Da fare | Alta | Eseguire verifica applicativa mirata e completare gli header/security controls del deployment. |
-| Filtri e organizzazione libreria | In corso | Media | Filtri combinabili, ordinamenti avanzati e test su librerie grandi. |
-| Indicatori di caricamento | In corso | Media | Audit globale di loader, stati vuoti, errori, rete lenta e aggiornamenti locali. |
-| Schede dettaglio ispirate a Showly | In corso | Media | Completare hero, cast, episodi, provider, trailer e contenuti correlati in mobile. |
-| Progresso serie ed episodi residui | Da fare | Media | Sostituire la percentuale ambigua con episodi residui e avanzamento globale della serie. |
-| Calendario, watchlist e ricerca globale | Da fare | Media | Aggiungere filtri dedicati, watchlist esplicita e risultati raggruppati. |
-| Pacchetto favicon/PWA | In corso | Bassa | Generare/verificare icone 192, 512 e maskable e controllare la resa su Android/GitHub Pages. |
-| Design system e identita visiva | Parzialmente completato | Bassa | Verificare il logo definitivo in tutti i contesti e mantenere preview/documentazione allineate. |
-| Build, versioning e deploy | Completato | Media | Nulla per il flusso base; i test E2E critici devono diventare prerequisito effettivo. |
+| Nome intervento | Priorita | Stato | Owner | Effort | Cosa resta da fare |
+| --- | --- | --- | --- | --- | --- |
+| Autenticazione Supabase e account unico | Alta | Parzialmente completato | Condiviso | Basso | Verificare PIN opzionale e recupero password su piu dispositivi. |
+| Profili Daniela ed Elena | Alta | Completato | Codex | Basso | Nulla di previsto nell'ambito iniziale. |
+| Catalogo e prima sincronizzazione cloud | Alta | Completato | Codex | Medio | Nulla per la migrazione iniziale; la sincronizzazione avanzata resta separata. |
+| Sincronizzazione cloud bidirezionale | Alta | Parzialmente completato | Condiviso | Alto | Implementazione, migration SQL e redeploy eseguiti; resta validare due dispositivi contemporanei e un conflitto reale. |
+| IndexedDB come cache offline | Alta | Da fare | Codex | Alto | Spostare Supabase a fonte primaria e IndexedDB a cache/fallback offline. |
+| Proxy TMDB/JustWatch | Alta | Completato | Condiviso | Alto | Proxy, secret, endpoint e test del contratto completati; resta solo la validazione funzionale dei casi reali. |
+| Trailer e disponibilita streaming | Alta | Parzialmente completato | Condiviso | Medio | Verificare copertura reale su un campione di film/serie e stati senza risultato. |
+| Programmazione cinema italiana | Alta | In corso | Condiviso | Alto | Rendere piu affidabili le fonti ufficiali e gestire titoli senza orari, come Supergirl. |
+| Retry metadati e scelta dell'utente | Alta | Da fare | Codex | Medio | Eliminare retry automatico al login e offrire Riprova/Ignora per ora con stato persistente. |
+| Audit responsive mobile | Alta | In corso | Condiviso | Alto | Completare Home, librerie, dettagli, profilo, import e ricerca su Samsung Galaxy S26+. |
+| Test E2E mobile | Alta | In corso | Codex | Medio | Rendere eseguibili i test senza policy amministrative e validarli su Chrome. |
+| VAPT e hardening del deploy | Alta | Da fare | Codex | Alto | Eseguire verifica applicativa mirata e completare header e controlli di sicurezza. |
+| Filtri e organizzazione libreria | Media | In corso | Codex | Medio | Aggiungere filtri combinabili, ordinamenti avanzati e test su librerie grandi. |
+| Indicatori di caricamento | Media | In corso | Codex | Medio | Audit globale di loader, stati vuoti, errori, rete lenta e aggiornamenti locali. |
+| Schede dettaglio ispirate a Showly | Media | In corso | Codex | Alto | Completare hero, cast, episodi, provider, trailer e contenuti correlati in mobile. |
+| Progresso serie ed episodi residui | Media | Da fare | Codex | Medio | Sostituire la percentuale ambigua con episodi residui e avanzamento globale della serie. |
+| Calendario, watchlist e ricerca globale | Media | Da fare | Codex | Alto | Aggiungere filtri dedicati, watchlist esplicita e risultati raggruppati. |
+| Pacchetto favicon/PWA | Bassa | In corso | Condiviso | Basso | Verificare icone 192, 512 e maskable su Android e GitHub Pages. |
+| Design system e identita visiva | Bassa | Completato | Codex | Medio | Asset SVG approvati collegati a header, login, profili, favicon, PWA e preview. |
+| Build, versioning e deploy | Media | Completato | Codex | Basso | Nulla per il flusso base; i test E2E critici devono diventare prerequisito effettivo. |
 
 ## Stato sintetico
 
@@ -103,7 +103,7 @@ Attivita:
 - [x] completare schema Supabase per dati account, profili, librerie, progressi e preferenze;
 - [x] aggiungere catalogo cloud condiviso per schede film/serie, cast, biografie, stagioni, episodi e fonti;
 - [x] implementare migrazione dal locale al cloud per il primo accesso;
-- [ ] implementare sync bidirezionale con versioni e risoluzione conflitti;
+- [x] implementare sync bidirezionale con versioni e risoluzione conflitti;
 - [x] aggiungere stato visibile di sincronizzazione e gestione errori;
 - [ ] ridurre IndexedDB a cache/offline, non a fonte primaria;
 - [ ] aggiungere test per accesso multi-dispositivo e multi-profilo.
@@ -218,9 +218,9 @@ Obiettivo:
 Attivita:
 
 - [x] definire direzione visiva del marchio Watchverse;
-- [ ] creare favicon, icona 192, icona 512 e maskable icon;
+- [x] collegare favicon, wordmark e marchio compatto approvati in tutti i contesti web/PWA;
 - [x] aggiornare manifest e asset;
-- [ ] verificare resa su browser, home screen e GitHub Pages.
+- [ ] verificare resa su browser, home screen e GitHub Pages con il dispositivo Android reale.
 
 Criteri di chiusura:
 

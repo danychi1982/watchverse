@@ -40,6 +40,8 @@ Non inserire mai nel browser la `service_role` o il token TMDB.
 - Lo schema RLS separa i dati dell'account da quelli di altri utenti.
 - Il cloud Ã¨ la fonte primaria online; IndexedDB resta cache locale e fallback offline.
 - Le scritture usano revisioni e timestamp. In caso di modifiche concorrenti vince la versione piÃ¹ recente e il confronto viene registrato in `sync_conflicts`.
+- Per un progetto Supabase già esistente, eseguire anche `migrations/20260712_bidirectional_sync.sql` nel SQL Editor: aggiunge i campi di versione/tombstone e gli indici necessari agli upsert.
+- Il proxy pubblico espone `/api/cinema` e `/api/trailer`; il trailer pubblico è un fallback e viene mostrato come trovato, non come ufficiale, quando non proviene da TMDB.
 - Le cancellazioni usano tombstone (`deleted_at`) per evitare la ricomparsa di record rimossi offline.
 - La funzione TMDB copre dettagli, ricerca, cast, episodi, video e disponibilitÃ  italiane tramite TMDB/JustWatch. Deve essere deployata con il secret `TMDB_READ_TOKEN`.
 - Trailer e streaming usano il proxy TMDB quando configurato. Gli orari cinema restano limitati ai siti ufficiali configurati: su GitHub Pages serve ancora un endpoint server-side dedicato per superare i limiti CORS.
