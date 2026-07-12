@@ -83,12 +83,8 @@ async function seedAccount(page) {
       });
       db.close();
     });
-    await page.evaluate(() => { localStorage.removeItem('watchverse.session.v2'); sessionStorage.removeItem('watchverse.session.temporary.v2'); });
+    await page.evaluate(() => { localStorage.setItem('watchverse.session.v2', JSON.stringify({ mode: 'local', createdAt: Date.now() })); sessionStorage.removeItem('watchverse.session.temporary.v2'); });
     await page.reload({ waitUntil:'domcontentloaded' });
-    await page.waitForSelector('#loginForm');
-    await page.fill('#loginUser','utente');
-    await page.fill('#loginPassword','abcdef');
-    await page.click('#loginForm button[type="submit"]');
     await page.waitForSelector('[data-profile-choice]');
     await page.locator('[data-profile-choice]').filter({ hasText:'Daniela' }).click();
     await page.waitForSelector('#homeContinueRail .episode-media-card');
