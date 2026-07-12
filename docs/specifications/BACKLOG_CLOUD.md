@@ -1,6 +1,6 @@
-# Piano di lavoro Watchverse
+# Backlog Watchverse
 
-Questo file traccia sia le attivita completate sia quelle ancora aperte. Una voce si considera completata solo dopo:
+Questo file raccoglie le attivita completate, in corso e ancora aperte. Non rappresenta un piano temporale vincolante: priorita, stato, owner ed effort aiutano a decidere il prossimo intervento. Una voce si considera completata solo dopo:
 
 - implementazione completata;
 - test automatici eseguiti;
