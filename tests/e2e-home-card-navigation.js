@@ -1,4 +1,4 @@
-const { chromium } = require('playwright-core');
+const { chromium } = require('playwright');
 const { openBrowser } = require('./e2e-browser');
 const assert = require('node:assert');
 const http = require('node:http');
