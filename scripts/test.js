@@ -46,7 +46,7 @@ const checks = [
   ["node", ["tests/e2e-home-card-navigation.js"]]
 ];
 
-const localBrowserBlocked = process.platform === 'win32' && !process.env.CI && !process.env.WATCHVERSE_CDP_URL && !process.env.CHROME_PATH;
+const localBrowserBlocked = process.platform === 'win32' && !process.env.CI && !process.env.WATCHVERSE_RUN_E2E && !process.env.WATCHVERSE_CDP_URL && !process.env.CHROME_PATH;
 const browserE2EEnabled = process.env.WATCHVERSE_RUN_E2E === '1';
 
 for (const check of checks) {

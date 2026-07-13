@@ -10,12 +10,15 @@ function executablePath() {
     .filter(Boolean).find(file => fs.existsSync(file));
 }
 
+// In CI Playwright supplies a private Chromium binary; locally we only attach
+// to an existing CDP browser or use an explicitly configured executable.
+
 async function openBrowser(chromium) {
   const cdpCandidates = [process.env.WATCHVERSE_CDP_URL, 'http://127.0.0.1:9222', 'http://127.0.0.1:9223'].filter(Boolean);
   for (const endpoint of cdpCandidates) {
     try { return await chromium.connectOverCDP(endpoint); } catch { /* prova il prossimo endpoint */ }
   }
-  const path = executablePath();
+  const path = process.env.WATCHVERSE_USE_SYSTEM_BROWSER === '1' ? executablePath() : null;
   try {
     return await chromium.launch(path ? { executablePath: path, headless: true } : { headless: true });
   } catch (error) {
