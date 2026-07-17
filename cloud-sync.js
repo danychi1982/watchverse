@@ -186,18 +186,17 @@
   async function deleteRecord(profile, store, value) {
     if (!isEnabled() || !profileId(profile) || !value) return;
     const deletedAt = new Date().toISOString();
-    const revision = Number(value.revision || 0) + 1;
     if (store === 'series' || store === 'movies') {
       const kind = store === 'series' ? 'series' : 'movie';
       const existing = await request(`/library_records?select=revision,updated_at&profile_id=eq.${encodeURIComponent(profile.cloudId)}&kind=eq.${kind}&local_id=eq.${encodeURIComponent(value.id)}`);
       const remote = existing?.[0];
-      if (remote && (Date.parse(remote.updated_at || '') || 0) > (Date.parse(value.updatedAt || '') || 0)) return { skipped: true };
+      const revision = Math.max(Number(value.revision || 0), Number(remote?.revision || 0)) + 1;
       await request('/library_records?on_conflict=profile_id,kind,local_id', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ profile_id: profile.cloudId, kind, local_id: value.id, payload: libraryPayload(value), deleted_at: deletedAt, revision, updated_at: deletedAt }) });
     } else if (store === 'progress') {
       const seriesId = value.seriesId || '';
       const existing = await request(`/episode_progress?select=revision,updated_at&profile_id=eq.${encodeURIComponent(profile.cloudId)}&series_local_id=eq.${encodeURIComponent(seriesId)}&season=eq.${Number(value.season || 0)}&episode=eq.${Number(value.episode || 0)}`);
       const remote = existing?.[0];
-      if (remote && (Date.parse(remote.updated_at || '') || 0) > (Date.parse(value.updatedAt || '') || 0)) return { skipped: true };
+      const revision = Math.max(Number(value.revision || 0), Number(remote?.revision || 0)) + 1;
       await request('/episode_progress?on_conflict=profile_id,series_local_id,season,episode', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ profile_id: profile.cloudId, local_id: value.id, series_local_id: seriesId, season: Number(value.season || 0), episode: Number(value.episode || 0), watched: false, payload: libraryPayload(value), deleted_at: deletedAt, revision, updated_at: deletedAt }) });
     }
     return { skipped: false };

@@ -59,6 +59,7 @@ Questo file raccoglie le attivita completate, in corso e ancora aperte. Non rapp
 | Build, versioning e deploy | Media | Completato | Codex | Basso | Nessuna attività tecnica residua. |
 
 | Prestazioni accesso e caricamento | Alta | Da fare | Codex | Alto | Ridurre il tempo percepito di login e apertura profilo, misurare il bootstrap cloud e spostare i caricamenti non indispensabili in background senza bloccare l’utente. |
+| Lazy load dei moduli con Vite | Media | Da fare | Codex | Medio | Valutare code splitting e import dinamici per route e moduli non essenziali, misurare il bootstrap e verificare che il caricamento progressivo non introduca regressioni. |
 | Ordinamento Film da vedere | Alta | Parzialmente completato | Daniela | Basso | Validare su mobile che il filtro usi `Data aggiunta` in ordine decrescente e che gli altri filtri mantengano il loro ordinamento. |
 | Ricerca Film senza perdita di focus | Alta | Parzialmente completato | Daniela | Medio | Validare su Samsung Galaxy S26+ che la tastiera resti aperta durante la digitazione e che la ricerca parta dopo la pausa o almeno due caratteri. |
 | Rimozione sicura dalla libreria | Alta | Da fare | Codex | Medio | Aggiungere la rimozione nella sola scheda di dettaglio per film e serie, con azione visivamente separata, conferma esplicita e aggiornamento cloud/cache dopo la cancellazione. |
@@ -516,3 +517,43 @@ Le righe storiche precedenti restano come tracciabilita. Per la gestione corrent
 | Rimozione non persistente dopo refresh | Alta | KO da verificare | Codex | Medio | Dopo la rimozione, il titolo ricompare con Ctrl+F5. Verificare tombstone, sincronizzazione cloud e merge locale/cloud. |
 | Copertura metadati bloccata su molti titoli | Alta | KO da approfondire | Codex | Medio | Analizzare perché il retry non riduce i titoli da verificare e può aumentare gli errori; distinguere assenza legittima di fonte da errore tecnico. |
 | Ricerca di titoli rimossi dal profilo | Media | KO da verificare | Codex | Medio | Distinguere il catalogo condiviso dal catalogo del profilo: un titolo rimosso non deve essere presentato come già disponibile senza indicare chiaramente che è stato rimosso dal profilo. |
+
+## Stato operativo dopo il ciclo autonomo del 17 luglio 2026
+
+Questa e la tabella corrente per la ripresa dei test. Le voci implementate ma non ancora confermate manualmente restano parzialmente completate.
+
+| Nome intervento | Priorita | Stato | Owner | Effort | Cosa resta da fare |
+|---|---|---|---|---|---|
+| Refresh cloud al cambio sezione | Media | Parzialmente completato | Daniela | Medio | Verificare che una modifica fatta dall'altro dispositivo diventi visibile rientrando in Home, Serie, Film o Cerca senza logout. |
+| Sincronizzazione cloud di preferiti e modifiche profilo | Alta | Parzialmente completato | Daniela | Medio | Confermare preferiti e modifiche su desktop/mobile dopo cambio sezione e dopo pulizia cache. |
+| Rimozione non persistente dopo refresh | Alta | Parzialmente completato | Daniela | Medio | Verificare che un titolo rimosso non ricompaia dopo Ctrl+F5 e che il catalogo condiviso non lo proponga come gia nel profilo. |
+| Ricerca automatica senza perdita di focus | Alta | Parzialmente completato | Daniela | Medio | Testare ricerca Serie, Film e Cerca su desktop e Samsung; durante la digitazione il focus e la tastiera devono restare attivi. |
+| Proposte personalizzate senza duplicati | Media | Parzialmente completato | Daniela | Medio | Verificare che le proposte non contengano titoli gia presenti nel profilo e che il comando Aggiungi funzioni. |
+| Ricerca pubblica pertinente | Media | Parzialmente completato | Daniela | Medio | Verificare House of Cards e altre query: solo film/serie pertinenti, nessuna persona e nessun falso positivo evidente. |
+| Retry metadati deciso dall'utente | Alta | Parzialmente completato | Daniela | Medio | Confermare che non parta al login e che Riprova non riusciti sia l'unico avvio manuale; approfondire i titoli ancora incompleti. |
+| Stato aggiornamento metadati esplicito | Media | Parzialmente completato | Daniela | Basso | Verificare che il pannello mostri chiaramente Aggiornamento in corso e Ciclo completato senza percentuale duplicata. |
+| Interazioni pannello metadati | Media | Parzialmente completato | Daniela | Basso | Verificare apertura, chiusura e pulsanti anche durante un aggiornamento in corso. |
+| Conferma import sostitutivo applicativa | Media | Parzialmente completato | Daniela | Medio | Confermare desktop e mobile del dialog interno all'app, senza alert del browser. |
+| Contrasto globale | Media | Parzialmente completato | Daniela | Basso | Eseguire controllo a tappeto sui temi e sui flussi di importazione, metadati e ricerca. |
+| Mostra/nascondi PIN e password | Media | Implementato | Daniela | Basso | Nessuna modifica tecnica residua; resta solo la verifica manuale finale dei modali. |
+| Redirect dopo rimozione dal dettaglio | Media | Implementato | Daniela | Basso | Nessuna modifica tecnica residua; confermare il comportamento su Film e Serie. |
+| IndexedDB come sola cache offline | Alta | Da fare | Codex | Medio | Completare la separazione tra dati cloud primari e cache locale, inclusa la gestione offline senza bloccare l'accesso. |
+| Proxy TMDB/JustWatch e fonti pubbliche | Alta | Parzialmente completato | Daniela | Medio | Verificare i titoli incompleti e correggere le fonti/proxy per locandine, cast, trailer, streaming e cinema. |
+| Audit mobile responsive | Alta | Da fare | Codex | Alto | Ristrutturare e verificare Home, librerie e dettagli su Samsung Galaxy S26+. |
+| Favicon/PWA aggiornata | Bassa | Parzialmente completato | Daniela | Basso | Verificare favicon, icone installate e cache PWA dopo aggiornamento. |
+| Stabilizzazione test browser E2E | Alta | Sospeso | Codex | Medio | Risolvere il gate di autenticazione con fixture/credenziali dedicate; il workflow browser resta sospeso e non va rilanciato. |
+| Lazy load dei moduli con Vite | Media | Da fare | Codex | Medio | Introdurre caricamento differito dei moduli pesanti e misurare il miglioramento delle performance. |
+
+## Snapshot pubblicazione 17 luglio 2026
+
+Le modifiche autonome incluse nella prossima pubblicazione sono:
+
+- aggiornamento cloud leggero al rientro in Home, Serie, Film e Cerca, senza bloccare il rendering iniziale;
+- persistenza delle rimozioni cloud tramite revisione e tombstone;
+- ricerca nelle librerie con aggiornamento parziale del solo elenco, preservando focus e tastiera;
+- proposte personali filtrate contro i titoli gia presenti nel profilo;
+- ricerca pubblica limitata a film e serie e filtrata per corrispondenza pertinente del titolo;
+- suite statica/contrattuale aggiornata ai comportamenti correnti;
+- workflow browser E2E sospeso e avviabile solo manualmente, per evitare run falliti finche non saranno disponibili fixture di autenticazione dedicate.
+
+Il test manuale resta necessario per confermare il comportamento su dispositivi e dati reali. Le attivita tecniche ancora aperte sono quelle elencate nella tabella piu recente qui sopra.
