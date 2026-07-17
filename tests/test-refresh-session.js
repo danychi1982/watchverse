@@ -17,7 +17,7 @@ if (!app.includes('window.WatchverseCloudSync?.isEnabled() && navigator.onLine')
 if (!app.includes("location.hash = kind === 'series' ? '#/series' : '#/movies';")) {
   throw new Error('La rimozione non reindirizza alla lista del tipo corretto.');
 }
-if (!app.includes("const excluded=new Set([...state.series, ...state.movies].map(item=>item.id));")) {
+if (!app.includes('function isCandidateInLibrary(row)') || !app.includes('!isCandidateInLibrary(row)')) {
   throw new Error('Le proposte non escludono la libreria gia\u0027 presente.');
 }
 if (!app.includes('scheduleMetadataRecoveryPass();\n      return;')) {
