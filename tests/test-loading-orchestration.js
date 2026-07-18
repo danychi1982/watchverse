@@ -22,7 +22,11 @@ assert(styles.includes('.blocking-loader.is-visible { opacity:1; visibility:visi
 assert(styles.includes('body.is-blocking-loading #app'), 'Le aree sottostanti al loader devono essere rese non interattive.' );
 assert(app.includes('root.setAttribute(\'inert\', \'\')'), 'Il loader globale deve isolare anche la tastiera dal contenuto sottostante.' );
 assert(app.includes('function startRouteProgress('), 'Manca il feedback leggero per la navigazione tra sezioni.' );
-assert(app.includes('startRouteProgress({ page: targetPage, id: targetId });'), 'I link interni devono avviare il feedback di navigazione senza overlay bloccante.' );
+assert(app.includes("history.pushState(null, '', link.getAttribute('href'));"), 'I link interni devono aggiornare la rotta senza attendere il completamento di una preparazione in background.' );
+assert(app.includes('void route({ loader: true });'), 'I link interni devono avviare subito il rendering della nuova sezione.' );
+assert(app.includes('viewCache: { revision: -1, searchRecommendations: null, programmingMarkup: null }'), 'Le viste costose devono avere una cache dedicata.' );
+assert(app.includes('Date.now() - state.cloudRefreshAt < 60000'), 'Il refresh cloud automatico deve essere limitato nel tempo.' );
+assert(!app.includes("['home', 'series', 'movies', 'search'].includes(page)"), 'La ricerca non deve riattivare sincronizzazioni cloud automatiche ad ogni apertura.' );
 assert(app.includes('const shouldShowRouteProgress ='), 'Il routing deve distinguere il progresso di navigazione dal loader modale.' );
 
 console.log('Orchestrazione loader, cache locale e azioni non bloccanti verificata.');

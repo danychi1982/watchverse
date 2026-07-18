@@ -199,7 +199,7 @@
     notifications: [], tmdbResults: [], publicResults: [], catalogResults: [], recommendationResults: [], isLoading: false, pendingAvatarProfileId: null, personFilmographyFilter: 'all', profileSettingsTab: 'identity',
     catalogEntries: [], catalogIndex: new Map(), catalogHydratedThisSession: 0, catalogNetworkAvoidedThisSession: 0,
     metadataQueue: [], metadataRunning: 0, metadataQueuedIds: new Set(), metadataAutoBudget: 36, metadataRenderPending: false, metadataRerenderTimer: null, metadataBackgroundStarted: false, metadataContinuationTimer: null, metadataHeaderTimer: null, metadataCompletedThisSession: 0, metadataFailedThisSession: 0, metadataRecoveryScheduled: false, metadataRecoveryDone: false, wcagStatusFilter: 'all', wcagLevelFilter: 'all', accessibilityTab: 'declaration', searchRecommendationFilter: 'all', navigationLoaderToken: 0, navigationRequestId: 0, initialCloudHydrationPending: false,
-    sidebarCollapsed: localStorage.getItem('watchverse.sidebarCollapsed') === '1', cinemaSearchLocation: null, cinemaSearchQuery: '', cinemaLocationFeedback: null, aivengersInitialized: false, lastRenderedRoute: '', defaultSourceStatus: null, defaultSourceSyncRunning: false, viewActionBusy: false, cloudRefreshRunning: false, cloudRefreshAt: 0, lastUserInteractionAt: 0, cloudRefreshTimer: null, routeProgressTimer: null
+    sidebarCollapsed: localStorage.getItem('watchverse.sidebarCollapsed') === '1', cinemaSearchLocation: null, cinemaSearchQuery: '', cinemaLocationFeedback: null, aivengersInitialized: false, lastRenderedRoute: '', defaultSourceStatus: null, defaultSourceSyncRunning: false, viewActionBusy: false, cloudRefreshRunning: false, cloudRefreshAt: 0, lastUserInteractionAt: 0, cloudRefreshTimer: null, routeProgressTimer: null, dataRevision: 0, viewCache: { revision: -1, searchRecommendations: null, programmingMarkup: null }
   };
 
 
@@ -655,8 +655,9 @@
   function scheduleCloudRouteRefresh(page) {
     const sync = window.WatchverseCloudSync;
     if (!sync?.isEnabled() || !state.profileSelected || !navigator.onLine) return;
-    if (!['home', 'series', 'movies', 'search'].includes(page)) return;
-    if (state.cloudRefreshRunning || Date.now() - state.cloudRefreshAt < 8000) return;
+    if (!['home', 'series', 'movies'].includes(page)) return;
+    if (state.cloudRefreshRunning || Date.now() - state.cloudRefreshAt < 60000) return;
+    const scheduledNavigationId = state.navigationRequestId;
     state.cloudRefreshRunning = true;
     state.cloudRefreshAt = Date.now();
     idle(async () => {
@@ -665,10 +666,10 @@
         if (!profile) return;
         await syncCloudProfile(profile);
         await reloadData({ migrate:false });
-        if (state.profileSelected && parseRoute().page === page) {
+        if (state.navigationRequestId === scheduledNavigationId && state.profileSelected && parseRoute().page === page) {
           const refresh = () => {
             state.cloudRefreshTimer = null;
-            if (!state.profileSelected || parseRoute().page !== page) return;
+            if (state.navigationRequestId !== scheduledNavigationId || !state.profileSelected || parseRoute().page !== page) return;
             if (Date.now() - state.lastUserInteractionAt < 1200) {
               state.cloudRefreshTimer = setTimeout(refresh, 1200);
               return;
@@ -970,6 +971,8 @@
     if (ratingUpdates.length) await dbBulkPut('movies', ratingUpdates);
     rebuildIndexes();
     buildNotifications();
+    state.dataRevision += 1;
+    state.viewCache = { revision: state.dataRevision, searchRecommendations: null, programmingMarkup: null };
   }
 
   function progressRecord(seriesId, season, episode) {
@@ -2070,6 +2073,10 @@
   }
   async function route(options = {}) {
     const navigationRequestId = ++state.navigationRequestId;
+    if (state.cloudRefreshTimer) {
+      clearTimeout(state.cloudRefreshTimer);
+      state.cloudRefreshTimer = null;
+    }
     const r = parseRoute();
     const routeKey = `${r.page}/${r.id || ''}`;
     const preserveScroll = options.preserveScroll === true;
@@ -2286,6 +2293,10 @@
 
   function renderProgrammingLegacy() {
     setPage('Programmazione', 'TV, cinema e nuove uscite', 'programming');
+    if (state.viewCache.revision === state.dataRevision && state.viewCache.programmingMarkup) {
+      setMain(state.viewCache.programmingMarkup);
+      return;
+    }
     const upcoming = upcomingEpisodes(30);
     const now = Date.now() - 1000 * 60 * 60 * 4;
     const weekEnd = Date.now() + 1000 * 60 * 60 * 24 * 7;
@@ -2299,6 +2310,7 @@
     const broadcastHtml = broadcasts.length ? broadcasts.map(row => `<article class="programming-event"><div><span class="result-kicker">${row.kind === 'movie' ? 'Film in TV' : 'Serie in TV'}</span><h3><a href="${row.kind === 'movie' ? '#/movie/' : '#/series/'}${encodeURIComponent(row.item.id)}">${esc(row.item.title)}</a></h3><p>${esc(row.channel || 'Canale TV')} · ${esc(showtimeDateLabel(row.startsAt || row.date))}</p><div class="programming-event-meta">${row.episode ? `<span>${esc(row.episode)}</span>` : ''}${row.broadcastType ? `<span>${esc(row.broadcastType)}</span>` : ''}${row.language ? `<span>${esc(row.language)}</span>` : ''}</div></div>${row.guideUrl ? `<a class="secondary compact" href="${esc(row.guideUrl)}" target="_blank" rel="noopener noreferrer">Guida ufficiale ↗</a>` : `<span class="programming-event-badge">${row.isDemo ? 'Dati demo' : 'Guida da collegare'}</span>`}</article>`).join('') : '<p class="notice warning">Nessun passaggio TV italiano rilevato nei prossimi sette giorni.</p>';
     const cinemaHtml = showtimes.length ? showtimes.map(row => { const cinema = preferredCinemas().find(x => x.id === row.cinemaId) || {}; return `<article class="programming-event"><div><span class="result-kicker">Al cinema</span><h3><a href="#/movie/${encodeURIComponent(row.item.id)}">${esc(row.item.title)}</a></h3><p>${esc(row.cinemaName || cinema.name || 'Cinema')} · ${esc(showtimeDateLabel(row.startsAt))}</p><div class="programming-event-meta"><span>${esc([row.format, row.language, row.auditorium].filter(Boolean).join(' · ') || 'Dettagli sul sito ufficiale')}</span></div></div><a class="secondary compact" href="${esc(row.bookingUrl || cinema.officialUrl || '#')}" target="_blank" rel="noopener noreferrer">Biglietti ↗</a></article>`; }).join('') : '<p class="notice warning">Nessuno spettacolo collegato. Le sale preferite restano disponibili nel profilo.</p>';
     setMain(`<section class="programming-overview" aria-label="Riepilogo programmazione"><article class="metric-card"><div class="metric-row"><span class="metric-icon">▤</span><span>Nuovi episodi</span></div><strong>${upcoming.length.toLocaleString('it-IT')}</strong></article><article class="metric-card"><div class="metric-row"><span class="metric-icon">TV</span><span>Passaggi TV, 7 giorni</span></div><strong>${broadcasts.length.toLocaleString('it-IT')}</strong></article><article class="metric-card"><div class="metric-row"><span class="metric-icon">🎟</span><span>Spettacoli cinema</span></div><strong>${showtimes.length.toLocaleString('it-IT')}</strong></article></section><section class="section"><div class="section-head"><div><h2>Nuovi episodi e uscite</h2><p>Date italiane quando disponibili, altrimenti uscita originale.</p></div></div><div class="calendar-groups">${groupedUpcomingHtml(upcoming)}</div></section><section class="section"><div class="section-head"><div><h2>In TV</h2><p>Palinsesti italiani rilevati nei prossimi sette giorni.</p></div></div><div class="programming-list">${broadcastHtml}</div></section><section class="section"><div class="section-head"><div><h2>Nei cinema preferiti</h2><p>Orari disponibili per le sale configurate nel profilo.</p></div><a class="section-link" href="#/settings">Gestisci cinema →</a></div><div class="programming-list">${cinemaHtml}</div></section>`);
+    if (state.viewCache.revision === state.dataRevision) state.viewCache.programmingMarkup = $('#main').innerHTML;
   }
 
   function renderProgramming() {
@@ -3122,7 +3134,10 @@
     setPage('Cerca','Film, serie e persone','search');
     const local = [...state.series.map(x=>({...x,kind:'tv'})),...state.movies.map(x=>({...x,kind:'movie'}))];
     const tmdbReady=!!(state.settings.tmdbToken||(window.WATCHVERSE_CONFIG||{}).tmdbProxyUrl);
-    const allRecommended=profileRecommendations(18);
+    const allRecommended = state.viewCache.revision === state.dataRevision && state.viewCache.searchRecommendations
+      ? state.viewCache.searchRecommendations
+      : profileRecommendations(18);
+    if (state.viewCache.revision === state.dataRevision) state.viewCache.searchRecommendations = allRecommended;
     const recommendationFilter=['all','movie','series'].includes(state.searchRecommendationFilter)?state.searchRecommendationFilter:'all';
     state.searchRecommendationFilter=recommendationFilter;
     const recommended=allRecommended.filter(row=>recommendationFilter==='all'||row.kind===recommendationFilter);
@@ -4429,9 +4444,12 @@
       const targetId = targetParts.length > 1 ? decodeURIComponent(targetParts.slice(1).join('/')) : null;
       const current = parseRoute();
       if (targetPage === current.page && targetId === current.id) return;
-      startRouteProgress({ page: targetPage, id: targetId });
+      event.preventDefault();
+      history.pushState(null, '', link.getAttribute('href'));
+      void route({ loader: true });
     });
     window.addEventListener('hashchange',()=>{if(state.profileSelected)route();});
+    window.addEventListener('popstate',()=>{if(state.profileSelected)void route();});
     window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();state.deferredInstall=event;$('#installButton')?.classList.remove('hidden');});
     $('#skipToContent')?.addEventListener('click',()=>$('#main')?.focus({preventScroll:false}));
     $('#installButton')?.addEventListener('click',installApp);
