@@ -13,6 +13,7 @@ Questa cartella conserva il contesto necessario per riprendere il progetto in un
 - Il contesto stabile va aggiornato qui, non copiato in ogni issue o chat.
 - Ogni decisione architetturale o di prodotto rilevante entra nel registro con data, motivazione e conseguenze.
 - Le attivita operative restano nel backlog; una voce non va duplicata in questo documento.
+- Ogni avanzamento significativo su decisioni, architettura o backlog aggiorna nella stessa sessione anche questa knowledge base e/o il registro delle decisioni, quando necessario.
 - I documenti devono distinguere fatti verificati, decisioni, ipotesi e attivita ancora da testare.
 - Ogni nuova chat dovrebbe iniziare leggendo questo indice, il contesto, il registro decisioni e il backlog.
 
