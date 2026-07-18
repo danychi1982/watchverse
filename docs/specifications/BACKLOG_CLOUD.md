@@ -605,3 +605,4 @@ Le correzioni seguenti sono state implementate, testate con la suite automatica,
 | Preferito dal dettaglio e interazioni concorrenti | Verificato desktop | Superato dopo le correzioni: toast e pulsante restano reattivi. |
 | Scheda dettaglio e navigazione durante aggiornamenti background | Verificato desktop | Superato: navigazione e azioni restano disponibili senza blocchi percepiti. |
 | Refresh senza perdere profilo, rotta, filtro e ordinamento | Verificato desktop | Superato su Serie, Film e dettaglio. |
+| Accesso offline dopo refresh | Verificato desktop | Superato: con rete disattivata il profilo, la rotta e la libreria restano disponibili dalla cache. |
