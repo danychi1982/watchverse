@@ -124,6 +124,7 @@ Per i subtask di Analisi e Progettazione il deliverable non è una frase riepilo
 - Story, Task e Bug ricevono sia gli Story Points sia `Original Estimate`.
 - Gli Story Points usano la scala Fibonacci e rappresentano la dimensione relativa della issue: `3` bassa, `5` media, `8` alta.
 - La stima operativa usa `Original Estimate` in ore: per Story `16h` bassa, `24h` media, `32h` alta; per Task e Bug `8h` bassa, `16h` media, `24h` alta.
+- Mappatura operativa per le Story: `Bassa = 3 SP / 16h`, `Media = 5 SP / 24h`, `Alta = 8 SP / 32h`. Gli SP esprimono dimensione relativa; le ore esprimono capacità operativa attesa e non sono una conversione matematica.
 - I subtask non ricevono Story Points: ricevono solo `Original Estimate` in ore, in base al componente. La convenzione corrente è `4h` per Analisi e Progettazione, UX/UI e QA/Testing; `8h` per Front-end, Back-end, Cloud/Infrastructure e DevOps/CI/CD.
 - La convenzione di calendario è `1 giorno/uomo = 8 ore`.
 - Story Points e ore sono indicatori complementari e non devono essere convertiti automaticamente l'uno nell'altro.
