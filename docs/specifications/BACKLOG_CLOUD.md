@@ -608,3 +608,4 @@ Le correzioni seguenti sono state implementate, testate con la suite automatica,
 | Accesso offline dopo refresh | Verificato desktop | Superato: con rete disattivata il profilo, la rotta e la libreria restano disponibili dalla cache. |
 | Home con evidenziazione e shell immediate | Implementato | La voce Home e la shell vengono mostrate al primo paint; rail, progressi e calendario vengono calcolati dopo. Resta la verifica manuale del tempo percepito. |
 | Home senza lampeggio durante refresh background | Implementato | I rientri in Home causati da metadati o sincronizzazione aggiornano direttamente l’elenco senza ripresentare “Preparo la Home”. Resta la verifica manuale dopo alcuni secondi. |
+| Home stabile tra sezioni e schede dettaglio | Verificato desktop | Superato: la Home resta stabile tornando da Serie, Film, Cerca e dalle schede dettaglio delle serie. |
