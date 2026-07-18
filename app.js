@@ -1690,14 +1690,14 @@
     const image = item.poster ? `<img class="poster-img" src="${esc(item.poster)}" alt="" loading="lazy" decoding="async">` : '';
     return `${image}<span class="poster-title">${esc(item.title)}</span>`;
   }
-  function mediaCard(item, kind = 'series') {
+  function mediaCard(item, kind = 'series', options = {}) {
     const isSeries = kind === 'series'; const prog = isSeries ? seriesProgress(item) : null; const completed = isSeries && seriesIsCompleted(item);
     const meta = isSeries ? `${item.year || '—'} · ${prog.remaining} episodi residui` : `${item.year || '—'} · ${item.runtime ? minutesToText(item.runtime) : 'Durata n.d.'}`;
     const href = isSeries ? `#/series/${encodeURIComponent(item.id)}` : `#/movie/${encodeURIComponent(item.id)}`;
     return `<article class="media-card" data-id="${esc(item.id)}" data-kind="${kind}">
       <a href="${href}" class="poster" style="background:${item.posterGradient || gradient(item.title)}">
         ${posterInner(item)}
-        <span class="poster-badge">${isSeries ? esc(completed ? 'COMPLETATA' : statusLabel(item.status)) : (item.watched ? 'VISTO' : 'DA VEDERE')}</span>
+        ${options.hideStatusBadge ? '' : `<span class="poster-badge">${isSeries ? esc(completed ? 'COMPLETATA' : statusLabel(item.status)) : (item.watched ? 'VISTO' : 'DA VEDERE')}</span>`}
       </a>
       <button class="favorite-button ${item.favorite ? 'active' : ''}" data-action="favorite" aria-label="${item.favorite ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'}">♥</button>
       <div class="card-body">
@@ -1875,14 +1875,34 @@
     return `<section class="content-card section cast-section"><div class="section-head"><div><h3>Cast</h3><p>${esc(description)}</p></div>${fullCast?`<a class="secondary compact external-cast-link" href="${esc(fullCast.url)}" target="_blank" rel="noopener noreferrer">${esc(fullCast.label)} ↗</a>`:''}</div>${total?`<div class="cast-strip cast-grid" role="list" aria-label="Interpreti principali">${castSectionHtml(item)}</div>`:castSectionHtml(item)}</section>`;
   }
 
+  function updateFavoriteControls(kind, id, active) {
+    $$('[data-action="favorite"]').forEach(button => {
+      const card = button.closest('[data-kind][data-id]');
+      if (!card || card.dataset.kind !== kind || card.dataset.id !== id) return;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-label', active ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti');
+      button.textContent = active ? '♥' : '♡';
+    });
+    const detailButton = $('#detailFavorite');
+    if (detailButton) detailButton.textContent = active ? '♥ Preferito' : '♡ Preferito';
+  }
+
   async function toggleFavorite(kind, id) {
     const list = kind === 'series' ? state.series : state.movies;
     const item = list.find(x => x.id === id);
     if (!item) return;
+    const previous = Boolean(item.favorite);
     item.favorite = !item.favorite;
-    await dbPut(kind === 'series' ? 'series' : 'movies', item);
+    updateFavoriteControls(kind, id, item.favorite);
     showToast(item.favorite ? 'Aggiunto ai preferiti' : 'Rimosso dai preferiti', item.title, '');
-    void route({ loader:false, preserveScroll:true });
+    try {
+      await dbPut(kind === 'series' ? 'series' : 'movies', item);
+      void route({ loader:false, preserveScroll:true });
+    } catch (error) {
+      item.favorite = previous;
+      updateFavoriteControls(kind, id, previous);
+      throw error;
+    }
   }
   async function legacyToggleFavorite(kind, id) {
     const list = kind === 'series' ? state.series : state.movies; const item = list.find(x => x.id === id); if (!item) return;
@@ -2325,6 +2345,7 @@
         <a href="${href}" class="poster episode-card-poster" style="background:${s.posterGradient || gradient(s.title)}" aria-label="Apri ${esc(s.title)}, ${esc(episodeCode)}">
           ${posterInner(s)}
         </a>
+        <button class="favorite-button ${s.favorite ? 'active' : ''}" data-action="favorite" aria-label="${s.favorite ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'}">${s.favorite ? '♥' : '♡'}</button>
         <div class="card-body">
           <p class="card-title"><a href="${href}" title="${esc(s.title)}">${esc(s.title)}</a></p>
           <div class="episode-title-row"><span class="episode-code">${esc(episodeCode)}</span><p class="episode-card-title">${esc(ep.title || 'Titolo episodio non disponibile')}</p></div>
@@ -2347,7 +2368,7 @@
     const listContent = state.homeTab === 'watch' ? `
       ${railSection({ id:'homeContinueRail', title:'Continua a guardare', description:'Le serie riprendono dal primo episodio ancora da vedere, ordinate per attività recente.', items:recentlyWatched, kicker:'Continua a guardare' })}
       ${latestReleased.length ? railSection({ id:'homeReleasedRail', title:'Nuovi episodi da recuperare', description:'Gli episodi non visti usciti più di recente.', items:latestReleased, kicker:'Uscito di recente' }) : ''}
-      <section class="section"><div class="section-head"><div><h2>Film da vedere</h2><p>${watchFilms.length} titoli pronti nella watchlist.</p></div><a class="section-link" href="#/movies">Apri film →</a></div><div class="media-grid">${watchFilms.map(m => mediaCard(m,'movie')).join('')}</div></section>` : `
+      <section class="section"><div class="section-head"><div><h2>Film da vedere</h2><p>${watchFilms.length} titoli pronti nella watchlist.</p></div><a class="section-link" href="#/movies">Apri film →</a></div><div class="media-grid">${watchFilms.map(m => mediaCard(m,'movie',{hideStatusBadge:true})).join('')}</div></section>` : `
       <section class="section"><div class="section-head"><div><h2>Calendario uscite</h2><p>Raggruppato per giorno. Quando è disponibile una data italiana viene usata come riferimento; altrimenti mostriamo l’uscita originale.</p></div><button class="secondary" id="notifyPermission">Attiva notifiche</button></div>
       <div class="calendar-groups">${groupedUpcomingHtml(upcoming)}</div></section>`;
 
