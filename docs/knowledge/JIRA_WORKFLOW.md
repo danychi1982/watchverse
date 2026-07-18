@@ -118,3 +118,13 @@ Il censimento è una baseline operativa: eventuali sovrapposizioni storiche nel 
 I subtask non sono segnaposto generici per componente. Summary e descrizione devono essere contestualizzati alla Story principale e indicare l'implementazione concreta da realizzare, i contratti o gli stati coinvolti e il criterio tecnico di completamento. Una stessa disciplina può avere più subtask quando il lavoro contiene attività indipendenti, per esempio separando UI, integrazione dati, gestione asincrona, persistenza, sicurezza o test automatici. Prima di creare un nuovo subtask va verificato che non duplichi quelli esistenti; quando una Story è complessa si preferisce una scomposizione tecnica più precisa mantenendo la Story come unità di verifica funzionale.
 
 Per i subtask di Analisi e Progettazione il deliverable non è una frase riepilogativa nel commento Jira. L'analisi funzionale e tecnica viene documentata in un file Markdown versionato sotto `docs/knowledge/analysis/`, con sezioni su flussi, input, stati, errori, contratti, persistenza, sicurezza, dipendenze e criteri tecnici. Il commento Jira contiene il link al file e una sintesi; per i subtask futuri il documento viene prodotto prima del passaggio a `Done`.
+
+## Stime Jira
+
+- Story, Task e Bug ricevono sia gli Story Points sia `Original Estimate`.
+- Gli Story Points usano la scala Fibonacci e rappresentano la dimensione relativa della issue: `3` bassa, `5` media, `8` alta.
+- La stima operativa usa `Original Estimate` in ore: per Story `16h` bassa, `24h` media, `32h` alta; per Task e Bug `8h` bassa, `16h` media, `24h` alta.
+- I subtask non ricevono Story Points: ricevono solo `Original Estimate` in ore, in base al componente. La convenzione corrente è `4h` per Analisi e Progettazione, UX/UI e QA/Testing; `8h` per Front-end, Back-end, Cloud/Infrastructure e DevOps/CI/CD.
+- La convenzione di calendario è `1 giorno/uomo = 8 ore`.
+- Story Points e ore sono indicatori complementari e non devono essere convertiti automaticamente l'uno nell'altro.
+- Le Epic sono contenitori di capability e non vengono stimate direttamente: la stima è distribuita sulle Story, Task, Bug e sui subtask figli.
