@@ -322,10 +322,6 @@
   }
 
   async function findTvmazeShow({ title, originalTitle = null, aliases = [], year = null, tvdbId = null }) {
-    if (tvdbId) {
-      try { return await fetchJson(`${TVMAZE}/lookup/shows?thetvdb=${encodeURIComponent(tvdbId)}`); }
-      catch { /* fallback to title search */ }
-    }
     const wantedTitles = unique([originalTitle, title, ...aliases]);
     const candidates = [];
     for (const wanted of wantedTitles.slice(0, 3)) {
@@ -342,7 +338,12 @@
     });
     const best = dedup[0];
     const score = best ? Math.max(...wantedTitles.map(w => titleScore(best.name, w, yearOf(best.premiered), year))) : 0;
-    return best && score >= 35 ? best : null;
+    if (best && score >= 35) return best;
+    if (tvdbId) {
+      try { return await fetchJson(`${TVMAZE}/lookup/shows?thetvdb=${encodeURIComponent(tvdbId)}`); }
+      catch { /* the external id may be stale; no console-visible failure is propagated */ }
+    }
+    return null;
   }
 
   async function lookupSeries(input = {}, options = {}) {

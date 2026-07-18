@@ -199,7 +199,7 @@
     notifications: [], tmdbResults: [], publicResults: [], catalogResults: [], recommendationResults: [], isLoading: false, pendingAvatarProfileId: null, personFilmographyFilter: 'all', profileSettingsTab: 'identity',
     catalogEntries: [], catalogIndex: new Map(), catalogHydratedThisSession: 0, catalogNetworkAvoidedThisSession: 0,
     metadataQueue: [], metadataRunning: 0, metadataQueuedIds: new Set(), metadataAutoBudget: 36, metadataRenderPending: false, metadataRerenderTimer: null, metadataBackgroundStarted: false, metadataContinuationTimer: null, metadataHeaderTimer: null, metadataCompletedThisSession: 0, metadataFailedThisSession: 0, metadataRecoveryScheduled: false, metadataRecoveryDone: false, wcagStatusFilter: 'all', wcagLevelFilter: 'all', accessibilityTab: 'declaration', searchRecommendationFilter: 'all', navigationLoaderToken: 0, navigationRequestId: 0, initialCloudHydrationPending: false,
-    sidebarCollapsed: localStorage.getItem('watchverse.sidebarCollapsed') === '1', cinemaSearchLocation: null, cinemaSearchQuery: '', cinemaLocationFeedback: null, aivengersInitialized: false, lastRenderedRoute: '', defaultSourceStatus: null, defaultSourceSyncRunning: false, viewActionBusy: false, cloudRefreshRunning: false, cloudRefreshAt: 0, lastUserInteractionAt: 0, cloudRefreshTimer: null, routeProgressTimer: null, dataRevision: 0, viewCache: { revision: -1, searchRecommendations: null, programmingMarkup: null }
+    sidebarCollapsed: localStorage.getItem('watchverse.sidebarCollapsed') === '1', cinemaSearchLocation: null, cinemaSearchQuery: '', cinemaLocationFeedback: null, aivengersInitialized: false, lastRenderedRoute: '', defaultSourceStatus: null, defaultSourceSyncRunning: false, viewActionBusy: false, pendingFavoriteKeys: new Set(), cloudRefreshRunning: false, cloudRefreshAt: 0, lastUserInteractionAt: 0, cloudRefreshTimer: null, routeProgressTimer: null, dataRevision: 0, viewCache: { revision: -1, searchRecommendations: null, programmingMarkup: null }
   };
 
 
@@ -284,6 +284,7 @@
     blockingLoaderShownAt = performance.now();
     loader.classList.add('is-visible');
     loader.setAttribute('aria-hidden', 'false');
+    loader.focus({ preventScroll: true });
     [$('#app'), $('#authRoot')].filter(Boolean).forEach(root => {
       if (!root.hasAttribute('data-blocking-previous-aria-hidden')) root.dataset.blockingPreviousAriaHidden = root.getAttribute('aria-hidden') ?? '';
       root.setAttribute('aria-hidden', 'true');
@@ -292,9 +293,6 @@
     document.body.classList.add('is-blocking-loading');
     $('#main')?.setAttribute('aria-busy', 'true');
     $('#authRoot')?.setAttribute('aria-busy', 'true');
-    requestAnimationFrame(() => {
-      if (loader.classList.contains('is-visible')) loader.focus({ preventScroll: true });
-    });
     return token;
   }
   function hideBlockingLoader(token, minimumVisibleMs = 320) {
@@ -316,6 +314,7 @@
       document.body.classList.remove('is-blocking-loading');
       $('#main')?.setAttribute('aria-busy', 'false');
       $('#authRoot')?.setAttribute('aria-busy', 'false');
+      if (state.profileSelected && !$('#app')?.classList.contains('hidden')) $('#main')?.focus({ preventScroll: true });
     };
     clearTimeout(blockingLoaderHideTimer);
     blockingLoaderHideTimer = setTimeout(finish, Math.max(0, minimumVisibleMs - elapsed));
@@ -1916,6 +1915,7 @@
   }
 
   function updateFavoriteControls(kind, id, active) {
+    const pending = state.pendingFavoriteKeys.has(`${kind}:${id}`);
     $$('[data-action="favorite"]').forEach(button => {
       const card = button.closest('[data-kind][data-id]');
       if (!card || card.dataset.kind !== kind || card.dataset.id !== id) return;
@@ -1924,6 +1924,10 @@
       button.textContent = active ? '♥' : '♡';
     });
     const detailButton = $('#detailFavorite');
+    if (detailButton) {
+      detailButton.disabled = pending;
+      detailButton.setAttribute('aria-busy', String(pending));
+    }
     if (detailButton) detailButton.textContent = active ? '♥ Preferito' : '♡ Preferito';
   }
 
@@ -1931,6 +1935,9 @@
     const list = kind === 'series' ? state.series : state.movies;
     const item = list.find(x => x.id === id);
     if (!item) return;
+    const pendingKey = `${kind}:${id}`;
+    if (state.pendingFavoriteKeys.has(pendingKey)) return;
+    state.pendingFavoriteKeys.add(pendingKey);
     const previous = Boolean(item.favorite);
     item.favorite = !item.favorite;
     updateFavoriteControls(kind, id, item.favorite);
@@ -1942,6 +1949,9 @@
       item.favorite = previous;
       updateFavoriteControls(kind, id, previous);
       throw error;
+    } finally {
+      state.pendingFavoriteKeys.delete(pendingKey);
+      updateFavoriteControls(kind, id, item.favorite);
     }
   }
   async function legacyToggleFavorite(kind, id) {
@@ -2083,9 +2093,10 @@
     const preservedScrollY = preserveScroll ? window.scrollY : 0;
     const preservedField = preserveScroll ? captureActiveField() : null;
     const shouldShowRouteProgress = options.loader !== false && state.profileSelected && state.lastRenderedRoute !== routeKey;
+    const isDetailRoute = state.profileSelected && ['series', 'movie'].includes(r.page) && Boolean(r.id);
     if (shouldShowRouteProgress) startRouteProgress(r, navigationRequestId);
     let loaderToken = 0;
-    if (options.blocking === true && options.loader !== false && state.profileSelected && state.lastRenderedRoute !== routeKey) {
+    if ((options.blocking === true || (isDetailRoute && options.loader !== false)) && state.lastRenderedRoute !== routeKey) {
       const [title, detail] = loaderCopyForRoute(r);
       loaderToken = state.navigationLoaderToken || showBlockingLoader(title, detail);
       state.navigationLoaderToken = 0;
