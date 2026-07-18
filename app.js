@@ -1258,7 +1258,11 @@
   function setPage(title, eyebrow = 'La tua libreria', active = 'home') {
     $('#pageTitle').textContent = title; $('#pageEyebrow').textContent = eyebrow; document.title = `${title} · Watchverse`; renderNav(active); updateMetadataHeader();
   }
-  function setMain(html) { const main = $('#main'); main.innerHTML = html; main.focus({ preventScroll: true }); }
+  function setMain(html) {
+    const main = $('#main');
+    main.innerHTML = html;
+    if (!$('#blockingLoader')?.classList.contains('is-visible')) main.focus({ preventScroll: true });
+  }
   function updateBackToTopButton() {
     const button = $('#backToTopButton');
     if (!button) return;
@@ -2704,6 +2708,22 @@
     const railId=`similar-rail-${kind}-${slug(item.id||item.title)}`;
     return `<section class="content-card section similar-section"><div class="section-head"><div><h3>Potrebbero piacerti anche</h3><p>Suggerimenti basati su generi, interpreti e titoli del profilo.</p></div>${suggestions.length?railControlsHtml(railId,'Potrebbero piacerti anche'):''}</div>${suggestions.length?`<div class="suggestion-rail" id="${esc(railId)}" data-rail tabindex="0" role="list" aria-label="Potrebbero piacerti anche">${suggestions.map(row=>suggestionCardHtml(row,item)).join('')}</div>`:'<p class="notice">Aggiungi altri titoli e valutazioni per ottenere suggerimenti più precisi.</p>'}</section>`;
   }
+  function similarSectionPlaceholderHtml(item, kind) {
+    return `<section class="content-card section similar-section" data-similar-shell data-similar-kind="${esc(kind)}" data-similar-id="${esc(item.id)}"><div class="section-head"><div><h3>Potrebbero piacerti anche</h3><p>Suggerimenti basati su generi, interpreti e titoli del profilo.</p></div></div><div class="metadata-loading" role="status"><span class="inline-spinner" aria-hidden="true"></span><div><strong>Preparo i suggerimenti</strong><p>La scheda è già disponibile; questa sezione si aggiornerà in background.</p></div></div></section>`;
+  }
+  function scheduleSimilarSection(item, kind, requestId) {
+    idle(() => {
+      if (requestId !== state.navigationRequestId) return;
+      const current = parseRoute();
+      if ((kind === 'series' && current.page !== 'series') || (kind === 'movie' && current.page !== 'movie') || current.id !== item.id) return;
+      const shell = $$('[data-similar-shell]').find(element => element.dataset.similarKind === kind && element.dataset.similarId === item.id);
+      if (!shell) return;
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = similarSectionHtml(item, kind);
+      shell.replaceWith(wrapper.firstElementChild);
+      bindHorizontalRails($('#main'));
+    });
+  }
 
   function detailHero(item, kind) {
     const banner = item.backdrop ? `<figure class="detail-banner media-frame media-frame-backdrop"><img class="detail-backdrop-image" src="${esc(item.backdrop)}" alt="" aria-hidden="true" width="1600" height="420" loading="eager" decoding="async"></figure>` : '';
@@ -2717,13 +2737,14 @@
 
   function renderSeriesDetail(id) {
     const s = state.series.find(x=>x.id===id); if(!s){setPage('Serie non trovata','Errore','series');setMain('<div class="empty-state"><h3>Serie non trovata</h3><a class="primary" href="#/series">Torna alla libreria</a></div>');return;}
+    const detailRequestId = state.navigationRequestId;
     setPage(s.title,'Dettaglio serie','series'); const prog=seriesProgress(s); const ep=nextEpisode(s); const latest=latestReleasedUnwatched(s);
     const info = `<div class="two-column"><div>
       <section class="content-card section"><div class="content-card-heading"><h3>Trama</h3>${publicMetadataSourceHtml(s)}</div><p>${esc(s.overview||'Descrizione non disponibile.')}</p></section>
       <section class="content-card section"><h3>Dove guardarla in streaming/TV</h3><div class="provider-groups">${providersHtml(s)}</div></section>
       ${trailerSectionHtml(s,'series')}
       ${castPanelHtml(s,'series')}
-      ${similarSectionHtml(s,'series')}
+       ${similarSectionPlaceholderHtml(s,'series')}
     </div><aside><section class="content-card"><h3>Il tuo stato</h3><div class="info-list"><div class="info-row"><span>Avanzamento</span><strong>${prog.watched}/${prog.total}</strong></div><div class="info-row"><span>Completamento</span><strong>${prog.percent}%</strong></div><div class="info-row"><span>Ultima visione</span><strong>${fmtDate(latestWatchedAt(s.id))}</strong></div>${latest?`<div class="info-row"><span>Ultimo episodio non visto</span><strong>S${pad2(latest.season)} E${pad2(latest.episode)} · ${fmtDate(latest.airDate)}</strong></div>`:''}</div><div style="margin-top:18px"><label style="font-weight:800">Il tuo voto</label>${starRating(s.rating,s.id)}</div><div style="margin-top:18px"><label for="seriesStatus" style="font-weight:800">Stato</label><select id="seriesStatus" style="width:100%;margin-top:7px"><option value="watching" ${s.status==='watching'?'selected':''}>In corso</option><option value="plan" ${['plan','watchlist'].includes(s.status)?'selected':''}>Da iniziare</option><option value="completed" ${s.status==='completed'?'selected':''}>Completata</option><option value="paused" ${s.status==='paused'?'selected':''}>In pausa</option><option value="dropped" ${s.status==='dropped'?'selected':''}>Abbandonata</option></select></div><button class="secondary" id="enrichSeriesPublic" style="width:100%;margin-top:14px">↻ Aggiorna locandina, episodi e cast</button>${(state.settings.tmdbToken||(window.WATCHVERSE_CONFIG||{}).tmdbProxyUrl)?'<button class="ghost" id="enrichSeriesTmdb" style="width:100%;margin-top:10px">Aggiorna dati TMDB/JustWatch</button>':''}</section><section class="content-card italy-schedule-card"><h3>Programmazione Italia</h3><p>${esc(italyReleaseRuleSummary(s))}</p><button class="ghost" id="editItalySchedule" style="width:100%">Modifica disponibilità italiana</button></section></aside></div>`;
     const episodes = `<section><div class="notice ${s.publicMetadata?.provider?'':'warning'}" style="margin-bottom:16px">${s.publicMetadata?.provider?'Calendario ed episodi collegati ai metadati pubblici.':'Gli episodi importati restano tracciabili. Watchverse sta cercando automaticamente titoli, date e nuovi episodi nelle fonti pubbliche.'}</div>
       ${ep?`<article class="content-card" style="margin-bottom:18px"><span class="kicker">Continua il monitoraggio</span><h3>S${pad2(ep.season)} E${pad2(ep.episode)} · ${esc(ep.title)}</h3><p>${esc(ep.overview||'')}</p>${ep.airDate?`<p class="season-meta">Uscita: ${fmtDate(ep.airDate)}</p>`:''}<button class="primary" id="continueEpisode">✓ Segna visto</button></article>`:''}
@@ -2742,13 +2763,15 @@
     $('#enrichSeriesPublic')?.addEventListener('click',()=>manualPublicMetadata('series',s));
     $('#enrichSeriesTmdb')?.addEventListener('click',()=>enrichSeriesFlow(s));
     $('#editItalySchedule')?.addEventListener('click',()=>showItalyScheduleEditor(s));
-    queuePublicMetadata('series',[s],{silent:true,includeCast:true});
-    idle(()=>maybeLoadProviders('series',s));
-    idle(()=>maybeLoadTrailer('series',s));
+     queuePublicMetadata('series',[s],{silent:true,includeCast:true});
+     idle(()=>maybeLoadProviders('series',s));
+     idle(()=>maybeLoadTrailer('series',s));
+     scheduleSimilarSection(s, 'series', detailRequestId);
   }
 
   function renderMovieDetail(id) {
     const m=state.movies.find(x=>x.id===id);if(!m){setPage('Film non trovato','Errore','movies');setMain('<div class="empty-state"><h3>Film non trovato</h3></div>');return;}
+    const detailRequestId = state.navigationRequestId;
     setPage(m.title,'Dettaglio film','movies');
     setMain(`${detailHero(m,'movie')}<div class="two-column"><div>
       <section class="content-card section"><div class="content-card-heading"><h3>Trama</h3>${publicMetadataSourceHtml(m)}</div><p>${esc(m.overview||'Descrizione non disponibile.')}</p></section>
@@ -2756,7 +2779,7 @@
       <section class="content-card section"><h3>Dove guardarlo in streaming/TV</h3><div class="provider-groups">${providersHtml(m)}</div></section>
       ${trailerSectionHtml(m,'movie')}
       ${castPanelHtml(m,'movie')}
-      ${similarSectionHtml(m,'movie')}
+       ${similarSectionPlaceholderHtml(m,'movie')}
     </div><aside><section class="content-card"><h3>La tua visione</h3><div class="form-field"><label>Voto personale</label>${starRating(m.rating,m.id)}</div><div class="form-field" style="margin-top:16px"><label for="watchedDate">Data visione</label><input id="watchedDate" type="date" value="${m.watchedAt?isoDate(m.watchedAt):''}"></div><div class="form-field" style="margin-top:16px"><label for="movieNotes">Note</label><textarea id="movieNotes" placeholder="Cosa ne pensi?">${esc(m.notes||'')}</textarea></div><button class="primary" id="saveMovieMeta" style="width:100%;margin-top:14px">Salva</button><button class="secondary" id="enrichMoviePublic" style="width:100%;margin-top:10px">↻ Aggiorna locandina, trama e cast</button>${(state.settings.tmdbToken||(window.WATCHVERSE_CONFIG||{}).tmdbProxyUrl)?'<button class="ghost" id="enrichMovieTmdb" style="width:100%;margin-top:10px">Aggiorna dati TMDB/JustWatch</button>':''}</section></aside></div>`);
     bindProgrammingActions(m,'movie');
     bindHorizontalRails($('#main'));
@@ -2768,10 +2791,11 @@
     $('#saveMovieMeta').addEventListener('click',async()=>{m.notes=$('#movieNotes').value.trim();const d=$('#watchedDate').value;if(d){m.watched=true;m.state='watched';m.watchedAt=new Date(`${d}T12:00:00`).toISOString();}await dbPut('movies',m);showToast('Film aggiornato',m.title);route();});
     $('#enrichMoviePublic')?.addEventListener('click',()=>manualPublicMetadata('movie',m));
     $('#enrichMovieTmdb')?.addEventListener('click',()=>enrichMovieFlow(m));
-    queuePublicMetadata('movie',[m],{silent:true,includeCast:true});
-    idle(()=>maybeLoadProviders('movie',m));
-    idle(()=>maybeLoadTrailer('movie',m));
-    idle(()=>maybeLoadCinemaShowtimes(m));
+     queuePublicMetadata('movie',[m],{silent:true,includeCast:true});
+     idle(()=>maybeLoadProviders('movie',m));
+     idle(()=>maybeLoadTrailer('movie',m));
+     idle(()=>maybeLoadCinemaShowtimes(m));
+     scheduleSimilarSection(m, 'movie', detailRequestId);
   }
 
   function personCacheId(name, tvmazeId = null, wikidataId = null) {
