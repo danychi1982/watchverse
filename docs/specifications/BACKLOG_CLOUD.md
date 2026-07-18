@@ -613,6 +613,8 @@ Le correzioni seguenti sono state implementate, testate con la suite automatica,
 
 ## Nuova analisi - titoli da verificare
 
+Aggiornamento 18 luglio 2026: il retry mirato di `Accidentally Famous: The Story of 883` ha lasciato il titolo senza corrispondenza pubblica; il pannello ha mostrato 792 titoli da verificare su 2559 e 4 errori tecnici. Il dato conferma la necessita della diagnostica per titolo prima di ulteriori retry massivi.
+
 | Nome intervento | Priorita | Stato | Owner | Effort | Cosa resta da fare |
 |---|---|---|---|---|---|
 | Analisi copertura metadati bloccata | Alta | KO da approfondire | Codex | Medio | Capire perché restano 674 titoli da verificare su 2564 con 0 errori tecnici; distinguere dati legittimamente incompleti, fonte non pertinente, identificazione errata e retry non eseguito. |

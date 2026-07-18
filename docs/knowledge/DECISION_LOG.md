@@ -23,6 +23,8 @@ Formato leggero ispirato agli Architecture Decision Records: una decisione, il c
 | ADR-017 | 2026-07-18 | Navigazione prioritaria rispetto alla preparazione delle viste | Cerca e Programmazione possono preparare contenuti in background, ma la navigazione verso Home, Serie o Film deve essere immediata. `history.pushState` e un contatore di navigazione rendono obsolete le callback precedenti; la cache di vista evita di ricalcolare le proposte quando i dati non sono cambiati. | Attiva, da verificare |
 | ADR-018 | 2026-07-18 | Home con primo paint immediato e refresh background senza shell | La Home aggiorna subito navigazione e shell, differisce il calcolo delle rail e, nei refresh automatici, mantiene l’elenco già visibile. Evita ritardi percepiti e lampeggi quando arrivano metadati o dati cloud. | Attiva, verificata desktop |
 
+| ADR-019 | 2026-07-18 | Diagnostica prima di nuovi retry massivi dei metadati | Un retry mirato puo lasciare invariato o aumentare l'elenco dei titoli da verificare e gli errori tecnici. Prima di ottimizzare altri retry va reso leggibile e salvabile il dettaglio per titolo, fonte, identificazione e tentativi. | Attiva, da implementare |
+
 ## Regole per nuove decisioni
 
 Una nuova voce deve:
