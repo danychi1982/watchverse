@@ -2017,11 +2017,26 @@
     const raw = (location.hash || '#/home').replace(/^#\//, ''); const [path, queryString = ''] = raw.split('?');
     const parts = path.split('/').filter(Boolean); return { page: parts[0] || 'home', id: parts[1] ? decodeURIComponent(parts.slice(1).join('/')) : null, query: new URLSearchParams(queryString) };
   }
+  function captureActiveField() {
+    const element = document.activeElement;
+    if (!element || !element.id || !['INPUT', 'TEXTAREA', 'SELECT'].includes(element.tagName)) return null;
+    return { id: element.id, start: typeof element.selectionStart === 'number' ? element.selectionStart : null, end: typeof element.selectionEnd === 'number' ? element.selectionEnd : null };
+  }
+  function restoreActiveField(snapshot) {
+    if (!snapshot) return;
+    const element = document.getElementById(snapshot.id);
+    if (!element) return;
+    element.focus({ preventScroll: true });
+    if (typeof snapshot.start === 'number' && typeof element.setSelectionRange === 'function') {
+      try { element.setSelectionRange(snapshot.start, snapshot.end); } catch {}
+    }
+  }
   async function route(options = {}) {
     const r = parseRoute();
     const routeKey = `${r.page}/${r.id || ''}`;
     const preserveScroll = options.preserveScroll === true;
     const preservedScrollY = preserveScroll ? window.scrollY : 0;
+    const preservedField = preserveScroll ? captureActiveField() : null;
     const shouldShowLoader = options.loader !== false && state.profileSelected && state.lastRenderedRoute !== routeKey;
     let loaderToken = 0;
     if (shouldShowLoader) {
@@ -2048,7 +2063,10 @@
       else if (r.page === 'design-system') renderDesignSystem();
       else renderSettings();
       state.lastRenderedRoute = routeKey;
-      if (preserveScroll) requestAnimationFrame(() => window.scrollTo({ top: preservedScrollY, behavior: 'instant' }));
+      if (preserveScroll) requestAnimationFrame(() => {
+        window.scrollTo({ top: preservedScrollY, behavior: 'instant' });
+        restoreActiveField(preservedField);
+      });
       if (!options.skipCloudRefresh) scheduleCloudRouteRefresh(r.page);
     } finally {
       if (loaderToken) hideBlockingLoader(loaderToken);
@@ -2493,7 +2511,8 @@
       ${items.length ? `<div class="${view==='grid'?'media-grid':'media-list'}">${visible.map(s => view==='grid'?mediaCard(s,'series'):mediaRow(s,'series')).join('')}</div>${visible.length < items.length ? `<div class="load-more"><button class="secondary" id="loadMoreSeries">Mostra altre ${Math.min(60, items.length-visible.length)} serie</button><span>${visible.length} di ${items.length}</span></div>` : ''}` : `<div class="empty-state"><div class="empty-icon">▣</div><h3>Nessuna serie trovata</h3><p>Cambia filtro o importa la tua cronologia.</p><a class="primary" href="#/import">Importa dati</a></div>`}`);
 
     $$('[data-filter]').forEach(b => b.addEventListener('click', () => runViewAction(b, () => { state.seriesFilter=b.dataset.filter; state.seriesVisible=60; state.settings.seriesFilter=state.seriesFilter; saveSettings(); renderSeriesLibrary(); })));
-    $('#seriesSearch').addEventListener('input', debounce(e => { state.seriesSearch=e.target.value; state.seriesVisible=60; renderLibraryResultsOnly('series'); }, 360));
+    const updateSeriesResults = debounce(() => { state.seriesVisible=60; renderLibraryResultsOnly('series'); }, 360);
+    $('#seriesSearch').addEventListener('input', e => { state.seriesSearch=e.target.value; updateSeriesResults(); });
     $$('[data-view]').forEach(b => b.addEventListener('click', () => runViewAction(b, () => { state.settings.seriesView=b.dataset.view; saveSettings(); renderSeriesLibrary(); })));
     $('#seriesSort').addEventListener('change', e => { state.seriesSort=e.target.value; state.settings.seriesSort=state.seriesSort; state.seriesVisible=60; saveSettings(); renderSeriesLibrary(); });
     $('#loadMoreSeries')?.addEventListener('click',()=>{state.seriesVisible+=60;renderSeriesLibrary();});
@@ -2526,7 +2545,8 @@
       <select id="movieSort" aria-label="Ordina film"><option value="recent" ${state.movieSort==='recent'?'selected':''}>${state.movieFilter==='watchlist'?'Data aggiunta':'Data visione'}</option><option value="rating" ${state.movieSort==='rating'?'selected':''}>Voto</option><option value="title" ${state.movieSort==='title'?'selected':''}>Titolo</option></select></div><div class="toolbar-right"><div class="view-toggle" aria-label="Vista film"><button data-view="grid" class="${view==='grid'?'active':''}" aria-label="Vista locandine" aria-pressed="${view==='grid'}">▦</button><button data-view="list" class="${view==='list'?'active':''}" aria-label="Vista elenco" aria-pressed="${view==='list'}">☷</button></div></div></div>
       ${items.length?`<div class="${view==='grid'?'media-grid':'media-list'}">${visible.map(m=>view==='grid'?mediaCard(m,'movie'):mediaRow(m,'movie')).join('')}</div>${visible.length<items.length?`<div class="load-more"><button class="secondary" id="loadMoreMovies">Mostra altri ${Math.min(60,items.length-visible.length)} film</button><span>${visible.length} di ${items.length}</span></div>`:''}`:`<div class="empty-state"><div class="empty-icon">🎬</div><h3>Nessun film trovato</h3><p>Aggiungi un titolo o cambia filtro.</p></div>`}`);
     $$('[data-filter]').forEach(b=>b.addEventListener('click',()=>runViewAction(b,()=>{state.movieFilter=b.dataset.filter;state.movieVisible=60;state.settings.movieFilter=state.movieFilter;saveSettings();renderMovieLibrary();})));
-    $('#movieSearch').addEventListener('input',debounce(e=>{state.movieSearch=e.target.value;state.movieVisible=60;renderLibraryResultsOnly('movies');},360));
+    const updateMovieResults = debounce(() => { state.movieVisible=60; renderLibraryResultsOnly('movies'); }, 360);
+    $('#movieSearch').addEventListener('input', e => { state.movieSearch=e.target.value; updateMovieResults(); });
     $$('[data-view]').forEach(b=>b.addEventListener('click',()=>runViewAction(b,()=>{state.settings.movieView=b.dataset.view;saveSettings();renderMovieLibrary();})));
     $('#movieSort').addEventListener('change',e=>{state.movieSort=e.target.value;state.settings.movieSort=state.movieSort;state.movieVisible=60;saveSettings();renderMovieLibrary();});
     $('#loadMoreMovies')?.addEventListener('click',()=>{state.movieVisible+=60;renderMovieLibrary();});
@@ -4275,6 +4295,10 @@
       // La cache locale apre subito il profilo. Il riallineamento cloud viene eseguito
       // dopo il primo rendering, così una rete lenta non congela l'accesso.
       await reloadData({ migrate:false });
+      if (libraryIsEmpty() && navigator.onLine && window.WatchverseCloudSync?.isEnabled()) {
+        await syncCloudProfile(profile);
+        await reloadData({ migrate:false });
+      }
       showAppShell();
       renderNav('home');
       state.lastRenderedRoute = '';

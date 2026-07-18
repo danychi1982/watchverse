@@ -53,7 +53,7 @@ Questo file raccoglie le attivita completate, in corso e ancora aperte. Non rapp
 | Ricerca Serie e tastiera mobile | Alta | Da fare | Codex | Medio | Verificare a tappeto tutti i campi di ricerca automatica e mantenere la tastiera durante la digitazione. |
 | Refresh senza perdere la pagina corrente | Media | Da fare | Codex | Medio | Dopo F5 o pull-to-refresh mantenere rotta, sezione, filtri e tab correnti invece di tornare alla scelta profilo. |
 | Accesso offline dopo refresh | Alta | Da fare | Codex | Medio | Consentire il rientro nel profilo e la lettura della cache dopo F5 offline, senza bloccare la scelta profilo. |
-| Ricerca con perdita di focus desktop/mobile | Alta | Da fare | Codex | Medio | Evitare il rerender del campo a ogni carattere: mantenere focus desktop e tastiera mobile durante la ricerca automatica. |
+| Ricerca con perdita di focus desktop/mobile | Alta | Implementato | Daniela | Medio | Verificare in locale che il focus desktop e la tastiera mobile restino attivi durante la ricerca automatica. |
 | Stato aggiornamento metadati sempre esplicito | Media | Da fare | Codex | Basso | Mostrare chiaramente nella parte alta del dialog se il ciclo è in corso o completato, senza reintrodurre la percentuale interna dei lotti. |
 | Design system e identita visiva | Bassa | Completato | Codex | Medio | Nessuna attività tecnica residua. |
 | Build, versioning e deploy | Media | Completato | Codex | Basso | Nessuna attività tecnica residua. |
@@ -436,7 +436,7 @@ La favicon puo essere anticipata se vogliamo una vittoria rapida, ma non sblocca
 | Nome intervento | Priorita | Stato | Owner | Effort | Cosa resta da fare |
 |---|---|---|---|---|---|
 | Refresh senza perdere pagina e filtro | Media | Parzialmente completato | Daniela | Medio | Verificare online e offline su Home, Serie e Film; i profili protetti da PIN devono continuare a richiedere il PIN. |
-| Ricerca con perdita di focus desktop/mobile | Alta | Da fare | Codex | Medio | Correggere il rerender dei campi di ricerca e verificare tutti i campi con ricerca automatica. |
+| Ricerca con perdita di focus desktop/mobile | Alta | Implementato | Daniela | Medio | Verificare in locale tutti i campi con ricerca automatica. |
 | Accesso offline dopo refresh | Alta | Parzialmente completato | Daniela | Medio | Confermare manualmente F5 offline con sessione e cache già disponibili. |
 | Sincronizzazione cloud di preferiti e modifiche profilo | Alta | Da fare | Codex | Medio | Verificare e correggere la persistenza cloud dei preferiti dopo pulizia cache e su più dispositivi. |
 | Sincronizzazione bidirezionale con conflitti | Alta | Parzialmente completato | Daniela | Medio | Eseguire i test multi-dispositivo e confermare i casi di conflitto. |
@@ -476,7 +476,7 @@ Le righe storiche precedenti restano come tracciabilita. Per la gestione corrent
 | Nome intervento | Priorita | Stato | Owner | Effort | Cosa resta da fare |
 |---|---|---|---|---|---|
 | Sincronizzazione cloud di preferiti e modifiche profilo | Alta | Da fare | Codex | Medio | Analizzare il caso in cui un preferito non persiste dopo pulizia cache e correggere il merge cloud/local. |
-| Ricerca automatica senza perdita di focus | Alta | Parzialmente completato | Codex | Medio | La ricerca Serie e' corretta; verificare e uniformare tutti gli altri campi di ricerca automatica. |
+| Ricerca automatica senza perdita di focus | Alta | Implementato | Daniela | Medio | Verificare in locale tutti gli altri campi di ricerca automatica. |
 | IndexedDB come sola cache offline | Alta | Da fare | Codex | Medio | Completare la separazione tra dati cloud primari e cache locale. |
 | Retry metadati deciso dall'utente | Alta | Da fare | Codex | Medio | Eliminare il retry automatico al login e introdurre Riprova/Ignora per ora. |
 | Stabilizzazione test E2E GitHub Actions | Alta | Bloccato | Codex | Medio | Risolvere il gate di autenticazione; workflow sospeso per evitare run falliti. |
@@ -527,7 +527,7 @@ Questa e la tabella corrente per la ripresa dei test. Le voci implementate ma no
 | Refresh cloud al cambio sezione | Media | Parzialmente completato | Daniela | Medio | Verificare che una modifica fatta dall'altro dispositivo diventi visibile rientrando in Home, Serie, Film o Cerca senza logout. |
 | Sincronizzazione cloud di preferiti e modifiche profilo | Alta | Parzialmente completato | Daniela | Medio | Confermare preferiti e modifiche su desktop/mobile dopo cambio sezione e dopo pulizia cache. |
 | Rimozione non persistente dopo refresh | Alta | Parzialmente completato | Daniela | Medio | Verificare che un titolo rimosso non ricompaia dopo Ctrl+F5 e che il catalogo condiviso non lo proponga come gia nel profilo. |
-| Ricerca automatica senza perdita di focus | Alta | Parzialmente completato | Daniela | Medio | Testare ricerca Serie, Film e Cerca su desktop e Samsung; durante la digitazione il focus e la tastiera devono restare attivi. |
+| Ricerca automatica senza perdita di focus | Alta | Implementato | Daniela | Medio | Verificare in locale ricerca Serie e Film su desktop e Samsung; durante la digitazione il focus e la tastiera devono restare attivi. |
 | Proposte personalizzate senza duplicati | Media | Parzialmente completato | Daniela | Medio | Verificare che le proposte non contengano titoli gia presenti nel profilo e che il comando Aggiungi funzioni. |
 | Ricerca pubblica pertinente | Media | Parzialmente completato | Daniela | Medio | Verificare House of Cards e altre query: solo film/serie pertinenti, nessuna persona e nessun falso positivo evidente. |
 | Retry metadati deciso dall'utente | Alta | Parzialmente completato | Daniela | Medio | Confermare che non parta al login e che Riprova non riusciti sia l'unico avvio manuale; approfondire i titoli ancora incompleti. |
@@ -565,7 +565,7 @@ Il test manuale resta necessario per confermare il comportamento su dispositivi 
 | Feedback immediato sulle azioni e navigazione non bloccante | Alta | Parzialmente completato | Daniela | Medio | Verificare sul sito pubblicato con rete lenta: login, apertura profilo, apertura dettaglio, preferito e azioni sulle card devono mostrare subito uno stato visibile e non perdere il click. |
 | Apertura profilo e caricamento iniziale | Alta | Parzialmente completato | Daniela | Alto | Misurare il tempo percepito su desktop e Samsung Galaxy S26+ e segnalare eventuali attese ancora superiori a pochi secondi. |
 | Refresh cloud differito durante l'interazione | Media | Implementato | Daniela | Basso | Confermare che un aggiornamento in background non ridisegni la pagina mentre l'utente sta cliccando o digitando. |
-| Loader fino al primo rendering della libreria | Alta | Da fare | Codex | Basso | Mantenere il loader del profilo visibile fino a quando i dati della libreria sono pronti, evitando il flash della home vuota/default tra loader e contenuto personale. |
+| Loader fino al primo rendering della libreria | Alta | Implementato | Daniela | Basso | Verificare in locale che, con cache vuota e catalogo cloud disponibile, la Home non mostri il contenuto vuoto/default prima della libreria personale. |
 | Preferiti nelle rail Home | Media | Implementato | Daniela | Basso | Verificare in locale il controllo preferito nelle card di “Continua a guardare” e “Nuovi episodi da recuperare”. |
 | Feedback preferito nel dettaglio | Alta | Implementato | Daniela | Basso | Verificare in locale feedback immediato, toast e rollback in caso di errore nella scheda serie/film. |
 | Etichetta ridondante nelle card Film da vedere | Bassa | Implementato | Daniela | Basso | Verificare in locale che il badge “Da vedere” non compaia nelle card della rail Home. |
