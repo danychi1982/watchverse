@@ -17,7 +17,8 @@
 <body>
   <button class="skip-link" id="skipToContent" type="button">Vai al contenuto</button>
   <div id="authRoot"></div>
-  <div id="blockingLoader" class="blocking-loader" role="status" aria-live="polite" aria-atomic="true" aria-hidden="true">
+  <div id="routeProgress" class="route-progress" role="progressbar" aria-label="Caricamento sezione" aria-hidden="true"></div>
+  <div id="blockingLoader" class="blocking-loader" tabindex="-1" role="status" aria-live="polite" aria-atomic="true" aria-hidden="true">
     <div class="blocking-loader-card">
       <div class="cinema-loader-art" aria-hidden="true">
         <span class="loader-reel"><i></i><i></i><i></i><i></i><i></i></span>

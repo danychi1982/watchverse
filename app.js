@@ -199,7 +199,7 @@
     notifications: [], tmdbResults: [], publicResults: [], catalogResults: [], recommendationResults: [], isLoading: false, pendingAvatarProfileId: null, personFilmographyFilter: 'all', profileSettingsTab: 'identity',
     catalogEntries: [], catalogIndex: new Map(), catalogHydratedThisSession: 0, catalogNetworkAvoidedThisSession: 0,
     metadataQueue: [], metadataRunning: 0, metadataQueuedIds: new Set(), metadataAutoBudget: 36, metadataRenderPending: false, metadataRerenderTimer: null, metadataBackgroundStarted: false, metadataContinuationTimer: null, metadataHeaderTimer: null, metadataCompletedThisSession: 0, metadataFailedThisSession: 0, metadataRecoveryScheduled: false, metadataRecoveryDone: false, wcagStatusFilter: 'all', wcagLevelFilter: 'all', accessibilityTab: 'declaration', searchRecommendationFilter: 'all', navigationLoaderToken: 0, navigationRequestId: 0, initialCloudHydrationPending: false,
-    sidebarCollapsed: localStorage.getItem('watchverse.sidebarCollapsed') === '1', cinemaSearchLocation: null, cinemaSearchQuery: '', cinemaLocationFeedback: null, aivengersInitialized: false, lastRenderedRoute: '', defaultSourceStatus: null, defaultSourceSyncRunning: false, viewActionBusy: false, cloudRefreshRunning: false, cloudRefreshAt: 0, lastUserInteractionAt: 0, cloudRefreshTimer: null
+    sidebarCollapsed: localStorage.getItem('watchverse.sidebarCollapsed') === '1', cinemaSearchLocation: null, cinemaSearchQuery: '', cinemaLocationFeedback: null, aivengersInitialized: false, lastRenderedRoute: '', defaultSourceStatus: null, defaultSourceSyncRunning: false, viewActionBusy: false, cloudRefreshRunning: false, cloudRefreshAt: 0, lastUserInteractionAt: 0, cloudRefreshTimer: null, routeProgressTimer: null
   };
 
 
@@ -284,9 +284,17 @@
     blockingLoaderShownAt = performance.now();
     loader.classList.add('is-visible');
     loader.setAttribute('aria-hidden', 'false');
+    [$('#app'), $('#authRoot')].filter(Boolean).forEach(root => {
+      if (!root.hasAttribute('data-blocking-previous-aria-hidden')) root.dataset.blockingPreviousAriaHidden = root.getAttribute('aria-hidden') ?? '';
+      root.setAttribute('aria-hidden', 'true');
+      root.setAttribute('inert', '');
+    });
     document.body.classList.add('is-blocking-loading');
     $('#main')?.setAttribute('aria-busy', 'true');
     $('#authRoot')?.setAttribute('aria-busy', 'true');
+    requestAnimationFrame(() => {
+      if (loader.classList.contains('is-visible')) loader.focus({ preventScroll: true });
+    });
     return token;
   }
   function hideBlockingLoader(token, minimumVisibleMs = 320) {
@@ -298,12 +306,41 @@
       if (token !== blockingLoaderToken) return;
       loader.classList.remove('is-visible');
       loader.setAttribute('aria-hidden', 'true');
+      [$('#app'), $('#authRoot')].filter(Boolean).forEach(root => {
+        const previous = root.dataset.blockingPreviousAriaHidden;
+        if (previous === '') root.removeAttribute('aria-hidden');
+        else if (previous != null) root.setAttribute('aria-hidden', previous);
+        delete root.dataset.blockingPreviousAriaHidden;
+        root.removeAttribute('inert');
+      });
       document.body.classList.remove('is-blocking-loading');
       $('#main')?.setAttribute('aria-busy', 'false');
       $('#authRoot')?.setAttribute('aria-busy', 'false');
     };
     clearTimeout(blockingLoaderHideTimer);
     blockingLoaderHideTimer = setTimeout(finish, Math.max(0, minimumVisibleMs - elapsed));
+  }
+  function startRouteProgress(routeInfo, requestId = 0) {
+    const progress = $('#routeProgress');
+    if (!progress) return;
+    clearTimeout(state.routeProgressTimer);
+    const routeKey = `${routeInfo.page}/${routeInfo.id || ''}`;
+    progress.dataset.route = routeKey;
+    progress.dataset.requestId = String(requestId);
+    state.routeProgressTimer = setTimeout(() => {
+      if (progress.dataset.route !== routeKey || progress.dataset.requestId !== String(requestId)) return;
+      progress.classList.add('is-visible');
+      progress.setAttribute('aria-hidden', 'false');
+      $('#main')?.setAttribute('aria-busy', 'true');
+    }, 120);
+  }
+  function finishRouteProgress(requestId = 0) {
+    const progress = $('#routeProgress');
+    if (!progress || (requestId && progress.dataset.requestId !== String(requestId))) return;
+    clearTimeout(state.routeProgressTimer);
+    progress.classList.remove('is-visible');
+    progress.setAttribute('aria-hidden', 'true');
+    $('#main')?.setAttribute('aria-busy', 'false');
   }
   function loaderCopyForRoute(routeInfo) {
     const name = currentProfile()?.name || 'il tuo profilo';
@@ -2038,14 +2075,19 @@
     const preserveScroll = options.preserveScroll === true;
     const preservedScrollY = preserveScroll ? window.scrollY : 0;
     const preservedField = preserveScroll ? captureActiveField() : null;
-    const shouldShowLoader = options.loader !== false && state.profileSelected && state.lastRenderedRoute !== routeKey;
+    const shouldShowRouteProgress = options.loader !== false && state.profileSelected && state.lastRenderedRoute !== routeKey;
+    if (shouldShowRouteProgress) startRouteProgress(r, navigationRequestId);
     let loaderToken = 0;
-    if (shouldShowLoader) {
+    if (options.blocking === true && options.loader !== false && state.profileSelected && state.lastRenderedRoute !== routeKey) {
       const [title, detail] = loaderCopyForRoute(r);
       loaderToken = state.navigationLoaderToken || showBlockingLoader(title, detail);
       state.navigationLoaderToken = 0;
       await nextPaint();
-      if (navigationRequestId !== state.navigationRequestId) return;
+    }
+    if (shouldShowRouteProgress) await nextPaint();
+    if (navigationRequestId !== state.navigationRequestId) {
+      finishRouteProgress(navigationRequestId);
+      return;
     }
     try {
       if (!preserveScroll) window.scrollTo({ top: 0, behavior: 'instant' });
@@ -2071,6 +2113,7 @@
       });
       if (!options.skipCloudRefresh && !state.initialCloudHydrationPending) scheduleCloudRouteRefresh(r.page);
     } finally {
+      finishRouteProgress(navigationRequestId);
       if (loaderToken) hideBlockingLoader(loaderToken);
     }
   }
@@ -4386,18 +4429,15 @@
       const targetId = targetParts.length > 1 ? decodeURIComponent(targetParts.slice(1).join('/')) : null;
       const current = parseRoute();
       if (targetPage === current.page && targetId === current.id) return;
-      if (state.navigationLoaderToken) {
-        hideBlockingLoader(state.navigationLoaderToken, 0);
-        state.navigationLoaderToken = 0;
-      }
-      const [title, detail] = loaderCopyForRoute({ page: targetPage, id: targetId });
-      state.navigationLoaderToken = showBlockingLoader(title, detail);
+      startRouteProgress({ page: targetPage, id: targetId });
     });
     window.addEventListener('hashchange',()=>{if(state.profileSelected)route();});
     window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();state.deferredInstall=event;$('#installButton')?.classList.remove('hidden');});
     $('#skipToContent')?.addEventListener('click',()=>$('#main')?.focus({preventScroll:false}));
     $('#installButton')?.addEventListener('click',installApp);
     $('#metadataStatusButton')?.addEventListener('click',showMetadataStatus);
+    $('#blockingLoader')?.addEventListener('click', event => event.stopPropagation());
+    $('#blockingLoader')?.addEventListener('keydown', event => event.stopPropagation());
     $('#notificationButton')?.addEventListener('click',showNotifications);
     $('#quickAddButton')?.addEventListener('click',showQuickAdd);
     $('#sidebarProfileButton')?.addEventListener('click',()=>{state.profileSettingsTab='identity';location.hash='#/settings';});
