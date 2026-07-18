@@ -3799,9 +3799,10 @@
     if($('#confirmGdprImport'))$('#confirmGdprImport').addEventListener('click',e=>{
       const replace = $('#replaceProfileData').checked;
       if (replace) {
+        const confirmButton = e.currentTarget;
         openModal('Conferma sostituzione dati', '<div class="destructive-confirmation"><div class="import-error-icon" aria-hidden="true">!</div><div><h3>Il catalogo attuale verrà sostituito</h3><p>Verranno cancellati il catalogo e i progressi cloud del solo profilo corrente prima di importare il file.</p><p class="notice warning">L’operazione non può essere annullata. Vuoi continuare?</p></div></div>', '<button class="ghost" id="cancelReplacement">Annulla</button><button class="danger-button" id="continueReplacement">Continua e sostituisci</button>');
         $('#cancelReplacement')?.addEventListener('click', closeModal);
-        $('#continueReplacement')?.addEventListener('click', () => { closeModal(); e.currentTarget.disabled = true; importGdprPlan(g, true); });
+        $('#continueReplacement')?.addEventListener('click', () => { closeModal(); if (confirmButton) confirmButton.disabled = true; void importGdprPlan(g, true); });
         return;
       }
       e.currentTarget.disabled=true;
