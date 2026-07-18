@@ -131,6 +131,14 @@ Per i subtask di Analisi e Progettazione il deliverable non è una frase riepilo
 - Le Epic sono contenitori di capability e non vengono stimate direttamente: la stima è distribuita sulle Story, Task, Bug e sui subtask figli.
 - Il campo Story Points utilizzato dalla schermata delle Story è `customfield_10038`; `customfield_10016` è il distinto campo Jira `Story point estimate` e non deve essere usato per questa convenzione. Se il valore è presente in `customfield_10038` ma la schermata mostra `Nessuno`, va verificata la configurazione del layout/schermata del campo.
 
+## Sprint 2 — presa in carico e passaggio in Review
+
+Una Story/Task/Bug viene portata in `Review` quando l’implementazione o la verifica tecnica è completata, la suite automatica è verde e il commento Jira contiene la sintesi delle modifiche, l’evidenza dei controlli e i passi di test funzionale manuale per Daniela.
+
+I subtask tecnici restano intermedi: quando il loro output è completato vengono portati direttamente in `Done`; il collaudo funzionale non viene duplicato sui subtask e resta sulla Story principale.
+
+Gli output di analisi e le decisioni tecniche riproducibili sono conservati in `docs/knowledge/analysis/` con nome `WVERSE-<numero>.md`. I test di regressione condivisi dello Sprint 2 sono raccolti in `tests/test-sprint2-regressions.js` e inclusi nella suite `npm test`.
+
 ## Analisi delle Story in backlog
 
 Nel ciclo di analisi sono stati prodotti deliverable funzionali e tecnici versionati in `docs/knowledge/analysis/`. Per le Story che erano ancora in `Da completare`:

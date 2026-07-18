@@ -654,7 +654,10 @@
   function scheduleCloudRouteRefresh(page) {
     const sync = window.WatchverseCloudSync;
     if (!sync?.isEnabled() || !state.profileSelected || !navigator.onLine) return;
-    if (!['home', 'series', 'movies'].includes(page)) return;
+    // Anche le viste di dettaglio e la ricerca devono riflettere le modifiche
+    // effettuate da un altro dispositivo: il pull aggiorna IndexedDB e il
+    // rerender conserva scroll, rotta e campo attivo.
+    if (!['home', 'series', 'movies', 'movie', 'search'].includes(page)) return;
     if (state.cloudRefreshRunning || Date.now() - state.cloudRefreshAt < 60000) return;
     const scheduledNavigationId = state.navigationRequestId;
     state.cloudRefreshRunning = true;
