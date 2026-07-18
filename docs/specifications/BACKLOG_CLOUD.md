@@ -1,5 +1,7 @@
 # Backlog Watchverse
 
+> **Documento storico e di contesto.** Il backlog operativo aggiornato è gestito in Jira nel progetto `WVERSE`. Stati, sprint, release, assegnatari, componenti e stime riportati nelle sezioni storiche potrebbero non essere aggiornati.
+
 > Stato corrente: la sezione **Stato corrente dopo le attivita autonome** in fondo al documento prevale sulle righe storiche.
 
 Questo file raccoglie le attivita completate, in corso e ancora aperte. Non rappresenta un piano temporale vincolante: priorita, stato, owner ed effort aiutano a decidere il prossimo intervento. Una voce si considera completata solo dopo:
@@ -9,6 +11,25 @@ Questo file raccoglie le attivita completate, in corso e ancora aperte. Non rapp
 - build verificata;
 - pubblicazione su GitHub Pages o ambiente concordato;
 - conferma funzionale di Daniela.
+
+## Mappatura verso Jira
+
+Le voci di questo documento sono state consolidate nel progetto Jira `WVERSE`. Jira è la fonte operativa per il lavoro corrente; questo file conserva il razionale, lo storico degli interventi e le osservazioni tecniche che hanno portato alla scomposizione delle issue.
+
+| Area storica | Issue Jira di riferimento |
+| --- | --- |
+| Autenticazione e profili | `WVERSE-1` Epic; Story `WVERSE-9`, `WVERSE-14`–`WVERSE-17` |
+| Home, libreria, progressi e preferiti | `WVERSE-2` Epic; Story `WVERSE-18`–`WVERSE-25` |
+| Ricerca e raccomandazioni | `WVERSE-3` Epic; Story `WVERSE-26`–`WVERSE-29` |
+| Metadati e fonti pubbliche | `WVERSE-4` Epic; Story `WVERSE-30`–`WVERSE-33` |
+| Import, export e backup | `WVERSE-5` Epic; Story `WVERSE-34`–`WVERSE-35` |
+| Sincronizzazione cloud e offline | `WVERSE-6` Epic; Story `WVERSE-36`–`WVERSE-38` |
+| Performance e PWA | `WVERSE-7` Epic; Story `WVERSE-39`–`WVERSE-41` |
+| Identità visiva e design system | `WVERSE-8` Epic; Story `WVERSE-42` |
+| Task operativi | `WVERSE-164`–`WVERSE-170` |
+| Bug censiti | `WVERSE-171`–`WVERSE-178` |
+
+I dettagli di analisi funzionale e tecnica sono versionati in `docs/knowledge/analysis/` e referenziati dai subtask Jira di Analisi e Progettazione. Le nuove modifiche operative devono essere registrate prima in Jira; questo documento va aggiornato solo per decisioni, contesto tecnico o storico significativo.
 
 ## Registro completo degli interventi
 
