@@ -11,7 +11,7 @@ if (!app.includes("const savedProfileId = localStorage.getItem('watchverse.curre
 if (!app.includes('if (navigator.onLine || !state.profiles.length)')) {
   throw new Error('Il fallback offline della scelta profilo non e\u0027 presente.');
 }
-if (!app.includes('window.WatchverseCloudSync?.isEnabled() && navigator.onLine')) {
+if (!app.includes("const cloudPrimary = navigator.onLine && window.WatchverseCloudSync?.isEnabled() && ['series','movies','progress'].includes(store);")) {
   throw new Error('La sincronizzazione cloud non e\u0027 protetta dal fallback offline.');
 }
 if (!app.includes("location.hash = kind === 'series' ? '#/series' : '#/movies';")) {

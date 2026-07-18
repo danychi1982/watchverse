@@ -199,7 +199,7 @@
     notifications: [], tmdbResults: [], publicResults: [], catalogResults: [], recommendationResults: [], isLoading: false, pendingAvatarProfileId: null, personFilmographyFilter: 'all', profileSettingsTab: 'identity',
     catalogEntries: [], catalogIndex: new Map(), catalogHydratedThisSession: 0, catalogNetworkAvoidedThisSession: 0,
     metadataQueue: [], metadataRunning: 0, metadataQueuedIds: new Set(), metadataAutoBudget: 36, metadataRenderPending: false, metadataRerenderTimer: null, metadataBackgroundStarted: false, metadataContinuationTimer: null, metadataHeaderTimer: null, metadataCompletedThisSession: 0, metadataFailedThisSession: 0, metadataRecoveryScheduled: false, metadataRecoveryDone: false, wcagStatusFilter: 'all', wcagLevelFilter: 'all', accessibilityTab: 'declaration', searchRecommendationFilter: 'all', navigationLoaderToken: 0,
-    sidebarCollapsed: localStorage.getItem('watchverse.sidebarCollapsed') === '1', cinemaSearchLocation: null, cinemaSearchQuery: '', cinemaLocationFeedback: null, aivengersInitialized: false, lastRenderedRoute: '', defaultSourceStatus: null, defaultSourceSyncRunning: false, viewActionBusy: false, cloudRefreshRunning: false, cloudRefreshAt: 0
+    sidebarCollapsed: localStorage.getItem('watchverse.sidebarCollapsed') === '1', cinemaSearchLocation: null, cinemaSearchQuery: '', cinemaLocationFeedback: null, aivengersInitialized: false, lastRenderedRoute: '', defaultSourceStatus: null, defaultSourceSyncRunning: false, viewActionBusy: false, cloudRefreshRunning: false, cloudRefreshAt: 0, lastUserInteractionAt: 0, cloudRefreshTimer: null
   };
 
 
@@ -211,6 +211,30 @@
   }
   function nextFrame() {
     return new Promise(resolve => requestAnimationFrame(resolve));
+  }
+  function setButtonBusy(button, busy, busyLabel = 'Operazione in corso') {
+    if (!button) return;
+    if (busy) {
+      if (!button.dataset.idleLabel) button.dataset.idleLabel = button.textContent.trim();
+      if (!Object.prototype.hasOwnProperty.call(button.dataset, 'idleTitle')) button.dataset.idleTitle = button.title || '';
+      button.disabled = true;
+      button.setAttribute('aria-busy', 'true');
+      button.classList.add('view-action-busy');
+      button.title = busyLabel;
+    } else {
+      button.disabled = false;
+      button.removeAttribute('aria-busy');
+      button.classList.remove('view-action-busy');
+      if (Object.prototype.hasOwnProperty.call(button.dataset, 'idleTitle')) button.title = button.dataset.idleTitle;
+    }
+  }
+  function runButtonAction(button, action, busyLabel = 'Operazione in corso') {
+    if (!button || button.disabled) return;
+    setButtonBusy(button, true, busyLabel);
+    void Promise.resolve().then(action).catch(error => {
+      console.warn('Watchverse action:', error);
+      showToast('Operazione non riuscita', 'Riprova tra poco.', '!');
+    }).finally(() => setButtonBusy(button, false));
   }
   async function runViewAction(button, action, loaderCopy = null) {
     if (!button || state.viewActionBusy) return;
@@ -263,8 +287,6 @@
     document.body.classList.add('is-blocking-loading');
     $('#main')?.setAttribute('aria-busy', 'true');
     $('#authRoot')?.setAttribute('aria-busy', 'true');
-    $('#app')?.setAttribute('inert', '');
-    $('#authRoot')?.setAttribute('inert', '');
     return token;
   }
   function hideBlockingLoader(token, minimumVisibleMs = 320) {
@@ -279,8 +301,6 @@
       document.body.classList.remove('is-blocking-loading');
       $('#main')?.setAttribute('aria-busy', 'false');
       $('#authRoot')?.setAttribute('aria-busy', 'false');
-      $('#app')?.removeAttribute('inert');
-      $('#authRoot')?.removeAttribute('inert');
     };
     clearTimeout(blockingLoaderHideTimer);
     blockingLoaderHideTimer = setTimeout(finish, Math.max(0, minimumVisibleMs - elapsed));
@@ -445,19 +465,33 @@
   function dbPut(store, value) {
     const prepared = ['series','movies','progress','settings'].includes(store) ? stampLocalValue(value) : value;
     const cloudPrimary = navigator.onLine && window.WatchverseCloudSync?.isEnabled() && ['series','movies','progress'].includes(store);
-    const syncFirst = cloudPrimary ? window.WatchverseCloudSync.pushRecord(currentProfile(), store, prepared).catch(error => { console.warn('Watchverse cloud record sync:', error); state.cloudSyncPending = true; }) : Promise.resolve();
-    if (state.db?.memory) return syncFirst.then(() => { memoryStores[store].set(prepared.id, structuredClone(prepared)); return value; });
-    return syncFirst.then(() => new Promise((resolve, reject) => { const r = dbTx(store, 'readwrite').put(prepared); r.onsuccess = () => resolve(value); r.onerror = () => reject(r.error); }));
+    const localWrite = state.db?.memory
+      ? Promise.resolve().then(() => { memoryStores[store].set(prepared.id, structuredClone(prepared)); return value; })
+      : new Promise((resolve, reject) => { const r = dbTx(store, 'readwrite').put(prepared); r.onsuccess = () => resolve(value); r.onerror = () => reject(r.error); });
+    if (cloudPrimary) {
+      void window.WatchverseCloudSync.pushRecord(currentProfile(), store, prepared).catch(error => {
+        console.warn('Watchverse cloud record sync:', error);
+        state.cloudSyncPending = true;
+      });
+    }
+    return localWrite;
   }
   function dbBulkPut(store, values, syncCloud = true) {
     const prepared = syncCloud && ['series','movies','progress','settings'].includes(store) ? values.map(stampLocalValue) : values;
-    const sync = syncCloud && window.WatchverseCloudSync?.pushRecords ? window.WatchverseCloudSync.pushRecords(currentProfile(), store, prepared).catch(error => { console.warn('Watchverse cloud batch sync:', error); state.cloudSyncPending = true; }) : Promise.resolve();
     const finish = () => prepared.length;
-    if (state.db?.memory) return sync.then(() => { prepared.forEach(v => memoryStores[store].set(v.id, structuredClone(v))); return finish(); });
-    return sync.then(() => new Promise((resolve, reject) => {
+    const localWrite = state.db?.memory
+      ? Promise.resolve().then(() => { prepared.forEach(v => memoryStores[store].set(v.id, structuredClone(v))); return finish(); })
+      : new Promise((resolve, reject) => {
       const tx = state.db.transaction(store, 'readwrite'); const os = tx.objectStore(store); prepared.forEach(v => os.put(v));
       tx.oncomplete = () => resolve(finish()); tx.onerror = () => reject(tx.error);
-    }));
+      });
+    if (syncCloud && window.WatchverseCloudSync?.pushRecords) {
+      void window.WatchverseCloudSync.pushRecords(currentProfile(), store, prepared).catch(error => {
+        console.warn('Watchverse cloud batch sync:', error);
+        state.cloudSyncPending = true;
+      });
+    }
+    return localWrite;
   }
   async function dbBulkPutBatched(store, values, batchSize = 600, onProgress = null) {
     let done = 0;
@@ -470,14 +504,21 @@
   }
   function dbDelete(store, id) {
     const valuePromise = dbGetAll(store).then(values => values.find(value => value.id === id));
-    const finish = value => {
+    const syncDelete = value => {
       if (!value) return;
       // Una rimozione esplicita deve vincere sul record cloud precedente e lasciare un tombstone persistente.
       const deletion = { ...value, revision: Number(value.revision || 0) + 1, updatedAt: new Date().toISOString() };
-      return window.WatchverseCloudSync?.deleteRecord(currentProfile(), store, deletion).catch(error => console.warn('Watchverse cloud delete sync:', error));
+      void window.WatchverseCloudSync?.deleteRecord(currentProfile(), store, deletion).catch(error => {
+        console.warn('Watchverse cloud delete sync:', error);
+        state.cloudSyncPending = true;
+      });
     };
-    if (state.db?.memory) { const value = memoryStores[store].get(id); memoryStores[store].delete(id); return Promise.resolve(finish(value)); }
-    return valuePromise.then(value => new Promise((resolve, reject) => { const r = dbTx(store, 'readwrite').delete(id); r.onsuccess = () => { Promise.resolve(finish(value)).then(resolve, reject); }; r.onerror = () => reject(r.error); }));
+    if (state.db?.memory) { const value = memoryStores[store].get(id); memoryStores[store].delete(id); syncDelete(value); return Promise.resolve(); }
+    return valuePromise.then(value => new Promise((resolve, reject) => {
+      const r = dbTx(store, 'readwrite').delete(id);
+      r.onsuccess = () => { syncDelete(value); resolve(); };
+      r.onerror = () => reject(r.error);
+    }));
   }
   function dbDeleteLocal(store, id) {
     if (state.db?.memory) { memoryStores[store].delete(id); return Promise.resolve(); }
@@ -586,9 +627,18 @@
         const profile = currentProfile();
         if (!profile) return;
         await syncCloudProfile(profile);
-        await reloadData();
+        await reloadData({ migrate:false });
         if (state.profileSelected && parseRoute().page === page) {
-          await route({ loader: false, preserveScroll: true, skipCloudRefresh: true });
+          const refresh = () => {
+            state.cloudRefreshTimer = null;
+            if (!state.profileSelected || parseRoute().page !== page) return;
+            if (Date.now() - state.lastUserInteractionAt < 1200) {
+              state.cloudRefreshTimer = setTimeout(refresh, 1200);
+              return;
+            }
+            void route({ loader: false, preserveScroll: true, skipCloudRefresh: true });
+          };
+          refresh();
         }
       } catch (error) {
         console.warn('Watchverse route cloud refresh:', error);
@@ -851,14 +901,14 @@
   function invalidateSeriesComputed(seriesId = null) {
     if (seriesId) state.indexes.seriesComputed.delete(seriesId); else state.indexes.seriesComputed.clear();
   }
-  async function reloadData() {
+  async function reloadData(options = {}) {
     const [series, movies, progress, people, catalog] = await Promise.all([
       dbGetAll('series'), dbGetAll('movies'), dbGetAll('progress'), dbGetAll('people'), dbGetAll('catalog')
     ]);
     rebuildCatalogIndex(catalog);
     // Migrazione trasparente: i metadati già presenti nelle librerie delle versioni precedenti
     // alimentano il catalogo comune, senza spostare o cancellare i dati personali.
-    await migrateLegacyRecordsIntoSharedCatalog(series, movies);
+    if (options.migrate !== false) await migrateLegacyRecordsIntoSharedCatalog(series, movies);
     state.series = series.filter(x => x.profileId === state.profileId);
     state.movies = movies.filter(x => x.profileId === state.profileId);
     const seriesAddedAtUpdates = state.series.filter(item => ensureLibraryAddedAt(item));
@@ -1826,10 +1876,29 @@
   }
 
   async function toggleFavorite(kind, id) {
+    const list = kind === 'series' ? state.series : state.movies;
+    const item = list.find(x => x.id === id);
+    if (!item) return;
+    item.favorite = !item.favorite;
+    await dbPut(kind === 'series' ? 'series' : 'movies', item);
+    showToast(item.favorite ? 'Aggiunto ai preferiti' : 'Rimosso dai preferiti', item.title, '');
+    void route({ loader:false, preserveScroll:true });
+  }
+  async function legacyToggleFavorite(kind, id) {
     const list = kind === 'series' ? state.series : state.movies; const item = list.find(x => x.id === id); if (!item) return;
     item.favorite = !item.favorite; await dbPut(kind === 'series' ? 'series' : 'movies', item); showToast(item.favorite ? 'Aggiunto ai preferiti' : 'Rimosso dai preferiti', item.title, '♥'); route();
   }
   async function toggleMovieWatched(id) {
+    const item = state.movies.find(x => x.id === id);
+    if (!item) return;
+    item.watched = !item.watched;
+    item.state = item.watched ? 'watched' : 'watchlist';
+    item.watchedAt = item.watched ? new Date().toISOString() : null;
+    await dbPut('movies', item);
+    showToast(item.watched ? 'Film segnato come visto' : 'Film rimesso da vedere', item.title, '');
+    void route({ loader:false, preserveScroll:true });
+  }
+  async function legacyToggleMovieWatched(id) {
     const item = state.movies.find(x => x.id === id); if (!item) return;
     item.watched = !item.watched; item.state = item.watched ? 'watched' : 'watchlist'; item.watchedAt = item.watched ? new Date().toISOString() : null;
     await dbPut('movies', item); showToast(item.watched ? 'Film segnato come visto' : 'Film rimesso da vedere', item.title, '🎬'); route();
@@ -1889,22 +1958,38 @@
       await dbPut('progress', rec);
     }
     rebuildIndexes();
+    void route({ loader:false, preserveScroll:true });
+  }
+  async function legacyToggleEpisode(seriesId, season, episode, episodeTitle = '') {
+    const existing = progressRecord(seriesId, season, episode);
+    if (existing) {
+      existing.watched = !existing.watched;
+      existing.watchedAt = existing.watched ? new Date().toISOString() : null;
+      await dbPut('progress', existing);
+    } else {
+      const rec = { id: `${state.profileId}|${String(seriesId).split('|').pop()}:s${season}:e${episode}`, profileId: state.profileId, seriesId, season, episode, title: episodeTitle, watched: true, watchedAt: new Date().toISOString() };
+      state.progress.push(rec);
+      await dbPut('progress', rec);
+    }
+    rebuildIndexes();
     route();
   }
 
   function bindCommonMediaActions(root = document) {
     $$('[data-action="favorite"]', root).forEach(btn => btn.addEventListener('click', e => {
-      e.preventDefault(); e.stopPropagation(); const card = btn.closest('[data-id]'); toggleFavorite(card.dataset.kind, card.dataset.id);
+      e.preventDefault(); e.stopPropagation(); const card = btn.closest('[data-id]');
+      runButtonAction(btn, () => toggleFavorite(card.dataset.kind, card.dataset.id), 'Salvataggio preferito in corso');
     }));
     $$('[data-action="watched"]', root).forEach(btn => btn.addEventListener('click', e => {
-      e.preventDefault(); e.stopPropagation(); const card = btn.closest('[data-id]'); if (card.dataset.kind === 'movie') toggleMovieWatched(card.dataset.id);
+      e.preventDefault(); e.stopPropagation(); const card = btn.closest('[data-id]');
+      if (card.dataset.kind === 'movie') runButtonAction(btn, () => toggleMovieWatched(card.dataset.id), 'Salvataggio visione in corso');
     }));
     $$('[data-action="remove"]', root).forEach(btn => btn.addEventListener('click', e => {
       e.preventDefault(); e.stopPropagation(); const card = btn.closest('[data-id]'); removeFromLibrary(card.dataset.kind, card.dataset.id);
     }));
     $$('[data-action="next"]', root).forEach(btn => btn.addEventListener('click', e => {
       e.preventDefault(); const card = btn.closest('[data-id]'); const s = state.series.find(x => x.id === card.dataset.id); const ep = s && nextEpisode(s);
-      if (ep) toggleEpisode(s.id, ep.season, ep.episode, ep.title); else showToast('Serie completata', s?.title || '');
+      if (ep) runButtonAction(btn, () => toggleEpisode(s.id, ep.season, ep.episode, ep.title), 'Salvataggio episodio in corso'); else showToast('Serie completata', s?.title || '');
     }));
   }
 
@@ -2515,8 +2600,8 @@
     setMain(`${detailHero(s,'series')}<div class="tabbar"><button class="tab-button ${state.detailTab==='info'?'active':''}" data-detail-tab="info">Info</button><button class="tab-button ${state.detailTab==='episodes'?'active':''}" data-detail-tab="episodes">Episodi</button></div>${state.detailTab==='info'?info:episodes}`);
     if(state.detailTab==='info'){bindProgrammingActions(s,'series');bindHorizontalRails($('#main'));addDetailRemovalAction('series',s);}
     $$('[data-detail-tab]').forEach(b=>b.addEventListener('click',()=>{state.detailTab=b.dataset.detailTab;renderSeriesDetail(id);}));
-    $('#detailFavorite').addEventListener('click',()=>toggleFavorite('series',id));
-    $('#detailMainAction').addEventListener('click',()=>{const n=nextEpisode(s);if(n)toggleEpisode(s.id,n.season,n.episode,n.title);});
+    $('#detailFavorite').addEventListener('click', event => runButtonAction(event.currentTarget, () => toggleFavorite('series',id), 'Salvataggio preferito in corso'));
+    $('#detailMainAction').addEventListener('click', event => { const n=nextEpisode(s); if(n) runButtonAction(event.currentTarget, () => toggleEpisode(s.id,n.season,n.episode,n.title), 'Salvataggio episodio in corso'); });
     $('#detailEdit').addEventListener('click',()=>openEditModal(s,'series'));
     if($('#seriesStatus'))$('#seriesStatus').addEventListener('change',async e=>{s.status=e.target.value;await dbPut('series',s);showToast('Stato aggiornato',statusLabel(s.status));});
     $$('.star-rating button').forEach(b=>b.addEventListener('click',async()=>{s.rating=Number(b.dataset.value);await dbPut('series',s);renderSeriesDetail(id);}));
@@ -2545,8 +2630,8 @@
     bindProgrammingActions(m,'movie');
     bindHorizontalRails($('#main'));
     addDetailRemovalAction('movies',m);
-    $('#detailFavorite').addEventListener('click',()=>toggleFavorite('movies',id));
-    $('#detailMainAction').addEventListener('click',()=>toggleMovieWatched(id));
+    $('#detailFavorite').addEventListener('click', event => runButtonAction(event.currentTarget, () => toggleFavorite('movies',id), 'Salvataggio preferito in corso'));
+    $('#detailMainAction').addEventListener('click', event => runButtonAction(event.currentTarget, () => toggleMovieWatched(id), 'Salvataggio visione in corso'));
     $('#detailEdit').addEventListener('click',()=>openEditModal(m,'movie'));
     $$('.star-rating button').forEach(b=>b.addEventListener('click',async()=>{m.rating=Number(b.dataset.value);await dbPut('movies',m);renderMovieDetail(id);}));
     $('#saveMovieMeta').addEventListener('click',async()=>{m.notes=$('#movieNotes').value.trim();const d=$('#watchedDate').value;if(d){m.watched=true;m.state='watched';m.watchedAt=new Date(`${d}T12:00:00`).toISOString();}await dbPut('movies',m);showToast('Film aggiornato',m.title);route();});
@@ -4083,13 +4168,29 @@
         <div class="form-field"><label for="loginUser">Nome utente</label><input id="loginUser" autocomplete="off" data-lpignore="true" data-1p-ignore="true" placeholder="Inserisci il nome utente" value="" required></div>
         <div class="form-field"><label for="loginPassword">Password</label><div class="password-field"><input id="loginPassword" type="password" autocomplete="off" data-lpignore="true" data-1p-ignore="true" required autofocus><button id="toggleLoginPassword" class="password-toggle" type="button" aria-label="Mostra password" title="Mostra password" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.6"/></svg><span class="sr-only">Mostra password</span></button></div></div>
         <div class="auth-row"><label class="auth-check"><input id="rememberLogin" type="checkbox" checked> Ricordami su questo dispositivo</label><button id="forgotPassword" class="auth-link" type="button">Password dimenticata?</button></div>
-        <button class="primary" type="submit">Accedi</button><div id="authMessage" class="auth-message" role="alert">${esc(message)}</div>
+        <button id="loginSubmit" class="primary" type="submit">Accedi</button><div id="authMessage" class="auth-message" role="alert">${esc(message)}</div>
       </form>
     </div></section>`;
     $('#forgotPassword').addEventListener('click',showForgotPasswordScreen);
     $('#toggleLoginPassword').addEventListener('click',()=>{const input=$('#loginPassword');const button=$('#toggleLoginPassword');const visible=input.type==='text';input.type=visible?'password':'text';const nextLabel=visible?'Mostra password':'Nascondi password';button.setAttribute('aria-label',nextLabel);button.title=nextLabel;button.setAttribute('aria-pressed',String(!visible));button.innerHTML=visible?'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.6"/></svg><span class="sr-only">Mostra password</span>':'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 6.2A10.8 10.8 0 0 1 12 6c6 0 9.5 6 9.5 6a17.6 17.6 0 0 1-3.1 3.5M6.2 6.9C3.9 8.3 2.5 12 2.5 12s3.5 6 9.5 6a10 10 0 0 0 3.7-.7M10 10a2.8 2.8 0 0 0 4 4"/></svg><span class="sr-only">Nascondi password</span>';input.focus();});
     requestAnimationFrame(()=>{const input=$('#loginUser');if(input)input.value='';});
-    $('#loginForm').addEventListener('submit',async e=>{e.preventDefault();const msg=$('#authMessage');msg.textContent='';try{await WatchverseAuth.signIn($('#loginUser').value,$('#loginPassword').value,$('#rememberLogin').checked);await enterProfileGateAfterAuth();}catch(err){msg.textContent=authErrorMessage(err);}});
+    $('#loginForm').addEventListener('submit',async e=>{
+      e.preventDefault();
+      const msg=$('#authMessage'); const submit=$('#loginSubmit'); msg.textContent='';
+      setButtonBusy(submit,true,'Accesso in corso');
+      const loginLoader = showBlockingLoader('Accesso in corso', 'Verifico le credenziali e preparo il profilo...');
+      if (msg) { msg.className='auth-message'; msg.textContent='Verifico le credenziali e preparo il profilo…'; }
+      try {
+        await WatchverseAuth.signIn($('#loginUser').value,$('#loginPassword').value,$('#rememberLogin').checked);
+        await enterProfileGateAfterAuth();
+      } catch(err) {
+        msg.className='auth-message'; msg.textContent=authErrorMessage(err);
+      } finally {
+        if (loginLoader) hideBlockingLoader(loginLoader);
+        setButtonBusy(submit,false);
+        if (msg && msg.textContent === 'Verifico le credenziali e preparo il profilo…') msg.textContent='';
+      }
+    });
     bindPasswordFieldToggles($('#authRoot'));
   }
   function showForgotPasswordScreen() {
@@ -4125,11 +4226,12 @@
   }
   async function requestProfileAccess(id) {
     const p=state.profiles.find(x=>x.id===id); if(!p)return;
-    if(!p.pinHash){await activateProfile(id);return;}
+    const profileButton = $$('[data-profile-choice]').find(button => button.dataset.profileChoice === id);
+    if(!p.pinHash){setButtonBusy(profileButton,true,'Apertura profilo in corso');try{await activateProfile(id);}finally{setButtonBusy(profileButton,false);}return;}
     $('#authRoot').innerHTML = `<section class="profile-gate"><div class="auth-card" style="text-align:center">${avatarHtml(p,'avatar-large')}<h2 style="margin-top:16px">PIN di ${esc(p.name)}</h2><p>Inserisci il PIN del profilo.</p><form id="gatePinForm" class="auth-form"><label class="sr-only" for="gatePin">PIN del profilo ${esc(p.name)}</label><input id="gatePin" type="password" inputmode="numeric" maxlength="6" autocomplete="off" autofocus><button class="primary">Apri profilo</button><button id="gatePinForgot" class="auth-link" type="button">PIN dimenticato?</button><button id="gatePinBack" class="ghost" type="button">Indietro</button><div id="authMessage" class="auth-message" role="alert"></div></form></div></section>`;
     $('#gatePinBack').addEventListener('click',showProfileGate);
     $('#gatePinForgot').addEventListener('click',()=>showPinRecovery(p,true));
-    $('#gatePinForm').addEventListener('submit',async e=>{e.preventDefault();const ok=await verifyProfilePin(p,$('#gatePin').value);if(ok)await activateProfile(id);else $('#authMessage').textContent='PIN errato.';});
+    $('#gatePinForm').addEventListener('submit',async e=>{e.preventDefault();const submit=e.currentTarget.querySelector('button.primary');setButtonBusy(submit,true,'Apertura profilo in corso');try{const ok=await verifyProfilePin(p,$('#gatePin').value);if(ok)await activateProfile(id);else $('#authMessage').textContent='PIN errato.';}catch(error){$('#authMessage').textContent=authErrorMessage(error);}finally{setButtonBusy(submit,false);}});
     bindPasswordFieldToggles($('#authRoot'));
   }
   async function activateProfile(id) {
@@ -4149,11 +4251,9 @@
         for(const store of ['series','movies','progress','imports']) await dbClearProfile(store);
         state.settings.demoSeeded=false;saveSettings();
       }
-      // Online il cloud viene riallineato prima di leggere la cache IndexedDB;
-      // offline la cache resta il fallback per permettere comunque l'accesso.
-      // Offline la cache locale resta leggibile; il cloud viene riallineato solo online.
-      if (window.WatchverseCloudSync?.isEnabled() && navigator.onLine) await syncCloudProfile(profile);
-      await reloadData();
+      // La cache locale apre subito il profilo. Il riallineamento cloud viene eseguito
+      // dopo il primo rendering, così una rete lenta non congela l'accesso.
+      await reloadData({ migrate:false });
       showAppShell();
       renderNav('home');
       state.lastRenderedRoute = '';
@@ -4162,11 +4262,21 @@
       if (window.WatchverseCloudSync?.isEnabled()) showToast('Sincronizzazione in corso', 'La libreria si aggiorna in background.', '↻', 7000, { kind:'sync' });
       idle(async () => {
         let backgroundProfile = state.profiles.find(item => item.id === id);
-        if (!backgroundProfile || state.profileId !== id || !navigator.onLine) return;
-        await syncCloudProfile(backgroundProfile, { onlyProgress: true });
+        if (!backgroundProfile || state.profileId !== id) return;
+        if (navigator.onLine && window.WatchverseCloudSync?.isEnabled()) {
+          await syncCloudProfile(backgroundProfile, { onlyProgress: true });
+        }
         if (state.profileId === id) {
-          await reloadData();
-          await route({ loader:false, preserveScroll:true });
+          await reloadData({ migrate:true });
+          const refresh = () => {
+            if (!state.profileSelected || state.profileId !== id) return;
+            if (Date.now() - state.lastUserInteractionAt < 1200) {
+              state.cloudRefreshTimer = setTimeout(refresh, 1200);
+              return;
+            }
+            void route({ loader:false, preserveScroll:true });
+          };
+          refresh();
         }
       });
       idle(scheduleBackgroundMetadataSync);
@@ -4178,12 +4288,19 @@
   function bindShellEvents() {
     if(state.shellBound)return;
     state.shellBound=true;
+    document.addEventListener('pointerdown', () => { state.lastUserInteractionAt = Date.now(); }, { passive: true });
+    document.addEventListener('keydown', () => { state.lastUserInteractionAt = Date.now(); }, { passive: true });
     document.addEventListener('click', event => {
-      const link = event.target.closest?.('a.nav-item[href^="#/"]');
+      const link = event.target.closest?.('a[href^="#/"]');
       if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-      const targetPage = link.getAttribute('href').replace(/^#\//, '').split(/[/?]/)[0] || 'home';
-      if (targetPage === parseRoute().page || state.navigationLoaderToken) return;
-      const [title, detail] = loaderCopyForRoute({ page: targetPage });
+      const rawTarget = link.getAttribute('href').replace(/^#\//, '');
+      const [targetPath] = rawTarget.split('?');
+      const targetParts = targetPath.split('/').filter(Boolean);
+      const targetPage = targetParts[0] || 'home';
+      const targetId = targetParts.length > 1 ? decodeURIComponent(targetParts.slice(1).join('/')) : null;
+      const current = parseRoute();
+      if ((targetPage === current.page && targetId === current.id) || state.navigationLoaderToken) return;
+      const [title, detail] = loaderCopyForRoute({ page: targetPage, id: targetId });
       state.navigationLoaderToken = showBlockingLoader(title, detail);
     });
     window.addEventListener('hashchange',()=>{if(state.profileSelected)route();});

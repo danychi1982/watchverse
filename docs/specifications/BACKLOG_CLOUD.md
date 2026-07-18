@@ -557,3 +557,11 @@ Le modifiche autonome incluse nella prossima pubblicazione sono:
 - workflow browser E2E sospeso e avviabile solo manualmente, per evitare run falliti finche non saranno disponibili fixture di autenticazione dedicate.
 
 Il test manuale resta necessario per confermare il comportamento su dispositivi e dati reali. Le attivita tecniche ancora aperte sono quelle elencate nella tabella piu recente qui sopra.
+
+## Delta tecnico - feedback e navigazione - 18 luglio 2026
+
+| Nome intervento | Priorita | Stato | Owner | Effort | Cosa resta da fare |
+|---|---|---|---|---|---|
+| Feedback immediato sulle azioni e navigazione non bloccante | Alta | Parzialmente completato | Daniela | Medio | Verificare sul sito pubblicato con rete lenta: login, apertura profilo, apertura dettaglio, preferito e azioni sulle card devono mostrare subito uno stato visibile e non perdere il click. |
+| Apertura profilo e caricamento iniziale | Alta | Parzialmente completato | Daniela | Alto | Misurare il tempo percepito su desktop e Samsung Galaxy S26+ e segnalare eventuali attese ancora superiori a pochi secondi. |
+| Refresh cloud differito durante l'interazione | Media | Implementato | Daniela | Basso | Confermare che un aggiornamento in background non ridisegni la pagina mentre l'utente sta cliccando o digitando. |
