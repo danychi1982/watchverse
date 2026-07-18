@@ -2432,6 +2432,17 @@
     if (state.initialCloudHydrationPending && libraryIsEmpty()) { renderInitialCloudLoadingHome(); return; }
     if (libraryIsEmpty()) { renderEmptyLibraryHome(); return; }
 
+    const requestId = state.navigationRequestId;
+    setMain('<section class="section-view-loading" aria-live="polite" aria-busy="true"><div class="home-loading-spinner" aria-hidden="true"></div><h2>Preparo la Home</h2><p>Organizzo i contenuti personali e le prossime uscite.</p></section>');
+    idle(async () => {
+      await nextPaint();
+      if (requestId !== state.navigationRequestId || parseRoute().page !== 'home') return;
+      renderHomeContent();
+    });
+  }
+
+  function renderHomeContent() {
+
     const recentlyWatched = state.series
       .map(s => ({ s, ep: nextEpisode(s), watchedAt: latestWatchedAt(s.id) }))
       .filter(x => x.ep && x.watchedAt)
