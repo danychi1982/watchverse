@@ -198,7 +198,7 @@
     detailTab: 'info', tvScheduleFilter: 'today', importPreview: null, gdprPreview: null, deferredInstall: null,
     notifications: [], tmdbResults: [], publicResults: [], catalogResults: [], recommendationResults: [], isLoading: false, pendingAvatarProfileId: null, personFilmographyFilter: 'all', profileSettingsTab: 'identity',
     catalogEntries: [], catalogIndex: new Map(), catalogHydratedThisSession: 0, catalogNetworkAvoidedThisSession: 0,
-    metadataQueue: [], metadataRunning: 0, metadataQueuedIds: new Set(), metadataAutoBudget: 36, metadataRenderPending: false, metadataRerenderTimer: null, metadataBackgroundStarted: false, metadataContinuationTimer: null, metadataHeaderTimer: null, metadataCompletedThisSession: 0, metadataFailedThisSession: 0, metadataRecoveryScheduled: false, metadataRecoveryDone: false, wcagStatusFilter: 'all', wcagLevelFilter: 'all', accessibilityTab: 'declaration', searchRecommendationFilter: 'all', navigationLoaderToken: 0,
+    metadataQueue: [], metadataRunning: 0, metadataQueuedIds: new Set(), metadataAutoBudget: 36, metadataRenderPending: false, metadataRerenderTimer: null, metadataBackgroundStarted: false, metadataContinuationTimer: null, metadataHeaderTimer: null, metadataCompletedThisSession: 0, metadataFailedThisSession: 0, metadataRecoveryScheduled: false, metadataRecoveryDone: false, wcagStatusFilter: 'all', wcagLevelFilter: 'all', accessibilityTab: 'declaration', searchRecommendationFilter: 'all', navigationLoaderToken: 0, navigationRequestId: 0, initialCloudHydrationPending: false,
     sidebarCollapsed: localStorage.getItem('watchverse.sidebarCollapsed') === '1', cinemaSearchLocation: null, cinemaSearchQuery: '', cinemaLocationFeedback: null, aivengersInitialized: false, lastRenderedRoute: '', defaultSourceStatus: null, defaultSourceSyncRunning: false, viewActionBusy: false, cloudRefreshRunning: false, cloudRefreshAt: 0, lastUserInteractionAt: 0, cloudRefreshTimer: null
   };
 
@@ -2032,6 +2032,7 @@
     }
   }
   async function route(options = {}) {
+    const navigationRequestId = ++state.navigationRequestId;
     const r = parseRoute();
     const routeKey = `${r.page}/${r.id || ''}`;
     const preserveScroll = options.preserveScroll === true;
@@ -2044,6 +2045,7 @@
       loaderToken = state.navigationLoaderToken || showBlockingLoader(title, detail);
       state.navigationLoaderToken = 0;
       await nextPaint();
+      if (navigationRequestId !== state.navigationRequestId) return;
     }
     try {
       if (!preserveScroll) window.scrollTo({ top: 0, behavior: 'instant' });
@@ -2067,7 +2069,7 @@
         window.scrollTo({ top: preservedScrollY, behavior: 'instant' });
         restoreActiveField(preservedField);
       });
-      if (!options.skipCloudRefresh) scheduleCloudRouteRefresh(r.page);
+      if (!options.skipCloudRefresh && !state.initialCloudHydrationPending) scheduleCloudRouteRefresh(r.page);
     } finally {
       if (loaderToken) hideBlockingLoader(loaderToken);
     }
@@ -2239,7 +2241,7 @@
     return [...groups.entries()].map(([dateKey, episodes]) => `<section class="calendar-day-group"><div class="calendar-day-heading"><span>${esc(calendarHeading(dateKey))}</span><small>${episodes.length} ${episodes.length === 1 ? 'episodio' : 'episodi'}</small></div><div class="continue-list">${episodes.map(upcomingCardHtml).join('')}</div></section>`).join('');
   }
 
-  function renderProgramming() {
+  function renderProgrammingLegacy() {
     setPage('Programmazione', 'TV, cinema e nuove uscite', 'programming');
     const upcoming = upcomingEpisodes(30);
     const now = Date.now() - 1000 * 60 * 60 * 4;
@@ -2254,6 +2256,17 @@
     const broadcastHtml = broadcasts.length ? broadcasts.map(row => `<article class="programming-event"><div><span class="result-kicker">${row.kind === 'movie' ? 'Film in TV' : 'Serie in TV'}</span><h3><a href="${row.kind === 'movie' ? '#/movie/' : '#/series/'}${encodeURIComponent(row.item.id)}">${esc(row.item.title)}</a></h3><p>${esc(row.channel || 'Canale TV')} · ${esc(showtimeDateLabel(row.startsAt || row.date))}</p><div class="programming-event-meta">${row.episode ? `<span>${esc(row.episode)}</span>` : ''}${row.broadcastType ? `<span>${esc(row.broadcastType)}</span>` : ''}${row.language ? `<span>${esc(row.language)}</span>` : ''}</div></div>${row.guideUrl ? `<a class="secondary compact" href="${esc(row.guideUrl)}" target="_blank" rel="noopener noreferrer">Guida ufficiale ↗</a>` : `<span class="programming-event-badge">${row.isDemo ? 'Dati demo' : 'Guida da collegare'}</span>`}</article>`).join('') : '<p class="notice warning">Nessun passaggio TV italiano rilevato nei prossimi sette giorni.</p>';
     const cinemaHtml = showtimes.length ? showtimes.map(row => { const cinema = preferredCinemas().find(x => x.id === row.cinemaId) || {}; return `<article class="programming-event"><div><span class="result-kicker">Al cinema</span><h3><a href="#/movie/${encodeURIComponent(row.item.id)}">${esc(row.item.title)}</a></h3><p>${esc(row.cinemaName || cinema.name || 'Cinema')} · ${esc(showtimeDateLabel(row.startsAt))}</p><div class="programming-event-meta"><span>${esc([row.format, row.language, row.auditorium].filter(Boolean).join(' · ') || 'Dettagli sul sito ufficiale')}</span></div></div><a class="secondary compact" href="${esc(row.bookingUrl || cinema.officialUrl || '#')}" target="_blank" rel="noopener noreferrer">Biglietti ↗</a></article>`; }).join('') : '<p class="notice warning">Nessuno spettacolo collegato. Le sale preferite restano disponibili nel profilo.</p>';
     setMain(`<section class="programming-overview" aria-label="Riepilogo programmazione"><article class="metric-card"><div class="metric-row"><span class="metric-icon">▤</span><span>Nuovi episodi</span></div><strong>${upcoming.length.toLocaleString('it-IT')}</strong></article><article class="metric-card"><div class="metric-row"><span class="metric-icon">TV</span><span>Passaggi TV, 7 giorni</span></div><strong>${broadcasts.length.toLocaleString('it-IT')}</strong></article><article class="metric-card"><div class="metric-row"><span class="metric-icon">🎟</span><span>Spettacoli cinema</span></div><strong>${showtimes.length.toLocaleString('it-IT')}</strong></article></section><section class="section"><div class="section-head"><div><h2>Nuovi episodi e uscite</h2><p>Date italiane quando disponibili, altrimenti uscita originale.</p></div></div><div class="calendar-groups">${groupedUpcomingHtml(upcoming)}</div></section><section class="section"><div class="section-head"><div><h2>In TV</h2><p>Palinsesti italiani rilevati nei prossimi sette giorni.</p></div></div><div class="programming-list">${broadcastHtml}</div></section><section class="section"><div class="section-head"><div><h2>Nei cinema preferiti</h2><p>Orari disponibili per le sale configurate nel profilo.</p></div><a class="section-link" href="#/settings">Gestisci cinema →</a></div><div class="programming-list">${cinemaHtml}</div></section>`);
+  }
+
+  function renderProgramming() {
+    setPage('Programmazione', 'TV, cinema e nuove uscite', 'programming');
+    const requestId = state.navigationRequestId;
+    setMain(`<section class="section-view-loading" aria-live="polite" aria-busy="true"><div class="home-loading-spinner" aria-hidden="true"></div><h2>Preparo la programmazione</h2><p>Carico episodi, palinsesti e orari disponibili.</p></section>`);
+    idle(async () => {
+      await nextPaint();
+      if (requestId !== state.navigationRequestId || parseRoute().page !== 'programming') return;
+      renderProgrammingLegacy();
+    });
   }
 
   function railControlsHtml(id, label) {
@@ -2334,8 +2347,19 @@
     });
   }
 
+  function renderInitialCloudLoadingHome() {
+    const profile = currentProfile();
+    setMain(`<section class="home-loading-state" aria-live="polite" aria-busy="true">
+      <div class="home-loading-spinner" aria-hidden="true"></div>
+      <span class="kicker">Profilo attivo · ${esc(profile?.name || 'spettatore')}</span>
+      <h1>Preparo la tua Home</h1>
+      <p>Sto recuperando la tua libreria. Puoi iniziare a navigare appena i contenuti sono pronti.</p>
+    </section>`);
+  }
+
   function renderHome() {
     setPage('Home', 'Cosa guardare adesso', 'home');
+    if (state.initialCloudHydrationPending && libraryIsEmpty()) { renderInitialCloudLoadingHome(); return; }
     if (libraryIsEmpty()) { renderEmptyLibraryHome(); return; }
 
     const recentlyWatched = state.series
@@ -3051,7 +3075,7 @@
     ];
   }
 
-  function renderSearch() {
+  function renderSearchLegacy() {
     setPage('Cerca','Film, serie e persone','search');
     const local = [...state.series.map(x=>({...x,kind:'tv'})),...state.movies.map(x=>({...x,kind:'movie'}))];
     const tmdbReady=!!(state.settings.tmdbToken||(window.WATCHVERSE_CONFIG||{}).tmdbProxyUrl);
@@ -3101,6 +3125,17 @@
         bindSearchActions();
       }catch(e){result.innerHTML+=`<p class="notice danger">${esc(e.message)}</p>`;}
     },420);input.addEventListener('input',run);
+  }
+
+  function renderSearch() {
+    setPage('Cerca', 'Film, serie e persone', 'search');
+    const requestId = state.navigationRequestId;
+    setMain(`<section class="section-view-loading" aria-live="polite" aria-busy="true"><div class="home-loading-spinner" aria-hidden="true"></div><h2>Preparo la ricerca</h2><p>Carico le proposte e gli strumenti di ricerca.</p></section>`);
+    idle(async () => {
+      await nextPaint();
+      if (requestId !== state.navigationRequestId || parseRoute().page !== 'search') return;
+      renderSearchLegacy();
+    });
   }
 
   function bindRecommendationActions() {
@@ -4295,35 +4330,41 @@
       // La cache locale apre subito il profilo. Il riallineamento cloud viene eseguito
       // dopo il primo rendering, così una rete lenta non congela l'accesso.
       await reloadData({ migrate:false });
-      if (libraryIsEmpty() && navigator.onLine && window.WatchverseCloudSync?.isEnabled()) {
-        await syncCloudProfile(profile);
-        await reloadData({ migrate:false });
-      }
+      const shouldHydrateCloud = libraryIsEmpty() && navigator.onLine && window.WatchverseCloudSync?.isEnabled();
+      state.initialCloudHydrationPending = Boolean(shouldHydrateCloud);
       showAppShell();
       renderNav('home');
       state.lastRenderedRoute = '';
       location.hash=requestedHash;
       await route({ loader:false });
       if (window.WatchverseCloudSync?.isEnabled()) showToast('Sincronizzazione in corso', 'La libreria si aggiorna in background.', '↻', 7000, { kind:'sync' });
-      idle(async () => {
-        let backgroundProfile = state.profiles.find(item => item.id === id);
+      const refreshCloudProfile = async () => {
+        const backgroundProfile = state.profiles.find(item => item.id === id);
         if (!backgroundProfile || state.profileId !== id) return;
-        if (navigator.onLine && window.WatchverseCloudSync?.isEnabled()) {
-          await syncCloudProfile(backgroundProfile, { onlyProgress: true });
-        }
-        if (state.profileId === id) {
+        try {
+          if (navigator.onLine && window.WatchverseCloudSync?.isEnabled()) {
+            await syncCloudProfile(backgroundProfile, shouldHydrateCloud ? {} : { onlyProgress: true });
+          }
+          if (state.profileId !== id) return;
           await reloadData({ migrate:true });
+          state.initialCloudHydrationPending = false;
           const refresh = () => {
             if (!state.profileSelected || state.profileId !== id) return;
             if (Date.now() - state.lastUserInteractionAt < 1200) {
               state.cloudRefreshTimer = setTimeout(refresh, 1200);
               return;
             }
-            void route({ loader:false, preserveScroll:true });
+            void route({ loader:false, preserveScroll:true, skipCloudRefresh:true });
           };
           refresh();
+        } catch (error) {
+          state.initialCloudHydrationPending = false;
+          console.warn('Watchverse background profile sync:', error);
+          if (state.profileSelected && state.profileId === id) void route({ loader:false, skipCloudRefresh:true });
         }
-      });
+      };
+      if (shouldHydrateCloud) setTimeout(refreshCloudProfile, 0);
+      else idle(refreshCloudProfile);
       idle(scheduleBackgroundMetadataSync);
       idle(()=>syncDefaultPublicSources(false));
     } finally {
@@ -4344,7 +4385,11 @@
       const targetPage = targetParts[0] || 'home';
       const targetId = targetParts.length > 1 ? decodeURIComponent(targetParts.slice(1).join('/')) : null;
       const current = parseRoute();
-      if ((targetPage === current.page && targetId === current.id) || state.navigationLoaderToken) return;
+      if (targetPage === current.page && targetId === current.id) return;
+      if (state.navigationLoaderToken) {
+        hideBlockingLoader(state.navigationLoaderToken, 0);
+        state.navigationLoaderToken = 0;
+      }
       const [title, detail] = loaderCopyForRoute({ page: targetPage, id: targetId });
       state.navigationLoaderToken = showBlockingLoader(title, detail);
     });

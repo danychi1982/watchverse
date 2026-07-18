@@ -18,6 +18,8 @@ Formato leggero ispirato agli Architecture Decision Records: una decisione, il c
 | ADR-012 | 2026-07 | Conferme distruttive gestite dall'app | Sostituzione import e rimozione catalogo devono usare dialog coerenti col design system, bloccare lo scroll sottostante e descrivere l'effetto. | Parzialmente implementata |
 | ADR-013 | 2026-07 | Build e deploy separati dal test locale | Le modifiche vengono provate localmente prima della pubblicazione; non si fa deploy senza richiesta esplicita dell'utente. | Attiva |
 | ADR-014 | 2026-07 | Browser E2E sospesi senza fixture dedicate | Evita run falliti e notifiche rumorose; la riattivazione richiede fixture/credenziali non sensibili e un gate profili deterministico. | Sospesa |
+| ADR-015 | 2026-07-18 | Loader informativo e bootstrap profilo in due fasi | Il primo rendering non deve attendere il pull cloud completo. Il loader di navigazione informa senza intercettare i click, mentre l'idratazione cloud aggiorna la Home in background e l'ultima rotta richiesta sostituisce quelle obsolete. | Attiva, in verifica |
+| ADR-016 | 2026-07-18 | Rendering differito per Ricerca e Programmazione | Le sezioni con raccomandazioni, palinsesti e orari mostrano prima una shell interattiva e posticipano il calcolo pesante al primo spazio libero dopo il paint. Se l'utente cambia rotta, il lavoro obsoleto viene annullato. | Attiva, da verificare |
 
 ## Regole per nuove decisioni
 
