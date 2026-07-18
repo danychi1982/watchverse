@@ -112,3 +112,7 @@ Il censimento automatico della baseline e del backlog è stato poi esteso:
 - le Story e le issue ancora da realizzare sono rimaste in `To Do`/backlog, senza assegnazione artificiale a uno sprint.
 
 Il censimento è una baseline operativa: eventuali sovrapposizioni storiche nel backlog locale devono essere ricondotte alle issue canoniche già create, evitando duplicati.
+
+## Regola di granularità dei subtask
+
+I subtask non sono segnaposto generici per componente. Summary e descrizione devono essere contestualizzati alla Story principale e indicare l'implementazione concreta da realizzare, i contratti o gli stati coinvolti e il criterio tecnico di completamento. Una stessa disciplina può avere più subtask quando il lavoro contiene attività indipendenti, per esempio separando UI, integrazione dati, gestione asincrona, persistenza, sicurezza o test automatici. Prima di creare un nuovo subtask va verificato che non duplichi quelli esistenti; quando una Story è complessa si preferisce una scomposizione tecnica più precisa mantenendo la Story come unità di verifica funzionale.
