@@ -617,4 +617,4 @@ Le correzioni seguenti sono state implementate, testate con la suite automatica,
 |---|---|---|---|---|---|
 | Analisi copertura metadati bloccata | Alta | KO da approfondire | Codex | Medio | Capire perché restano 674 titoli da verificare su 2564 con 0 errori tecnici; distinguere dati legittimamente incompleti, fonte non pertinente, identificazione errata e retry non eseguito. |
 | Diagnostica rapida titoli da verificare | Alta | Da fare | Codex | Medio | Aggiungere un report leggibile e salvabile dal pannello con profilo, tipo, titolo, anno, ID/fonti, parti mancanti, categoria errore, tentativi, ultimo tentativo e prossimo retry, così da consentire analisi mirate senza ricostruire ogni volta l’elenco. |
-| Import sostitutivo: Continua e sostituisci | Alta | KO da correggere | Codex | Basso | Il dialog si chiude ma l’importazione non parte; correggere il callback del pulsante e verificare il salvataggio completo. |
+| Import sostitutivo: Continua e sostituisci | Alta | Implementato, da verificare | Codex | Basso | Il callback è stato corretto; ripetere l’importazione e verificare salvataggio completo, report finale e persistenza dopo refresh. |
