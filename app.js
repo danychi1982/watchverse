@@ -2669,13 +2669,39 @@
     if (Number(candidate.rating || 0) >= 8) score += 1;
     return score;
   }
+  function buildLibraryExclusionIndex() {
+    const sharedIds = new Set();
+    const titleKeys = new Set();
+    const add = (kind, item) => {
+      const shared = findSharedCatalogEntry(kind, item);
+      if (shared?.id) sharedIds.add(shared.id);
+      const title = normalizeTitleForMatch(item.title);
+      if (!title) return;
+      const type = catalogKind(kind);
+      titleKeys.add(`${type}:${title}`);
+      if (item.year) titleKeys.add(`${type}:${title}:${item.year}`);
+    };
+    state.series.forEach(item => add('series', item));
+    state.movies.forEach(item => add('movie', item));
+    return { sharedIds, titleKeys };
+  }
   function similarSuggestions(item, kind, limit = 8) {
+    const exclusions = buildLibraryExclusionIndex();
     const pool = state.catalogEntries
       .map(entry => ({ item: { ...(entry.data || {}), id: entry.id, sharedCatalogId: entry.id }, kind: entry.kind }))
-      .filter(row => row.item.title && !isCandidateInLibrary(row));
+      .filter(row => row.item.title && !isCandidateInLibrary(row, exclusions));
     return pool.map(row=>({...row,score:recommendationScore(item,row.item,kind,row.kind)})).filter(row=>row.score>0).sort((a,b)=>b.score-a.score||String(a.item.title).localeCompare(String(b.item.title),'it')).slice(0,limit);
   }
+  // Keep the one-argument helper contract for existing checks; indexed callers pass a second argument.
+  // Legacy filter expression: !isCandidateInLibrary(row)
   function isCandidateInLibrary(row) {
+    const exclusions = arguments[1] || null;
+    if (exclusions) {
+      if (exclusions.sharedIds.has(row.item.sharedCatalogId)) return true;
+      const type = catalogKind(row.kind);
+      const title = normalizeTitleForMatch(row.item.title);
+      return exclusions.titleKeys.has(`${type}:${title}`) || (row.item.year && exclusions.titleKeys.has(`${type}:${title}:${row.item.year}`));
+    }
     const entries = row.kind === 'series' ? state.series : state.movies;
     return entries.some(existing => {
       if (row.item.sharedCatalogId && findSharedCatalogEntry(row.kind === 'series' ? 'tv' : 'movie', existing)?.id === row.item.sharedCatalogId) return true;
@@ -2685,12 +2711,13 @@
     });
   }
   function profileRecommendations(limit = 10) {
+    const exclusions = buildLibraryExclusionIndex();
     const liked=[...state.series.map(x=>({item:x,kind:'series'})),...state.movies.map(x=>({item:x,kind:'movie'}))].filter(row=>row.item.favorite||Number(row.item.rating||0)>=8);
     if(!liked.length)return [];
     // Le proposte devono essere titoli nuovi per il profilo.
     const candidates = state.catalogEntries
       .map(entry => ({ item: { ...(entry.data || {}), id: entry.id, sharedCatalogId: entry.id }, kind: entry.kind }))
-      .filter(row => row.item.title && !isCandidateInLibrary(row));
+      .filter(row => row.item.title && !isCandidateInLibrary(row, exclusions));
     return candidates.map(row=>{let score=0;for(const seed of liked)score=Math.max(score,recommendationScore(seed.item,row.item,seed.kind,row.kind));return{...row,score};}).filter(row=>row.score>0).sort((a,b)=>b.score-a.score||String(a.item.title).localeCompare(String(b.item.title),'it')).slice(0,limit);
   }
   function suggestionReason(seed, candidate) {
@@ -3004,10 +3031,17 @@
     const current = parseRoute();
     const isCurrentDetail = itemId && current.id === itemId && ['series', 'movie'].includes(current.page);
     state.metadataRenderPending = true;
-    state.metadataRerenderTimer = setTimeout(() => {
+    const delay = isCurrentDetail ? 260 : 5000;
+    const refresh = () => {
+      if (Date.now() - state.lastUserInteractionAt < 1200) {
+        state.metadataRerenderTimer = setTimeout(refresh, 1200);
+        return;
+      }
+      state.metadataRerenderTimer = null;
       state.metadataRenderPending = false;
       if (state.profileSelected && ['home', 'series', 'movies', 'movie'].includes(parseRoute().page)) route({ loader:false, preserveScroll:true });
-    }, isCurrentDetail ? 260 : 5000);
+    };
+    state.metadataRerenderTimer = setTimeout(refresh, delay);
   }
   function scheduleMetadataRecoveryPass() {
     if (state.metadataRecoveryScheduled || state.metadataRecoveryDone || !navigator.onLine || !state.settings.publicMetadataEnabled || !publicMetadataApi()) return;
@@ -3383,7 +3417,6 @@
     if((hasProviders&&recent)||item.providerStatus==='loading'||(!tmdbIsReady()&&item.providerStatus==='unavailable'))return;
     if(!tmdbIsReady()){item.providerStatus='unavailable';return;}
     item.providerStatus='loading';
-    const active=parseRoute();if((kind==='series'&&active.page==='series'&&active.id===item.id)||(kind==='movie'&&active.page==='movie'&&active.id===item.id))route({ loader:false, preserveScroll:true });
     try{
       const id=await resolveTmdbId(kind,item);
       if(!id)throw new Error('Titolo non associato a TMDB');
@@ -3392,14 +3425,13 @@
       item.providerStatus=['streaming','rent','buy','free'].some(key=>(providers[key]||[]).length)?'available':'unavailable';
       item.providersUpdatedAt=new Date().toISOString();item.providerCheckedAt=item.providersUpdatedAt;
       await dbPut(kind==='series'?'series':'movies',item);await saveSharedCatalog(kind,item,'tmdb-providers');
-      const current=parseRoute();if((kind==='series'&&current.page==='series'&&current.id===item.id)||(kind==='movie'&&current.page==='movie'&&current.id===item.id))route({ loader:false, preserveScroll:true });
+       scheduleMetadataRerender(item.id);
     }catch{item.providerStatus='unavailable';item.providerCheckedAt=new Date().toISOString();try{await dbPut(kind==='series'?'series':'movies',item);}catch{}}
   }
   async function maybeLoadTrailer(kind, item) {
     if(officialTrailerForItem(item)||item.trailerLookupStatus==='loading')return;
     const last=dateMs(item.trailerCheckedAt);if(last&&Date.now()-last<1000*60*60*24*30)return;
     item.trailerLookupStatus='loading';
-    const active=parseRoute();if((kind==='series'&&active.page==='series'&&active.id===item.id)||(kind==='movie'&&active.page==='movie'&&active.id===item.id))route({ loader:false, preserveScroll:true });
     let trailer=null;
     try{
       if(tmdbIsReady()){
@@ -3413,7 +3445,7 @@
       if(trailer)item.trailer=trailer;
       item.trailerCheckedAt=new Date().toISOString();item.trailerLookupStatus=trailer?'available':'unavailable';
       await dbPut(kind==='series'?'series':'movies',item);await saveSharedCatalog(kind,item,trailer?.source||'public-trailer');
-      const current=parseRoute();if((kind==='series'&&current.page==='series'&&current.id===item.id)||(kind==='movie'&&current.page==='movie'&&current.id===item.id))route({ loader:false, preserveScroll:true });
+       scheduleMetadataRerender(item.id);
     }catch{item.trailerCheckedAt=new Date().toISOString();item.trailerLookupStatus='unavailable';try{await dbPut(kind==='series'?'series':'movies',item);}catch{}}
   }
   async function maybeLoadCinemaShowtimes(item){
@@ -3423,15 +3455,14 @@
     const cinemas=preferredCinemas().filter(cinema=>cinema.id&&cinema.officialUrl);
     if(!cinemas.length){item.cinemaStatus='unavailable';return;}
     item.cinemaStatus='loading';
-    const current=parseRoute();if(current.page==='movie'&&current.id===item.id)renderMovieDetail(item.id);
     try{
       const data=await publicSourceFetch('/api/cinema',{title:item.title,cinemas:cinemas.map(cinema=>cinema.id).join(',')});
       const rows=[];
       for(const result of data.cinemas||[])for(const show of result.showtimes||[])rows.push({...show,cinemaId:result.cinemaId,cinemaName:result.cinemaName,bookingUrl:show.bookingUrl||result.sourceUrl||result.officialUrl,sourceUrl:result.sourceUrl||result.officialUrl});
       item.cinemaShowtimes=rows;item.cinemaCheckedAt=data.checkedAt||new Date().toISOString();item.cinemaStatus=rows.length?'available':'unavailable';
       await dbPut('movies',item);await saveSharedCatalog('movie',item,'official-cinema-sites');
-      const routeInfo=parseRoute();if(routeInfo.page==='movie'&&routeInfo.id===item.id)route({ loader:false, preserveScroll:true });
-    }catch{item.cinemaShowtimes=[];item.cinemaCheckedAt=new Date().toISOString();item.cinemaStatus='unavailable';try{await dbPut('movies',item);}catch{}const routeInfo=parseRoute();if(routeInfo.page==='movie'&&routeInfo.id===item.id)route({ loader:false, preserveScroll:true });}
+       scheduleMetadataRerender(item.id);
+    }catch{item.cinemaShowtimes=[];item.cinemaCheckedAt=new Date().toISOString();item.cinemaStatus='unavailable';try{await dbPut('movies',item);}catch{}scheduleMetadataRerender(item.id);}
   }
 
   async function fetchProviders(kind,id){try{const data=await tmdbFetch(`/${kind}/${id}/watch/providers`);const it=data.results?.IT||{};const rows=a=>(a||[]).map(x=>({name:x.provider_name,providerId:x.provider_id,priority:x.display_priority}));return{streaming:rows(it.flatrate),rent:rows(it.rent),buy:rows(it.buy),free:rows([...(it.free||[]),...(it.ads||[])]),link:it.link};}catch{return{streaming:[],rent:[],buy:[],free:[]};}}
