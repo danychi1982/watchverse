@@ -596,3 +596,12 @@ Le correzioni seguenti sono state implementate, testate con la suite automatica,
 | Preferiti con guardia contro click concorrenti | Alta | Implementato | Codex | Medio | Verificare cambio immediato, toast, persistenza e disponibilità delle altre azioni durante il salvataggio. |
 | Focus e accessibilità del loader | Media | Implementato | Codex | Basso | Controllare che la console non mostri più il warning `aria-hidden` durante l’apertura dettaglio. |
 | Lookup TVmaze con fallback titolo prima dell’ID esterno | Media | Implementato | Codex | Basso | Verificare che il lookup normale non produca il 404 `lookup/shows?thetvdb=...`; distinguere eventuali errori delle estensioni browser. |
+
+## Esiti test manuali desktop - 18 luglio 2026
+
+| Nome intervento | Stato | Esito |
+|---|---|---|
+| Ricerca automatica senza perdita di focus | Verificato desktop | Superato: Serie e Film mantengono focus e aggiornano i risultati. |
+| Preferito dal dettaglio e interazioni concorrenti | Verificato desktop | Superato dopo le correzioni: toast e pulsante restano reattivi. |
+| Scheda dettaglio e navigazione durante aggiornamenti background | Verificato desktop | Superato: navigazione e azioni restano disponibili senza blocchi percepiti. |
+| Refresh senza perdere profilo, rotta, filtro e ordinamento | Verificato desktop | Superato su Serie, Film e dettaglio. |
