@@ -609,3 +609,11 @@ Le correzioni seguenti sono state implementate, testate con la suite automatica,
 | Home con evidenziazione e shell immediate | Implementato | La voce Home e la shell vengono mostrate al primo paint; rail, progressi e calendario vengono calcolati dopo. Resta la verifica manuale del tempo percepito. |
 | Home senza lampeggio durante refresh background | Implementato | I rientri in Home causati da metadati o sincronizzazione aggiornano direttamente l’elenco senza ripresentare “Preparo la Home”. Resta la verifica manuale dopo alcuni secondi. |
 | Home stabile tra sezioni e schede dettaglio | Verificato desktop | Superato: la Home resta stabile tornando da Serie, Film, Cerca e dalle schede dettaglio delle serie. |
+| Pannello aggiornamento metadati | Verificato desktop | Superato: stato, copertura, fonti, dettaglio e comandi del pannello sono leggibili e reattivi. |
+
+## Nuova analisi - titoli da verificare
+
+| Nome intervento | Priorita | Stato | Owner | Effort | Cosa resta da fare |
+|---|---|---|---|---|---|
+| Analisi copertura metadati bloccata | Alta | KO da approfondire | Codex | Medio | Capire perché restano 674 titoli da verificare su 2564 con 0 errori tecnici; distinguere dati legittimamente incompleti, fonte non pertinente, identificazione errata e retry non eseguito. |
+| Diagnostica rapida titoli da verificare | Alta | Da fare | Codex | Medio | Aggiungere un report leggibile e salvabile dal pannello con profilo, tipo, titolo, anno, ID/fonti, parti mancanti, categoria errore, tentativi, ultimo tentativo e prossimo retry, così da consentire analisi mirate senza ricostruire ogni volta l’elenco. |
