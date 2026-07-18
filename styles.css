@@ -2026,7 +2026,8 @@ html[data-theme="system"] { --toast-bg:#26231f; --toast-text:#fffdf8; --toast-mu
 
 
 /* Watchverse 2.0.18 — loader cinematografico e contenimento locandine della ricerca */
-body.is-blocking-loading { overflow:hidden; }
+/* Il loader comunica l'attesa senza sequestrare scroll e click dell'interfaccia. */
+body.is-blocking-loading { overflow:auto; }
 .blocking-loader {
   position:fixed;
   inset:0;
