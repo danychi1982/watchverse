@@ -128,7 +128,7 @@ Per i subtask di Analisi e Progettazione il deliverable non è una frase riepilo
 - La convenzione di calendario è `1 giorno/uomo = 8 ore`.
 - Story Points e ore sono indicatori complementari e non devono essere convertiti automaticamente l'uno nell'altro.
 - Le Epic sono contenitori di capability e non vengono stimate direttamente: la stima è distribuita sulle Story, Task, Bug e sui subtask figli.
-- Il campo Story Points utilizzato dal progetto è `customfield_10016`. Se il valore è presente nei dati Jira ma la schermata mostra `Nessuno`, va verificata la configurazione del layout/schermata del campo; il valore non deve essere duplicato in un campo alternativo.
+- Il campo Story Points utilizzato dalla schermata delle Story è `customfield_10038`; `customfield_10016` è il distinto campo Jira `Story point estimate` e non deve essere usato per questa convenzione. Se il valore è presente in `customfield_10038` ma la schermata mostra `Nessuno`, va verificata la configurazione del layout/schermata del campo.
 
 ## Analisi delle Story in backlog
 
