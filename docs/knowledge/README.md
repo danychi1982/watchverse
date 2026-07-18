@@ -7,6 +7,7 @@ Questa cartella conserva il contesto necessario per riprendere il progetto in un
 1. [Contesto di progetto](PROJECT_CONTEXT.md): obiettivo, architettura, ambiente, vincoli e regole operative.
 2. [Registro delle decisioni](DECISION_LOG.md): decisioni importanti, motivazioni, conseguenze e stato.
 3. [Backlog corrente](../specifications/BACKLOG_CLOUD.md): unica fonte per priorita, stato, owner, effort e residui.
+4. [Gestione Jira](JIRA_WORKFLOW.md): regole di censimento, tipizzazione, sprint, review e configurazione dell'integrazione.
 
 ## Principi di manutenzione
 

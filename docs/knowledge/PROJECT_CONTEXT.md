@@ -94,6 +94,10 @@ La Home mostra subito la voce di navigazione attiva e una shell al primo ingress
 - Prima del deploy: verificare codice, test disponibili e build. Il deploy va fatto solo quando richiesto esplicitamente.
 - Quando richiesto un commit, includere tutto il pending coerente con la richiesta e controllare `git status` dopo il commit.
 
+## Gestione operativa Jira
+
+Il progetto Watchverse usa una board Jira Scrum per il backlog operativo. Le regole di censimento, i tipi di issue, gli stati, la release R1, i componenti e il flusso Codex/Daniela sono definiti in [JIRA_WORKFLOW.md](JIRA_WORKFLOW.md). Le issue gia completate vanno in R1/Done; quelle implementate ma da testare manualmente vanno nello sprint corrente/Review; il lavoro non ancora sviluppato resta nel backlog. I test non hanno subtask dedicati.
+
 ## Come aggiornare il contesto
 
 Aggiornare questo file solo per fatti stabili o regole operative. Per una scelta nuova aggiungere una voce a `DECISION_LOG.md`; per un'attivita aggiungere o aggiornare `BACKLOG_CLOUD.md`. Evitare di usare questo file come cronologia delle sessioni.
