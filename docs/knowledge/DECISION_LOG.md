@@ -20,6 +20,7 @@ Formato leggero ispirato agli Architecture Decision Records: una decisione, il c
 | ADR-014 | 2026-07 | Browser E2E sospesi senza fixture dedicate | Evita run falliti e notifiche rumorose; la riattivazione richiede fixture/credenziali non sensibili e un gate profili deterministico. | Sospesa |
 | ADR-015 | 2026-07-18 | Loader informativo e bootstrap profilo in due fasi | Il primo rendering non deve attendere il pull cloud completo. Il loader di navigazione informa senza intercettare i click, mentre l'idratazione cloud aggiorna la Home in background e l'ultima rotta richiesta sostituisce quelle obsolete. | Attiva, in verifica |
 | ADR-016 | 2026-07-18 | Rendering differito per Ricerca e Programmazione | Le sezioni con raccomandazioni, palinsesti e orari mostrano prima una shell interattiva e posticipano il calcolo pesante al primo spazio libero dopo il paint. Se l'utente cambia rotta, il lavoro obsoleto viene annullato. | Attiva, da verificare |
+| ADR-017 | 2026-07-18 | Navigazione prioritaria rispetto alla preparazione delle viste | Cerca e Programmazione possono preparare contenuti in background, ma la navigazione verso Home, Serie o Film deve essere immediata. `history.pushState` e un contatore di navigazione rendono obsolete le callback precedenti; la cache di vista evita di ricalcolare le proposte quando i dati non sono cambiati. | Attiva, da verificare |
 
 ## Regole per nuove decisioni
 
