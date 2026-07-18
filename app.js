@@ -2114,7 +2114,7 @@
     try {
       if (!preserveScroll) window.scrollTo({ top: 0, behavior: 'instant' });
       updateBackToTopButton();
-      if (r.page === 'home') renderHome();
+      if (r.page === 'home') renderHome({ background: options.preserveScroll === true && state.lastRenderedRoute === routeKey });
       else if (r.page === 'series' && r.id) renderSeriesDetail(r.id);
       else if (r.page === 'series') renderSeriesLibrary();
       else if (r.page === 'movie' && r.id) renderMovieDetail(r.id);
@@ -2427,10 +2427,11 @@
     </section>`);
   }
 
-  function renderHome() {
+  function renderHome(options = {}) {
     setPage('Home', 'Cosa guardare adesso', 'home');
     if (state.initialCloudHydrationPending && libraryIsEmpty()) { renderInitialCloudLoadingHome(); return; }
     if (libraryIsEmpty()) { renderEmptyLibraryHome(); return; }
+    if (options.background === true) { renderHomeContent(); return; }
 
     const requestId = state.navigationRequestId;
     setMain('<section class="section-view-loading" aria-live="polite" aria-busy="true"><div class="home-loading-spinner" aria-hidden="true"></div><h2>Preparo la Home</h2><p>Organizzo i contenuti personali e le prossime uscite.</p></section>');
