@@ -128,3 +128,19 @@ Per i subtask di Analisi e Progettazione il deliverable non è una frase riepilo
 - La convenzione di calendario è `1 giorno/uomo = 8 ore`.
 - Story Points e ore sono indicatori complementari e non devono essere convertiti automaticamente l'uno nell'altro.
 - Le Epic sono contenitori di capability e non vengono stimate direttamente: la stima è distribuita sulle Story, Task, Bug e sui subtask figli.
+- Il campo Story Points utilizzato dal progetto è `customfield_10016`. Se il valore è presente nei dati Jira ma la schermata mostra `Nessuno`, va verificata la configurazione del layout/schermata del campo; il valore non deve essere duplicato in un campo alternativo.
+
+## Analisi delle Story in backlog
+
+Nel ciclo di analisi sono stati prodotti deliverable funzionali e tecnici versionati in `docs/knowledge/analysis/`. Per le Story che erano ancora in `Da completare`:
+
+- `WVERSE-43`: preferenze e impostazioni personali;
+- `WVERSE-100`: raccomandazioni senza titoli già presenti;
+- `WVERSE-121`: diagnostica dei titoli senza corrispondenza;
+- `WVERSE-129`: export e ripristino dei dati personali;
+- `WVERSE-133`: sincronizzazione cloud bidirezionale e conflitti;
+- `WVERSE-143`: aggiornamento delle viste dopo modifiche da altro dispositivo;
+
+Sono stati inoltre completati e ricondotti alla gerarchia corretta due deliverable già associati a Story in `Review`: `WVERSE-138` alla Story `WVERSE-37` e `WVERSE-147` alla Story `WVERSE-39`.
+
+I deliverable descrivono flussi, contratti dati, stati, errori, dipendenze e criteri tecnici. I relativi subtask di analisi sono stati portati direttamente in `Done`; le Story principali sono passate in `In Progress`. Dopo l'analisi di WVERSE-38 la complessità è stata rivalutata da Media ad Alta, con Story Points da 5 a 8 e stima da 24h a 32h.
