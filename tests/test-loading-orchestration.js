@@ -18,7 +18,11 @@ assert(app.includes('const shouldHydrateCloud = libraryIsEmpty()'), 'Il bootstra
 assert(app.includes('state.initialCloudHydrationPending = false;'), 'Lo stato di idratazione cloud non viene chiuso.' );
 assert(app.includes("const profileButton = $$('[data-profile-choice]').find"), 'La selezione del profilo dipende da CSS.escape.' );
 assert(!app.includes('document.querySelector(`[data-profile-choice="${CSS.escape(id)}"]`)'), 'E rimasto il selettore profilo non portabile.' );
-assert(styles.includes('.blocking-loader.is-visible { opacity:1; visibility:visible; pointer-events:none; }'), 'Il loader di navigazione deve restare informativo e non intercettare i click.' );
-assert(!styles.includes('.blocking-loader.is-visible { opacity:1; visibility:visible; pointer-events:auto; }'), 'Il loader di navigazione non deve bloccare la navigazione.' );
+assert(styles.includes('.blocking-loader.is-visible { opacity:1; visibility:visible; pointer-events:auto;'), 'Il loader globale deve intercettare i click quando è visibile.' );
+assert(styles.includes('body.is-blocking-loading #app'), 'Le aree sottostanti al loader devono essere rese non interattive.' );
+assert(app.includes('root.setAttribute(\'inert\', \'\')'), 'Il loader globale deve isolare anche la tastiera dal contenuto sottostante.' );
+assert(app.includes('function startRouteProgress('), 'Manca il feedback leggero per la navigazione tra sezioni.' );
+assert(app.includes('startRouteProgress({ page: targetPage, id: targetId });'), 'I link interni devono avviare il feedback di navigazione senza overlay bloccante.' );
+assert(app.includes('const shouldShowRouteProgress ='), 'Il routing deve distinguere il progresso di navigazione dal loader modale.' );
 
 console.log('Orchestrazione loader, cache locale e azioni non bloccanti verificata.');

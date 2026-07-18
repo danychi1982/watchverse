@@ -2025,13 +2025,42 @@ html[data-theme="system"] { --toast-bg:#26231f; --toast-text:#fffdf8; --toast-mu
 }
 
 
-/* Watchverse 2.0.18 — loader cinematografico e contenimento locandine della ricerca */
-/* Il loader comunica l'attesa senza sequestrare scroll e click dell'interfaccia. */
-body.is-blocking-loading { overflow:auto; }
+/* Loader globale: modale solo per operazioni realmente bloccanti. */
+body.is-blocking-loading { overflow:hidden; }
+body.is-blocking-loading #app,
+body.is-blocking-loading #authRoot { pointer-events:none; user-select:none; }
+.route-progress {
+  position:fixed;
+  top:0;
+  left:0;
+  right:0;
+  z-index:4900;
+  height:3px;
+  overflow:hidden;
+  background:var(--accent);
+  opacity:0;
+  pointer-events:none;
+  transform:scaleX(0);
+  transform-origin:left;
+  transition:opacity .16s ease;
+}
+.route-progress::after {
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(90deg,transparent 0%,var(--accent-2) 48%,transparent 100%);
+  transform:translateX(-100%);
+  animation:route-progress-sweep 1.1s ease-in-out infinite;
+}
+.route-progress.is-visible { opacity:1; transform:scaleX(1); }
+@keyframes route-progress-sweep {
+  0% { transform:translateX(-100%); }
+  100% { transform:translateX(100%); }
+}
 .blocking-loader {
   position:fixed;
   inset:0;
-  z-index:1000;
+  z-index:5000;
   display:grid;
   place-items:center;
   padding:24px;
@@ -2042,7 +2071,8 @@ body.is-blocking-loading { overflow:auto; }
   pointer-events:none;
   transition:opacity .16s ease,visibility .16s ease;
 }
-.blocking-loader.is-visible { opacity:1; visibility:visible; pointer-events:none; }
+.blocking-loader.is-visible { opacity:1; visibility:visible; pointer-events:auto; cursor:progress; }
+.blocking-loader.is-visible .blocking-loader-card { pointer-events:auto; }
 .blocking-loader-card {
   width:min(410px,100%);
   display:flex;
