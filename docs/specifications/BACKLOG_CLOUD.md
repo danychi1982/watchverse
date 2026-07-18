@@ -582,3 +582,17 @@ Il test manuale resta necessario per confermare il comportamento su dispositivi 
 | Nome intervento | Priorita | Stato | Owner | Effort | Cosa resta da fare |
 |---|---|---|---|---|---|
 | Rendering iniziale di Ricerca e Programmazione | Alta | Implementato | Daniela | Medio | Verificare in locale che la shell compaia subito, che i click di navigazione restino recepiti e che il contenuto venga poi popolato senza blocchi percepiti. |
+
+## Delta tecnico - schede dettaglio e interazioni non bloccanti - 18 luglio 2026
+
+Le correzioni seguenti sono state implementate, testate con la suite automatica, pubblicate su GitHub Pages e attendono conferma manuale desktop.
+
+| Nome intervento | Priorita | Stato | Owner | Effort | Cosa resta da fare |
+|---|---|---|---|---|---|
+| Loader visibile apertura dettaglio | Alta | Implementato | Codex | Basso | Confermare che il feedback compaia subito aprendo schede da Home, Serie, Film e Cerca. |
+| Rendering iniziale scheda dettaglio | Alta | Implementato | Codex | Alto | Confermare che titolo, azioni e navigazione siano disponibili rapidamente senza attese di metadati o suggerimenti. |
+| Suggerimenti dettaglio fuori dal rendering iniziale | Alta | Implementato | Codex | Medio | Verificare che la sezione “Potrebbero piacerti anche” arrivi in background senza bloccare click o toast. |
+| Rerender provider, trailer e cinema non invasivo | Alta | Implementato | Codex | Medio | Verificare che gli aggiornamenti asincroni non ridisegnino la scheda durante l’interazione. |
+| Preferiti con guardia contro click concorrenti | Alta | Implementato | Codex | Medio | Verificare cambio immediato, toast, persistenza e disponibilità delle altre azioni durante il salvataggio. |
+| Focus e accessibilità del loader | Media | Implementato | Codex | Basso | Controllare che la console non mostri più il warning `aria-hidden` durante l’apertura dettaglio. |
+| Lookup TVmaze con fallback titolo prima dell’ID esterno | Media | Implementato | Codex | Basso | Verificare che il lookup normale non produca il 404 `lookup/shows?thetvdb=...`; distinguere eventuali errori delle estensioni browser. |
