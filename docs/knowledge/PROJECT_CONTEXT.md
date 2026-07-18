@@ -96,7 +96,7 @@ La Home mostra subito la voce di navigazione attiva e una shell al primo ingress
 
 ## Gestione operativa Jira
 
-Il progetto Watchverse usa il progetto Jira company-managed `WVERSE` e la board `WVERSE board` per il backlog operativo. Le regole di censimento, i tipi di issue, gli stati, la release R1, i componenti e il flusso Codex/Daniela sono definiti in [JIRA_WORKFLOW.md](JIRA_WORKFLOW.md). I componenti rappresentano discipline/ciclo di vita; le capability funzionali sono Epic. Le issue gia completate vanno in R1/Done; quelle implementate ma da testare manualmente vanno nello sprint corrente/Review; il lavoro non ancora sviluppato resta nel backlog. Il test manuale non ha subtask dedicati; l'automazione QA puo invece essere tracciata in un subtask. Le issue gestite da Codex usano la label `codex-managed` e restano assegnate a Daniela.
+Il progetto Watchverse usa il progetto Jira company-managed `WVERSE` e la board `WVERSE board` per il backlog operativo. Le regole di censimento, i tipi di issue, gli stati, la release R1, i componenti e il flusso Codex/Daniela sono definiti in [JIRA_WORKFLOW.md](JIRA_WORKFLOW.md). I componenti rappresentano discipline/ciclo di vita; le capability funzionali sono Epic. Le issue gia completate vanno in R1/Done; quelle implementate ma da testare manualmente vanno nello sprint corrente/Review; il lavoro non ancora sviluppato resta nel backlog. Il test manuale riguarda la Story principale e non ha subtask dedicati: i subtask tecnici intermedi possono passare direttamente a Done e la Story passa in Review quando tutti i subtask necessari sono conclusi. Le issue gestite da Codex usano la label `codex-managed` e restano assegnate a Daniela.
 
 ## Come aggiornare il contesto
 

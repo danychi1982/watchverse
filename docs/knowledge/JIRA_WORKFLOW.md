@@ -11,7 +11,9 @@ Progetto Jira corrente: Watchverse, progetto company-managed con chiave `WVERSE`
 - Le attivita gia implementate e pubblicate vengono censite come `Done` nella release `R1`. La release verra chiusa da Daniela dopo il censimento e la verifica desiderata.
 - Le funzionalita o correzioni implementate ma ancora da verificare manualmente vengono messe nello sprint corrente, in stato `Review`, assegnate a Daniela.
 - Le attivita non implementate restano nel backlog; Daniela decidera lo sprint.
-- Non si creano subtask dedicati ai test: il test funzionale fa parte del passaggio della issue in `Review`.
+- Non si creano subtask dedicati al test manuale: il test funzionale riguarda la Story, Task o Bug principale.
+- I subtask sono elementi tecnici intermedi e non vengono sottoposti a Review funzionale: quando il lavoro tecnico e concluso possono passare direttamente a `Done`.
+- La Story principale passa in `Review` solo quando tutti i subtask necessari sono in `Done` e il comportamento complessivo e pronto per la verifica manuale.
 - Le issue che Codex prende in carico vengono assegnate a Daniela, perche il connettore Atlassian opera con la sua identita Jira. Si aggiunge la label `codex-managed` per distinguere le issue gestite da Codex.
 - Gli stati operativi concordati sono `To Do`, `In Progress`, `Review`, `Done`.
 
@@ -50,6 +52,8 @@ Per Story, Task e Bug i commenti di handoff e collaudo vengono aggiunti sulla is
 
 I subtask documentano il lavoro tecnico specifico; non sostituiscono il riepilogo di transizione della Story.
 
+Il ciclo di vita dei subtask e indipendente dalla Review funzionale: un subtask completato passa direttamente a `Done`. La Review e il test manuale si applicano alla issue principale, dopo la chiusura di tutti i subtask necessari.
+
 ## Componenti definitivi
 
 - `Analisi e Progettazione`: raccolta requisiti, analisi funzionale, architettura, modellazione dati e progettazione tecnica.
@@ -85,4 +89,26 @@ Non salvare token o credenziali nella repository e non usare account condivisi. 
 
 ## Procedura periodica
 
-Quando Daniela indica uno sprint, Codex prende in carico le issue assegnate a Codex in quello sprint, lavora una issue alla volta, la porta in `In Progress`, implementa e verifica localmente, poi la porta in `Review` con commento di handoff. Le issue che richiedono verifica manuale restano in `Review` fino all'esito di Daniela.
+Quando Daniela indica uno sprint, Codex prende in carico le issue assegnate a Daniela e marcate `codex-managed` in quello sprint. Lavora una Story alla volta e porta i relativi subtask in `In Progress`, implementa e verifica localmente, poi chiude i subtask direttamente in `Done`. Quando tutti i subtask necessari sono conclusi, porta la Story principale in `Review` con commento di handoff. La Story resta in `Review` fino all'esito del test manuale di Daniela.
+
+## Stato del censimento Jira
+
+La configurazione e la baseline iniziale sono state registrate nel progetto `WVERSE`:
+
+- Epic di prodotto: `WVERSE-1` - `WVERSE-8`, con descrizione strutturata e campo `Complessità` valorizzato;
+- Story campione: `WVERSE-9`, con quattro subtask tecnici `WVERSE-10` - `WVERSE-13`;
+- la Story campione e i subtask sono in `Done`, nella release `R1`, con i commenti di passaggio in Review ed esito della verifica manuale sulla Story principale;
+- il campo Jira `Complessità` e una selezione singola con valori `Bassa`, `Media`, `Alta`;
+- le issue gestite da Codex usano la label `codex-managed` e restano assegnate a Daniela.
+
+Il censimento automatico della baseline e del backlog è stato poi esteso:
+
+- `WVERSE-14` - `WVERSE-42`: 29 Story funzionali, collegate alle Epic di prodotto, con priorità, componenti, complessità, assegnatario e label `codex-managed`;
+- `WVERSE-43` - `WVERSE-163`: 121 subtask tecnici, denominati con il componente tra parentesi e collegati alla Story principale;
+- `WVERSE-164` - `WVERSE-170`: Task operativi di QA, DevOps, sicurezza, deploy e performance;
+- `WVERSE-171` - `WVERSE-178`: Bug relativi a ricerca, metadati, sincronizzazione, libreria e importazione;
+- le Story già implementate sono state portate in `Done` e associate a `R1`, insieme ai relativi subtask;
+- le Story implementate ma da verificare manualmente sono in `Review`, con commento di handoff e istruzioni di test sulla Story principale; i subtask corrispondenti sono direttamente in `Done`;
+- le Story e le issue ancora da realizzare sono rimaste in `To Do`/backlog, senza assegnazione artificiale a uno sprint.
+
+Il censimento è una baseline operativa: eventuali sovrapposizioni storiche nel backlog locale devono essere ricondotte alle issue canoniche già create, evitando duplicati.
