@@ -617,7 +617,7 @@ Aggiornamento 18 luglio 2026: il retry mirato di `Accidentally Famous: The Story
 
 | Nome intervento | Priorita | Stato | Owner | Effort | Cosa resta da fare |
 |---|---|---|---|---|---|
-| Analisi copertura metadati bloccata | Alta | KO da approfondire | Codex | Medio | Capire perché restano 674 titoli da verificare su 2564 con 0 errori tecnici; distinguere dati legittimamente incompleti, fonte non pertinente, identificazione errata e retry non eseguito. |
+| Analisi copertura metadati bloccata | Alta | KO da approfondire | Codex | Medio | Il retry mirato ha lasciato 792 titoli da verificare su 2559 e ha portato gli errori tecnici a 4; distinguere dati legittimamente incompleti, fonte non pertinente, identificazione errata e errore tecnico. |
 | Diagnostica rapida titoli da verificare | Alta | Da fare | Codex | Medio | Aggiungere un report leggibile e salvabile dal pannello con profilo, tipo, titolo, anno, ID/fonti, parti mancanti, categoria errore, tentativi, ultimo tentativo e prossimo retry, così da consentire analisi mirate senza ricostruire ogni volta l’elenco. |
 | Import sostitutivo: Continua e sostituisci | Alta | Implementato, da verificare | Codex | Basso | Il callback è stato corretto; ripetere l’importazione e verificare salvataggio completo, report finale e persistenza dopo refresh. |
 | Import sostitutivo completato | Verificato desktop | Superato: Continua e sostituisci avvia l’importazione, mostra l’avanzamento e conserva i dati dopo refresh. |
