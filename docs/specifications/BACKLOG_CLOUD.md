@@ -58,7 +58,7 @@ Questo file raccoglie le attivita completate, in corso e ancora aperte. Non rapp
 | Design system e identita visiva | Bassa | Completato | Codex | Medio | Nessuna attività tecnica residua. |
 | Build, versioning e deploy | Media | Completato | Codex | Basso | Nessuna attività tecnica residua. |
 
-| Prestazioni accesso e caricamento | Alta | Da fare | Codex | Alto | Ridurre il tempo percepito di login e apertura profilo, misurare il bootstrap cloud e spostare i caricamenti non indispensabili in background senza bloccare l’utente. |
+| Prestazioni accesso e caricamento | Alta | Da fare | Codex | Alto | Ridisegnare il bootstrap in due fasi: autenticazione, profilo e proiezione minima delle rail Home per il primo rendering; locandine non visibili, metadati e resto della libreria in background. Aggiungere cache stale-while-revalidate, deduplicazione/annullamento delle richieste, limite di concorrenza e misure LCP/TTI/tempo di apertura profilo. |
 | Lazy load dei moduli con Vite | Media | Da fare | Codex | Medio | Valutare code splitting e import dinamici per route e moduli non essenziali, misurare il bootstrap e verificare che il caricamento progressivo non introduca regressioni. |
 | Ordinamento Film da vedere | Alta | Parzialmente completato | Daniela | Basso | Validare su mobile che il filtro usi `Data aggiunta` in ordine decrescente e che gli altri filtri mantengano il loro ordinamento. |
 | Ricerca Film senza perdita di focus | Alta | Parzialmente completato | Daniela | Medio | Validare su Samsung Galaxy S26+ che la tastiera resti aperta durante la digitazione e che la ricerca parta dopo la pausa o almeno due caratteri. |
