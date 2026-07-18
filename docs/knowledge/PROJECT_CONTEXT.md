@@ -53,6 +53,7 @@ Sono presenti proxy Supabase per TMDB e fonti pubbliche. I segreti restano nelle
 - Il caricamento deve essere progressivo: autenticazione, profilo e dati minimi prima; immagini/metadati non visibili e resto della libreria in background.
 - Ogni interazione lenta deve avere uno stato di caricamento coerente e deve evitare click concorrenti o UI apparentemente bloccata.
 - I retry dei metadati non partono automaticamente: l'utente decide quando riprovare.
+- Un retry manuale puo lasciare invariato o aumentare l'elenco dei titoli da verificare e gli errori tecnici; serve una diagnostica per distinguere assenza legittima di fonte, identificazione errata e errore tecnico.
 - Le azioni distruttive richiedono conferma interna all'app, aderente al design system; non usare `window.confirm`.
 - Dopo rimozione di un titolo, il risultato atteso e redirect a lista film/serie o home e persistenza anche dopo refresh.
 - I campi password e PIN partono nascosti e hanno mostra/nascondi dentro il campo.
