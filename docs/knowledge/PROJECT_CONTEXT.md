@@ -76,6 +76,10 @@ Il problema attuale piu importante e il tempo di accesso al profilo e alla home.
 
 La soluzione dovra misurare almeno LCP, TTI e tempo di apertura profilo, usare cache stale-while-revalidate, deduplicare/annullare richieste obsolete e limitare la concorrenza. Questa e una voce attiva del backlog, non una funzionalita da considerare completata.
 
+Il bootstrap del profilo ora segue due fasi: con cache vuota mostra una Home coerente in stato di preparazione, poi idrata la libreria cloud in background. Il loader di navigazione e informativo e non deve bloccare i click; una navigazione successiva invalida quella precedente.
+
+Ricerca e Programmazione usano un rendering differito: mostrano subito una shell di caricamento e calcolano proposte, palinsesti e orari dopo il primo paint tramite idle scheduling. Se la rotta cambia prima del calcolo, la richiesta obsoleta viene scartata.
+
 ## Test e limiti operativi
 
 - I test non distruttivi possono essere eseguiti autonomamente.

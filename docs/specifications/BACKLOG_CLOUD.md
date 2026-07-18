@@ -569,3 +569,16 @@ Il test manuale resta necessario per confermare il comportamento su dispositivi 
 | Preferiti nelle rail Home | Media | Implementato | Daniela | Basso | Verificare in locale il controllo preferito nelle card di “Continua a guardare” e “Nuovi episodi da recuperare”. |
 | Feedback preferito nel dettaglio | Alta | Implementato | Daniela | Basso | Verificare in locale feedback immediato, toast e rollback in caso di errore nella scheda serie/film. |
 | Etichetta ridondante nelle card Film da vedere | Bassa | Implementato | Daniela | Basso | Verificare in locale che il badge “Da vedere” non compaia nelle card della rail Home. |
+
+## Delta tecnico - interazione e bootstrap in due fasi - 18 luglio 2026
+
+| Nome intervento | Priorita | Stato | Owner | Effort | Cosa resta da fare |
+|---|---|---|---|---|---|
+| Navigazione recepisce il click durante transizioni | Alta | Implementato | Daniela | Medio | Verificare in locale click rapidi su Home, Serie, Film e Cerca durante o subito dopo il loader. |
+| Bootstrap profilo con Home coerente e idratazione cloud differita | Alta | Implementato | Daniela | Alto | Verificare con cache vuota e rete lenta che non compaia la Home vuota/default e che la prima vista diventi interattiva rapidamente. |
+
+## Delta tecnico - rendering differito sezioni lente - 18 luglio 2026
+
+| Nome intervento | Priorita | Stato | Owner | Effort | Cosa resta da fare |
+|---|---|---|---|---|---|
+| Rendering iniziale di Ricerca e Programmazione | Alta | Implementato | Daniela | Medio | Verificare in locale che la shell compaia subito, che i click di navigazione restino recepiti e che il contenuto venga poi popolato senza blocchi percepiti. |
