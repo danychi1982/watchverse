@@ -24,6 +24,7 @@ Formato leggero ispirato agli Architecture Decision Records: una decisione, il c
 | ADR-018 | 2026-07-18 | Home con primo paint immediato e refresh background senza shell | La Home aggiorna subito navigazione e shell, differisce il calcolo delle rail e, nei refresh automatici, mantiene l’elenco già visibile. Evita ritardi percepiti e lampeggi quando arrivano metadati o dati cloud. | Attiva, verificata desktop |
 
 | ADR-019 | 2026-07-18 | Diagnostica prima di nuovi retry massivi dei metadati | Un retry mirato puo lasciare invariato o aumentare l'elenco dei titoli da verificare e gli errori tecnici. Prima di ottimizzare altri retry va reso leggibile e salvabile il dettaglio per titolo, fonte, identificazione e tentativi. | Attiva, da implementare |
+| ADR-020 | 2026-07-18 | Jira come registro operativo del backlog | Il backlog Watchverse viene censito in Jira con release R1 per il lavoro completato, sprint corrente/Review per il lavoro implementato da verificare manualmente e backlog per il lavoro non ancora sviluppato. Story, Task e Bug hanno criteri distinti; i test restano parte del passaggio in Review e non diventano subtask. | Attiva, configurazione in corso |
 
 ## Regole per nuove decisioni
 
