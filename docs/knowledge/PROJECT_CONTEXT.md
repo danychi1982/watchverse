@@ -82,6 +82,8 @@ Ricerca e Programmazione usano un rendering differito: mostrano subito una shell
 
 La navigazione ha priorita sul caricamento differito: i link interni aggiornano subito la rotta con `history.pushState` e incrementano `navigationRequestId`, quindi una callback obsoleta di Cerca o Programmazione non puo piu sostituire la pagina scelta dall'utente. Le viste costose usano `viewCache`, invalidata quando cambia `dataRevision`; il refresh cloud automatico e limitato alle sezioni personali principali e ha un intervallo minimo di 60 secondi. Cerca e Programmazione non devono avviare sincronizzazioni cloud automatiche a ogni apertura.
 
+La Home mostra subito la voce di navigazione attiva e una shell al primo ingresso; il calcolo di rail, progressi e calendario viene differito dopo il primo paint. I refresh automatici di metadati o cloud aggiornano direttamente la Home gia visibile senza ripresentare la shell di preparazione, evitando lampeggi durante la permanenza nella sezione.
+
 ## Test e limiti operativi
 
 - I test non distruttivi possono essere eseguiti autonomamente.
