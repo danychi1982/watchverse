@@ -172,7 +172,7 @@ La ripresa dei test ha distinto gli esiti funzionali desktop dai test che richie
 | `WVERSE-192` | KO desktop: la sezione “Programmazione Italia” resta attaccata alla sezione precedente | Riportato in In corso; serve correzione del distacco visivo |
 | `WVERSE-193` | KO desktop: chevron piccolo/decentrato e direzione orizzontale incoerente | Riportato in corso; adottare pattern accordion con chevron giù chiuso / su aperto, centrato e coerente |
 | `WVERSE-194` | Non eseguito: richiede viewport mobile | Resta in Revisione |
-| `WVERSE-195` | Fix implementato, da confermare con controllo manuale | Resta in Revisione |
+| `WVERSE-195` | Superato desktop: controllo a campione senza testi tecnici residui nell’interfaccia | Da portare a Completata |
 | `WVERSE-197` | Fix implementato, da confermare con retest | Resta in Revisione |
 | `WVERSE-198` | KO confermato: toast “Rimozione in corso” resta visibile | Preso in carico; toast pendente chiuso al completamento |
 
