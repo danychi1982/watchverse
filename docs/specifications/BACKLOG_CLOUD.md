@@ -148,6 +148,10 @@ Verificate le cinque issue Jira ancora in sviluppo. Le fix sono state completate
 
 Test superato su più card di serie completate: il pulsante “Completata” è stato rimosso, il check statico è leggibile e “Dettagli” occupa tutta la larghezza disponibile. La issue è pronta per la chiusura.
 
+### Evidenza collaudo desktop — WVERSE-192 (19 luglio 2026)
+
+Test superato: il dettaglio mostra uno spazio verticale visibile e coerente tra “Il tuo stato” e “Programmazione Italia”.
+
 ### Nuova attività Sprint 1 — WVERSE-199
 
 Sostituire la label “Prossimo” con “Visto” nel pulsante delle card serie non completate, perché l’azione marca come visto l’episodio corrente. Stima: 3 Story Points / 16h / 2 giorni uomo.
@@ -175,6 +179,12 @@ Controllo a campione superato su Home, Serie, Film, Cerca e dettaglio titoli: no
 ### Evidenza collaudo desktop — WVERSE-193 (19 luglio 2026)
 
 Retest KO: il controllo delle stagioni mostra un cerchio non risolutivo, con chevron piccolo e decentrato; nello stato chiuso il simbolo punta a destra. Da correggere secondo il pattern accordion/disclosure: `aria-expanded` coerente con lo stato, chevron verso il basso da chiuso e verso l'alto da aperto, dimensione e allineamento centrati.
+
+Aggiornamento retest: dopo la correzione del verso, lo chevron si sposta comunque otticamente tra stato aperto e chiuso. La posizione deve restare stabile e ancorata a destra con una geometria dell’icona a dimensione fissa. Issue riportata in **In corso**.
+
+### Aggiornamento Jira — WVERSE-199
+
+La task è associata all’Epic `WVERSE-2` (**Libreria, progressi e preferiti**) e alla versione `R2`, oltre che allo Sprint 1. Stima confermata: 3 Story Points / 16h / 2 giorni uomo.
 
 ### Evidenza collaudo desktop — WVERSE-192 (19 luglio 2026)
 
