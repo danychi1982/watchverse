@@ -163,7 +163,7 @@ select { min-height:44px; }
 .poster { aspect-ratio:2/3; position:relative; background:linear-gradient(145deg,#40331d,#151515); overflow:hidden; display:flex; align-items:flex-end; }
 .poster::after { content:""; position:absolute; inset:0; background:linear-gradient(to top,rgba(0,0,0,.85),transparent 55%); }
 .poster-title { position:relative; z-index:1; padding:14px; font-weight:950; text-transform:uppercase; letter-spacing:.4px; font-size:19px; text-shadow:0 3px 12px rgba(0,0,0,.8); }
-.poster-badge { position:absolute; top:10px; left:10px; z-index:2; background:rgba(0,0,0,.72); border:1px solid rgba(255,255,255,.18); border-radius:999px; padding:5px 9px; font-size:11px; font-weight:900; }
+.poster-badge { position:absolute; top:10px; left:10px; z-index:2; display:inline-flex; max-width:calc(100% - 20px); align-items:center; justify-content:center; text-align:center; white-space:normal; overflow-wrap:anywhere; line-height:1.15; background:rgba(0,0,0,.72); border:1px solid rgba(255,255,255,.18); border-radius:999px; padding:5px 9px; font-size:11px; font-weight:900; }
 .favorite-button { position:absolute; z-index:4; top:9px; right:9px; width:36px; height:36px; border-radius:50%; border:1px solid rgba(255,255,255,.26); color:white; background:rgba(0,0,0,.56); }
 .favorite-button.active { color:#fff; background:var(--danger); border-color:var(--danger-strong); }
 .card-body { padding:13px; }
@@ -230,6 +230,9 @@ select { min-height:44px; }
 .season { margin-bottom:13px; border:1px solid var(--line); border-radius:16px; overflow:hidden; background:var(--surface); }
 .season-head { width:100%; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:16px; border:0; color:var(--text); background:var(--surface-2); }
 .season-head strong { font-size:18px; }
+.season-chevron { display:inline-grid; width:32px; height:32px; place-items:center; flex:0 0 32px; border:1px solid var(--line); border-radius:50%; font-size:22px; line-height:1; transition:transform .18s ease, background .18s ease; }
+.season-head:hover .season-chevron,.season-head:focus-visible .season-chevron { background:var(--surface); }
+.season-head[aria-expanded="false"] .season-chevron { transform:rotate(-90deg); }
 .season-meta { color:var(--muted); font-size:13px; }
 .episode-list { display:grid; }
 .episode-row { display:grid; grid-template-columns:72px 1fr auto; gap:14px; align-items:center; padding:12px 15px; border-top:1px solid var(--line); }

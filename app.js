@@ -196,7 +196,7 @@
     seriesSort: 'latestEpisode', movieSort: 'recent',
     seriesSearch: '', movieSearch: '', seriesVisible: 60, movieVisible: 60,
     detailTab: 'info', tvScheduleFilter: 'today', importPreview: null, gdprPreview: null, deferredInstall: null,
-    notifications: [], tmdbResults: [], publicResults: [], catalogResults: [], recommendationResults: [], isLoading: false, pendingAvatarProfileId: null, personFilmographyFilter: 'all', profileSettingsTab: 'identity',
+    notifications: [], tmdbResults: [], publicResults: [], catalogResults: [], recommendationResults: [], searchQuery: '', isLoading: false, pendingAvatarProfileId: null, personFilmographyFilter: 'all', profileSettingsTab: 'identity',
     catalogEntries: [], catalogIndex: new Map(), catalogHydratedThisSession: 0, catalogNetworkAvoidedThisSession: 0,
     metadataQueue: [], metadataRunning: 0, metadataQueuedIds: new Set(), metadataAutoBudget: 36, metadataRenderPending: false, metadataRerenderTimer: null, metadataBackgroundStarted: false, metadataContinuationTimer: null, metadataHeaderTimer: null, metadataCompletedThisSession: 0, metadataFailedThisSession: 0, metadataRecoveryScheduled: false, metadataRecoveryDone: false, wcagStatusFilter: 'all', wcagLevelFilter: 'all', accessibilityTab: 'declaration', searchRecommendationFilter: 'all', navigationLoaderToken: 0, navigationRequestId: 0, initialCloudHydrationPending: false, initialCloudHydrationError: null,
     sidebarCollapsed: localStorage.getItem('watchverse.sidebarCollapsed') === '1', cinemaSearchLocation: null, cinemaSearchQuery: '', cinemaLocationFeedback: null, aivengersInitialized: false, lastRenderedRoute: '', defaultSourceStatus: null, defaultSourceSyncRunning: false, viewActionBusy: false, pendingFavoriteKeys: new Set(), cloudRefreshRunning: false, cloudRefreshAt: 0, lastUserInteractionAt: 0, cloudRefreshTimer: null, routeProgressTimer: null, dataRevision: 0, viewCache: { revision: -1, searchRecommendations: null, programmingMarkup: null }
@@ -982,9 +982,11 @@
       await dbDelete(store, entry.id);
       for (const progressId of entry.progressIds || []) await dbDelete('progress', progressId);
       removePendingLibraryRemoval(entry);
+      options.pendingToast?.remove?.();
       if (options.feedback !== false) showToast('Titolo rimosso dalla libreria', entry.title, '×');
     } catch (error) {
       removePendingLibraryRemoval(entry);
+      options.pendingToast?.remove?.();
       await reloadData();
       showToast('Rimozione non completata', 'La sincronizzazione non è riuscita. Il titolo è stato ripristinato: controlla la connessione e riprova.', '!', 8000, { kind:'error' });
     } finally {
@@ -1507,6 +1509,11 @@
       essentialMissing,
       error,
       failedAt,
+      attempts: Number(item.publicMetadata?.attempts || 0),
+      nextRetryAt: item.publicMetadata?.nextRetryAt || null,
+      errorCategory: item.publicMetadata?.errorCategory || null,
+      provider: item.publicMetadata?.provider || null,
+      providerId: item.publicMetadata?.providerId || null,
       essentialComplete: essentialMissing.length === 0,
       extendedComplete: missing.length === 0 && !error
     };
@@ -1544,6 +1551,7 @@
     const extendedCoveragePercent = totalTitles ? Math.max(0, Math.min(100, Math.round(allRows.filter(row => row.extendedComplete).length / totalTitles * 100))) : 100;
     const active = state.metadataQueue.length + state.metadataRunning > 0;
     const remainingWork = totalTitles > 0 && allRows.some(row => needsPublicMetadata(row.item, row.kind, true));
+    const waitingForRetry = !active && remainingWork && failed > 0;
     const batchCompleted = totalTitles === 0 || (!active && state.metadataBackgroundStarted && !remainingWork);
     const cyclePercent = batchCompleted ? 100 : (active ? Math.max(1, Math.min(99, Math.round((state.metadataCompletedThisSession + state.metadataFailedThisSession) / Math.max(1, state.metadataCompletedThisSession + state.metadataFailedThisSession + state.metadataQueue.length + state.metadataRunning) * 100))) : (remainingWork ? Math.min(99, coveragePercent) : 0));
     return {
@@ -1570,7 +1578,8 @@
       queued: state.metadataQueue.length,
       running: state.metadataRunning,
       active,
-      remainingWork
+      remainingWork,
+      waitingForRetry
     };
   }
 
@@ -1598,7 +1607,7 @@
     if (summary) summary.textContent = status.active
       ? `${status.running} in corso · ${status.queued} in coda · copertura ${status.coveragePercent}%`
       : status.remainingWork
-        ? `${status.incomplete} titoli da verificare · ciclo ancora in corso`
+        ? `${status.incomplete} titoli da verificare · ${status.waitingForRetry ? 'in attesa di retry' : 'ciclo ancora in corso'}`
       : status.incomplete > 0
         ? `${status.incomplete} titoli incompleti${status.failed ? ` · ${status.failed} errori` : ''}`
         : 'Catalogo completo';
@@ -1703,7 +1712,14 @@
     const route = row.kind === 'series' ? `#/series/${encodeURIComponent(row.item.id)}` : `#/movie/${encodeURIComponent(row.item.id)}`;
     const type = row.kind === 'series' ? 'Serie TV' : 'Film';
     const missing = row.missing.length ? row.missing.join(', ') : 'Nessun campo mancante';
-    return `<article class="metadata-issue-row" data-kind="${row.kind}" data-id="${esc(row.item.id)}"><div class="metadata-issue-main"><span class="result-kicker">${type}${row.item.year?` · ${esc(row.item.year)}`:''}</span><h4>${esc(row.item.title||'Titolo senza nome')}</h4><p><strong>Da completare:</strong> ${esc(missing)}</p>${row.error?`<p class="metadata-error-copy"><strong>Errore tecnico:</strong> ${esc(row.error)}</p>`:''}</div><div class="metadata-issue-actions"><a class="ghost compact" data-metadata-open href="${route}">Apri scheda</a><button class="secondary compact" type="button" data-metadata-retry>Riprova</button></div></article>`;
+    const diagnostics = [
+      row.errorCategory ? `Categoria: ${row.errorCategory}` : '',
+      row.provider ? `Fonte: ${row.provider}${row.providerId ? ` · ${row.providerId}` : ''}` : '',
+      row.attempts ? `Tentativi: ${row.attempts}` : '',
+      row.failedAt ? `Ultimo tentativo: ${fmtDateTime(row.failedAt)}` : '',
+      row.nextRetryAt ? `Prossimo retry: ${fmtDateTime(row.nextRetryAt)}` : ''
+    ].filter(Boolean).join(' · ');
+    return `<article class="metadata-issue-row" data-kind="${row.kind}" data-id="${esc(row.item.id)}"><div class="metadata-issue-main"><span class="result-kicker">${type}${row.item.year?` · ${esc(row.item.year)}`:''}</span><h4>${esc(row.item.title||'Titolo senza nome')}</h4><p><strong>Da completare:</strong> ${esc(missing)}</p>${row.error?`<p class="metadata-error-copy"><strong>Errore tecnico:</strong> ${esc(row.error)}</p>`:''}${diagnostics?`<p class="metadata-diagnostics">${esc(diagnostics)}</p>`:''}</div><div class="metadata-issue-actions"><a class="ghost compact" data-metadata-open href="${route}">Apri scheda</a><button class="secondary compact" type="button" data-metadata-retry>Riprova</button></div></article>`;
   }
 
   function showMetadataIssues(filter = 'all') {
@@ -1737,8 +1753,8 @@
   function showMetadataStatus() {
     const s = metadataGlobalStatus();
     const groups=syncSourceGroups(s);
-    if (!s.active && s.remainingWork) s.active = true;
-    openModal('Stato aggiornamento fonti', `<div class="metadata-status-detail"><div class="metadata-status-big"><strong>${s.coveragePercent}%</strong><div><span>Copertura effettiva dei metadati</span><small class="metadata-cycle-state">${s.active ? 'Aggiornamento in corso' : 'Ciclo completato'}</small></div></div><div class="progress-track metadata-progress large"><div class="progress-fill" style="width:${s.coveragePercent}%"></div></div><div class="metadata-recap-grid"><div><strong>${s.totalTitles.toLocaleString('it-IT')}</strong><span>Titoli del profilo</span></div><div><strong>${s.essentialIncomplete.toLocaleString('it-IT')}</strong><span>Titoli da verificare</span></div><div><strong>${s.failed.toLocaleString('it-IT')}</strong><span>Errori tecnici</span></div></div><div class="sync-source-groups">${groups.map(syncGroupHtml).join('')}</div>${s.active ? `<p class="metadata-live-line"><span class="inline-spinner" aria-hidden="true"></span>Aggiornamento in corso: ${s.running} elaborazioni attive e ${s.queued} titoli in coda. Puoi continuare a usare l’app.</p>` : ''}</div>`, `<button class="ghost" id="openSourceDetails">Vedi fonti</button><button class="ghost" id="openMetadataIssues">Dettaglio titoli</button><button class="secondary" id="retryMetadata">Riprova non riusciti</button><button class="primary" id="resumeMetadata">Aggiorna ora</button>`);
+    const cycleLabel = s.active ? 'Aggiornamento in corso' : s.waitingForRetry ? 'In attesa di retry' : s.remainingWork ? 'Ciclo parziale' : 'Ciclo completato';
+    openModal('Stato aggiornamento fonti', `<div class="metadata-status-detail"><div class="metadata-status-big"><strong>${s.coveragePercent}%</strong><div><span>Copertura effettiva dei metadati</span><small class="metadata-cycle-state">${cycleLabel}</small></div></div><div class="progress-track metadata-progress large"><div class="progress-fill" style="width:${s.coveragePercent}%"></div></div><div class="metadata-recap-grid"><div><strong>${s.totalTitles.toLocaleString('it-IT')}</strong><span>Titoli del profilo</span></div><div><strong>${s.essentialIncomplete.toLocaleString('it-IT')}</strong><span>Titoli da verificare</span></div><div><strong>${s.failed.toLocaleString('it-IT')}</strong><span>Errori tecnici</span></div></div><div class="sync-source-groups">${groups.map(syncGroupHtml).join('')}</div>${s.active ? `<p class="metadata-live-line"><span class="inline-spinner" aria-hidden="true"></span>Aggiornamento in corso: ${s.running} elaborazioni attive e ${s.queued} titoli in coda. Puoi continuare a usare l’app.</p>` : ''}</div>`, `<button class="ghost" id="openSourceDetails">Vedi fonti</button><button class="ghost" id="openMetadataIssues">Dettaglio titoli</button><button class="secondary" id="retryMetadata">Riprova non riusciti</button><button class="primary" id="resumeMetadata">Aggiorna ora</button>`);
     $('#openSourceDetails')?.addEventListener('click',()=>{closeModal();state.profileSettingsTab='data';location.hash='#/settings';route();});
     $('#openMetadataIssues')?.addEventListener('click',()=>showMetadataIssues('all'));
     $('#retryMetadata')?.addEventListener('click',()=>{for(const item of [...state.series,...state.movies])if(item.publicMetadata?.failedAt||item.publicMetadata?.error)item.publicMetadata={...item.publicMetadata,failedAt:null,error:null,parts:{...(item.publicMetadata?.parts||{}),coreComplete:false}};state.metadataBackgroundStarted=false;state.metadataRecoveryScheduled=false;state.metadataRecoveryDone=false;state.metadataAutoBudget+=50;scheduleBackgroundMetadataSync(true);syncDefaultPublicSources(true);closeModal();showToast('Nuovo tentativo avviato','Le fonti non riuscite verranno ricontrollate.','↻');});
@@ -2054,10 +2070,10 @@
       state.progress = state.progress.filter(x => x.seriesId !== id);
     } else state.movies = state.movies.filter(x => x.id !== id);
     rebuildIndexes();
-    showToast('Rimozione in corso', item.title, '…', 0);
+    const pendingToast = showToast('Rimozione in corso', item.title, '…', 0);
     location.hash = kind === 'series' ? '#/series' : '#/movies';
     await route({ loader:false });
-    void completePendingLibraryRemoval(pending);
+    void completePendingLibraryRemoval(pending, { pendingToast });
   }
   function confirmLibraryRemoval(title) {
     return new Promise(resolve => {
@@ -2521,7 +2537,7 @@
   function renderHomeContent() {
 
     const recentlyWatched = state.series
-      .map(s => ({ s, ep: nextEpisode(s), watchedAt: latestWatchedAt(s.id) || s.watchedAt || s.updatedAt || s.addedAt }))
+      .map(s => ({ s, ep: nextEpisode(s), watchedAt: latestWatchedAt(s.id) }))
       .filter(x => x.ep && x.watchedAt)
       .sort((a, b) => dateMs(b.watchedAt) - dateMs(a.watchedAt))
       .slice(0, 12);
@@ -2876,7 +2892,7 @@
     </div><aside><section class="content-card"><h3>Il tuo stato</h3><div class="info-list"><div class="info-row"><span>Avanzamento</span><strong>${prog.watched}/${prog.total}</strong></div><div class="info-row"><span>Completamento</span><strong>${prog.percent}%</strong></div><div class="info-row"><span>Ultima visione</span><strong>${fmtDate(latestWatchedAt(s.id))}</strong></div>${latest?`<div class="info-row"><span>Ultimo episodio non visto</span><strong>S${pad2(latest.season)} E${pad2(latest.episode)} · ${fmtDate(latest.airDate)}</strong></div>`:''}</div><div style="margin-top:18px"><label style="font-weight:800">Il tuo voto</label>${starRating(s.rating,s.id)}</div><div style="margin-top:18px"><label for="seriesStatus" style="font-weight:800">Stato</label><select id="seriesStatus" style="width:100%;margin-top:7px"><option value="watching" ${s.status==='watching'?'selected':''}>In corso</option><option value="plan" ${['plan','watchlist'].includes(s.status)?'selected':''}>Da iniziare</option><option value="completed" ${s.status==='completed'?'selected':''}>Completata</option><option value="paused" ${s.status==='paused'?'selected':''}>In pausa</option><option value="dropped" ${s.status==='dropped'?'selected':''}>Abbandonata</option></select></div><button class="secondary" id="enrichSeriesPublic" style="width:100%;margin-top:14px">↻ Aggiorna locandina, episodi e cast</button>${(state.settings.tmdbToken||(window.WATCHVERSE_CONFIG||{}).tmdbProxyUrl)?'<button class="ghost" id="enrichSeriesTmdb" style="width:100%;margin-top:10px">Aggiorna dati TMDB/JustWatch</button>':''}</section><section class="content-card italy-schedule-card"><h3>Programmazione Italia</h3><p>${esc(italyReleaseRuleSummary(s))}</p><button class="ghost" id="editItalySchedule" style="width:100%">Modifica disponibilità italiana</button></section></aside></div>`;
     const episodes = `<section><div class="notice ${s.publicMetadata?.provider?'':'warning'}" style="margin-bottom:16px">${s.publicMetadata?.provider?'Calendario ed episodi collegati ai metadati pubblici.':'Gli episodi importati restano tracciabili. Watchverse sta cercando automaticamente titoli, date e nuovi episodi nelle fonti pubbliche.'}</div>
       ${ep?`<article class="content-card" style="margin-bottom:18px"><span class="kicker">Continua il monitoraggio</span><h3>S${pad2(ep.season)} E${pad2(ep.episode)} · ${esc(ep.title)}</h3><p>${esc(ep.overview||'')}</p>${ep.airDate?`<p class="season-meta">Uscita: ${fmtDate(ep.airDate)}</p>`:''}<button class="primary" id="continueEpisode">✓ Segna visto</button></article>`:''}
-      ${(s.seasons||[]).slice().sort((a,b)=>a.number-b.number).map(season=>{const eps=(season.episodes||[]).slice().sort((a,b)=>a.episode-b.episode);const watched=eps.filter(e=>isEpisodeWatched(s.id,e.season,e.episode)).length;return `<section class="season"><button class="season-head" data-season-toggle="${season.number}" aria-expanded="true" aria-controls="season-body-${season.number}"><span><strong>${esc(season.name||`Stagione ${season.number}`)}</strong><br><span class="season-meta">${watched}/${eps.length} episodi visti</span></span><span>⌄</span></button><div class="episode-list" id="season-body-${season.number}" data-season-body="${season.number}">${eps.map(e=>`<article class="episode-row"><div class="episode-thumb">${e.image?`<img src="${esc(e.image)}" alt="" loading="lazy" decoding="async">`:`S${pad2(e.season)}E${pad2(e.episode)}`}</div><div><h4>${esc(e.title||`Episodio ${e.episode}`)}</h4><p>${e.airDate?fmtDate(e.airDate)+' · ':''}${e.runtime||50} min</p>${e.overview?`<small>${esc(e.overview.slice(0,180))}</small>`:''}</div><button class="watch-check ${isEpisodeWatched(s.id,e.season,e.episode)?'watched':''}" data-ep="${e.episode}" data-season="${e.season}" data-title="${esc(e.title||'')}" aria-label="${isEpisodeWatched(s.id,e.season,e.episode)?'Segna come non visto':'Segna come visto'}: S${pad2(e.season)} E${pad2(e.episode)} ${esc(e.title||'')}">✓</button></article>`).join('')}</div></section>`;}).join('')||'<div class="empty-state"><h3>Nessun episodio disponibile</h3><p>L’aggiornamento pubblico verrà tentato automaticamente quando sei online.</p></div>'}</section>`;
+      ${(s.seasons||[]).slice().sort((a,b)=>a.number-b.number).map(season=>{const eps=(season.episodes||[]).slice().sort((a,b)=>a.episode-b.episode);const watched=eps.filter(e=>isEpisodeWatched(s.id,e.season,e.episode)).length;return `<section class="season"><button class="season-head" data-season-toggle="${season.number}" aria-expanded="true" aria-controls="season-body-${season.number}"><span><strong>${esc(season.name||`Stagione ${season.number}`)}</strong><br><span class="season-meta">${watched}/${eps.length} episodi visti</span></span><span class="season-chevron" aria-hidden="true">⌄</span></button><div class="episode-list" id="season-body-${season.number}" data-season-body="${season.number}">${eps.map(e=>`<article class="episode-row"><div class="episode-thumb">${e.image?`<img src="${esc(e.image)}" alt="" loading="lazy" decoding="async">`:`S${pad2(e.season)}E${pad2(e.episode)}`}</div><div><h4>${esc(e.title||`Episodio ${e.episode}`)}</h4><p>${e.airDate?fmtDate(e.airDate)+' · ':''}${e.runtime||50} min</p>${e.overview?`<small>${esc(e.overview.slice(0,180))}</small>`:''}</div><button class="watch-check ${isEpisodeWatched(s.id,e.season,e.episode)?'watched':''}" data-ep="${e.episode}" data-season="${e.season}" data-title="${esc(e.title||'')}" aria-label="${isEpisodeWatched(s.id,e.season,e.episode)?'Segna come non visto':'Segna come visto'}: S${pad2(e.season)} E${pad2(e.episode)} ${esc(e.title||'')}">✓</button></article>`).join('')}</div></section>`;}).join('')||'<div class="empty-state"><h3>Nessun episodio disponibile</h3><p>L’aggiornamento pubblico verrà tentato automaticamente quando sei online.</p></div>'}</section>`;
     setMain(`${detailHero(s,'series')}<div class="tabbar"><button class="tab-button ${state.detailTab==='info'?'active':''}" data-detail-tab="info">Info</button><button class="tab-button ${state.detailTab==='episodes'?'active':''}" data-detail-tab="episodes">Episodi</button></div>${state.detailTab==='info'?info:episodes}`);
     if(state.detailTab==='info'){bindProgrammingActions(s,'series');bindHorizontalRails($('#main'));addDetailRemovalAction('series',s);}
     $$('[data-detail-tab]').forEach(b=>b.addEventListener('click',()=>{state.detailTab=b.dataset.detailTab;renderSeriesDetail(id);}));
@@ -3315,7 +3331,7 @@
     const recommendationRailId='search-recommendations-rail';
     const recommendationBlock=`<section class="search-recommendations"><div class="section-head search-recommendation-head"><div><span class="kicker">Per ${esc(currentProfile()?.name||'te')}</span><h2>Proposte basate sui tuoi gusti</h2><p>Partiamo da preferiti e valutazioni positive. Puoi distinguere rapidamente film e serie TV.</p></div><div class="search-recommendation-actions"><div class="recommendation-filter" role="tablist" aria-label="Filtra le proposte"><button type="button" role="tab" aria-selected="${recommendationFilter==='all'}" class="${recommendationFilter==='all'?'active':''}" data-recommendation-filter="all">Tutti <span>${recommendationCounts.all}</span></button><button type="button" role="tab" aria-selected="${recommendationFilter==='movie'}" class="${recommendationFilter==='movie'?'active':''}" data-recommendation-filter="movie">Film <span>${recommendationCounts.movie}</span></button><button type="button" role="tab" aria-selected="${recommendationFilter==='series'}" class="${recommendationFilter==='series'?'active':''}" data-recommendation-filter="series">Serie TV <span>${recommendationCounts.series}</span></button></div>${recommended.length?railControlsHtml(recommendationRailId,'proposte basate sui tuoi gusti'):''}</div></div>${recommended.length?`<div class="suggestion-rail" id="${recommendationRailId}" data-rail tabindex="0" role="list" aria-label="Proposte basate sui tuoi gusti">${recommended.map(row=>suggestionCardHtml(row)).join('')}</div>`:`<div class="notice">${allRecommended.length?'Non ci sono ancora proposte per questo tipo di contenuto.':'Segna qualche titolo come preferito o assegna almeno 4 stelle per attivare le proposte personalizzate.'}</div>`}</section>`;
     setMain(`${recommendationBlock}<section class="content-card"><div class="section-head"><div><h2>Trova qualcosa da vedere</h2><p>Cerca film, serie TV e interpreti.</p></div></div>
-      <div class="search-box" style="max-width:720px"><span>⌕</span><input id="globalSearch" type="search" placeholder="Titolo, serie o interprete" autofocus></div>
+      <div class="search-box" style="max-width:720px"><span>⌕</span><input id="globalSearch" type="search" placeholder="Titolo, serie o interprete" value="${esc(state.searchQuery)}" autofocus></div>
       <div id="searchNotice" class="notice" style="margin-top:14px">I risultati includono i titoli della tua libreria e le proposte disponibili online.</div>
       <div id="searchResults" class="search-results"><div class="empty-state"><div class="empty-icon">⌕</div><h3>Inizia a digitare</h3><p>I risultati appariranno qui.</p></div></div></section>`);
     state.recommendationResults = allRecommended;
@@ -3323,8 +3339,11 @@
     $$('[data-recommendation-filter]').forEach(button=>button.addEventListener('click',()=>{state.searchRecommendationFilter=button.dataset.recommendationFilter;renderSearch();}));
     bindHorizontalRails($('#main'));
     const input=$('#globalSearch'), result=$('#searchResults');
+    if (state.searchQuery) input.value = state.searchQuery;
     const run=debounce(async()=>{
-      const q=input.value.trim();if(!q){result.innerHTML='<div class="empty-state"><div class="empty-icon">⌕</div><h3>Inizia a digitare</h3></div>';return;}
+      const q=input.value.trim();
+      state.searchQuery = input.value;
+      if(!q){result.innerHTML='<div class="empty-state"><div class="empty-icon">⌕</div><h3>Inizia a digitare</h3></div>';return;}
       const localMatches=local.filter(x=>matchesMediaSearch(x,q)).slice(0,10);
       const localCatalogIds=new Set(local.map(item=>findSharedCatalogEntry(item.kind,item)?.id).filter(Boolean));
       const sharedMatches=sharedCatalogSearch(q,12).filter(row=>!localCatalogIds.has(row.catalogEntryId));
@@ -3341,6 +3360,7 @@
         const tasks=[api?.searchSeries(q)||Promise.resolve([]),api?.searchMovies(q)||Promise.resolve([])];
         if(tmdbReady)tasks.push(searchTMDB(q));
         const values=await Promise.allSettled(tasks);
+        if (input.value.trim() !== q || parseRoute().page !== 'search') return;
         const publicRows=[...(values[0].status==='fulfilled'?values[0].value:[]),...(values[1].status==='fulfilled'?values[1].value:[])]
           .filter(row=>(row.kind==='tv'||row.kind==='movie') && searchTitleMatchesQuery(row.title, q));
         const tmdbRows=(tmdbReady&&values[2]?.status==='fulfilled'?values[2].value:[])
@@ -3353,7 +3373,7 @@
         result.innerHTML=`${localHtml}${availableHtml?`<h3 style="margin-top:20px">Risultati disponibili</h3>${availableHtml}`:''}${availableHtml?'':'<p class="notice">Nessun risultato disponibile da aggiungere.</p>'}`;
         bindSearchActions();
       }catch(e){result.innerHTML+=`<p class="notice danger">${esc(e.message)}</p>`;}
-    },420);input.addEventListener('input',run);
+    },420);input.addEventListener('input',()=>{ state.searchQuery=input.value; run(); });
   }
 
   function renderSearch() {
