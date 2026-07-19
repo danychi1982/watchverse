@@ -186,6 +186,14 @@ Aggiornamento retest: dopo la correzione del verso, lo chevron si sposta comunqu
 
 La task è associata all’Epic `WVERSE-2` (**Libreria, progressi e preferiti**) e alla versione `R2`, oltre che allo Sprint 1. Stima confermata: 3 Story Points / 16h / 2 giorni uomo.
 
+### Implementazione pronta per retest — WVERSE-193 e WVERSE-199 (19 luglio 2026)
+
+`WVERSE-193`: lo chevron usa ora un contenitore fisso e una geometria CSS stabile; il verso è basso da chiuso e alto da aperto.
+
+`WVERSE-199`: il pulsante delle serie non completate mostra ora “Visto” e mantiene l’azione esistente di registrazione dell’episodio come visto.
+
+Test automatici e build superati. Entrambe le issue sono state portate in **Revisione**.
+
 ### Evidenza collaudo desktop — WVERSE-192 (19 luglio 2026)
 
 Retest KO: nella scheda dettaglio la sezione “Programmazione Italia” è ancora visivamente attaccata alla sezione precedente. Il ticket torna in corso per correggere il distacco verticale.
