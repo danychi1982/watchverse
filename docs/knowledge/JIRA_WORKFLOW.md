@@ -174,7 +174,7 @@ La ripresa dei test ha distinto gli esiti funzionali desktop dai test che richie
 | `WVERSE-194` | Non eseguito: richiede viewport mobile | Resta in Revisione |
 | `WVERSE-195` | Superato desktop: controllo a campione senza testi tecnici residui nell’interfaccia | Da portare a Completata |
 | `WVERSE-197` | Fix implementato, da confermare con retest | Resta in Revisione |
-| `WVERSE-198` | KO confermato: toast “Rimozione in corso” resta visibile | Preso in carico; toast pendente chiuso al completamento |
+| `WVERSE-198` | Superato desktop: il toast “Rimozione in corso” scompare al completamento | Da portare a Completata |
 
 La suite automatica e la build statica sono verdi. Gli E2E browser locali restano sospesi per `spawn EPERM`; i test multidispositivo e mobile non sono stati considerati completati.
 
