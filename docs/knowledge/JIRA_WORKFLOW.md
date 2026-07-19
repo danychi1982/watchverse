@@ -206,6 +206,12 @@ Convenzione Jira aggiornata: le issue che riguardano esclusivamente mobile/respo
 
 ## Analisi delle Story in backlog
 
+### Nuove issue mobile Sprint 1 — WVERSE-202 e WVERSE-203
+
+`WVERSE-202` riguarda l’impaginazione delle proposte nella sezione Cerca su mobile: **3 Story Points / 16h / 2 giorni uomo**.
+`WVERSE-203` riguarda la visibilità della tab selezionata dopo lo scroll orizzontale dei filtri su mobile: **5 Story Points / 24h / 3 giorni uomo**.
+Entrambe sono Bug associate all’Epic `WVERSE-2`, versione `R2`, componente Front-end, label `mobile`, Sprint 1 e stato **Da completare**.
+
 Nel ciclo di analisi sono stati prodotti deliverable funzionali e tecnici versionati in `docs/knowledge/analysis/`. Per le Story che erano ancora in `Da completare`:
 
 - `WVERSE-43`: preferenze e impostazioni personali;
