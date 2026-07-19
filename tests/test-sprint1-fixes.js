@@ -48,5 +48,6 @@ assert(app.includes('topTitles'), 'Manca la classifica dei titoli con più tenta
 assert(app.includes('metadata-analysis'), 'Manca la sezione UI della diagnostica aggregata');
 assert(css.includes('width:min(860px,100%)'), 'La modale non prevede una larghezza desktop maggiore');
 assert(css.includes('overflow-wrap:anywhere'), 'La diagnostica non gestisce i testi lunghi senza overflow');
+assert(css.includes('align-items:start'), 'Le card diagnostiche non mantengono l’altezza propria');
 
 console.log('✓ Fix Sprint 1 e raccomandazioni verificate');

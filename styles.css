@@ -3081,7 +3081,7 @@ html[data-theme="buffy"] .settings-card { border-color:color-mix(in srgb,var(--l
 .metadata-analysis { display:grid; gap:12px; min-width:0; padding:16px; border:1px solid var(--line); border-radius:14px; background:var(--surface-2); overflow:hidden; }
 .metadata-analysis h3, .metadata-analysis h4 { margin:0; }
 .metadata-analysis p { margin:5px 0 0; color:var(--muted); }
-.metadata-analysis-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; min-width:0; }
+.metadata-analysis-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); align-items:start; gap:10px; min-width:0; }
 .metadata-analysis-grid article { min-width:0; overflow:hidden; padding:12px; border:1px solid var(--line); border-radius:12px; background:var(--surface-1); }
 .metadata-analysis-list { display:grid; gap:7px; margin:10px 0 0; padding-left:20px; }
 .metadata-analysis-list li { display:grid; grid-template-columns:minmax(0,1fr); gap:3px; min-width:0; color:var(--text); }
