@@ -7,7 +7,7 @@ assert(app.includes('Copertura effettiva dei metadati'), 'La copertura non è pr
 assert(app.includes('Titoli da verificare'), 'Gli elementi non risolti non sono indicati separatamente');
 assert(app.includes('Errori tecnici'), 'Gli errori tecnici non sono distinti dai titoli incompleti');
 assert(app.includes('function scheduleMetadataRecoveryPass()'), 'Manca il recupero automatico dei metadati falliti');
-assert(app.includes('tentativo manuale'), "Manca l'indicazione per il nuovo tentativo manuale");
+assert(app.includes('Retry automatico avviato'), 'Manca il recupero automatico degli elementi falliti');
 assert(app.includes("$('#retryMetadata')"), "Manca l'azione esplicita di retry dei metadati");
 assert(app.includes('function scheduleNextMetadataBatch()'), 'Manca la continuazione automatica dei lotti metadati');
 assert(app.includes('state.metadataAutoBudget = 72'), 'Manca il reset del budget per il lotto successivo');
