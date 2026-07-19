@@ -200,6 +200,10 @@ Retest `WVERSE-194` superato su mobile: le schede del Cast sono leggibili e cons
 
 Retest `WVERSE-171` superato su Samsung S26+: la ricerca mantiene testo e focus durante gli aggiornamenti; issue portata in **Completata**. Dal collaudo sono emersi due nuovi problemi mobile distinti, in attesa di ticket dedicati.
 
+Nuova attività `WVERSE-201`: misurare e mostrare la durata complessiva del ciclo di aggiornamento fonti, per valutare la performance. Associata all’Epic `WVERSE-4`, versione `R2`, Sprint 1, con stima **3 Story Points / 16h / 2 giorni uomo**. WVERSE-186 resta in verifica fino al completamento del ciclo.
+
+Convenzione Jira aggiornata: le issue che riguardano esclusivamente mobile/responsive usano anche la label `mobile`. Applicata a `WVERSE-165`, `WVERSE-166`, `WVERSE-171` e `WVERSE-194`. Quick filter consigliato: `project = WVERSE AND labels = mobile ORDER BY priority DESC, key ASC`.
+
 ## Analisi delle Story in backlog
 
 Nel ciclo di analisi sono stati prodotti deliverable funzionali e tecnici versionati in `docs/knowledge/analysis/`. Per le Story che erano ancora in `Da completare`:

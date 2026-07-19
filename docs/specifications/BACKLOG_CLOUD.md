@@ -198,6 +198,14 @@ Test automatici e build superati. Entrambe le issue sono state portate in **Revi
 
 Portate in **In corso** per la lavorazione successiva: `WVERSE-164` runner E2E/CI, `WVERSE-165` test E2E mobile, `WVERSE-168` hardening deploy, `WVERSE-169` build e deploy ripetibile, `WVERSE-191` redirect dopo aggiunta dalla Ricerca.
 
+### Nuova attività Sprint 1 — WVERSE-201
+
+Misurare la durata complessiva del ciclo fonti e mostrarla quando il ciclo è completato, mantenendo il dato dopo la riapertura del pannello. Contesto: reimport pulito fermo al 4% con 2.449 titoli da verificare e 0 errori. Epic `WVERSE-4`, versione `R2`, stima 3 Story Points / 16h / 2 giorni uomo.
+
+### Convenzione filtro mobile Jira
+
+Le issue esclusivamente mobile/responsive sono marcate con la label `mobile`. Applicata a `WVERSE-165`, `WVERSE-166`, `WVERSE-171` e `WVERSE-194`. JQL per il quick filter: `project = WVERSE AND labels = mobile ORDER BY priority DESC, key ASC`.
+
 ### Retest WVERSE-193 — nuovo KO (19 luglio 2026)
 
 Il collaudo ha confermato che lo chevron restava sempre rivolto verso il basso e cambiava posizione nel box della stagione. Applicata una correzione con wrapper fisso 36×36, ancoraggio a destra e orientamento della sola geometria CSS in base a `aria-expanded`. La issue è stata riportata in **In corso** per nuovo retest.
