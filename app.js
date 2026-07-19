@@ -1570,6 +1570,35 @@
     return { diagnostics, essentialIncomplete, supplementalIncomplete, errors };
   }
 
+  function metadataErrorAnalysis(items = null) {
+    const diagnostics = items || metadataDiagnostics().diagnostics;
+    const errors = diagnostics.filter(row => row.error || row.failedAt || row.attempts > 0);
+    const group = (key, label) => {
+      const groups = new Map();
+      for (const row of errors) {
+        const value = row[key] || label;
+        const current = groups.get(value) || { label:value, errors:0, attempts:0, titles:[] };
+        current.errors += row.error || row.failedAt ? 1 : 0;
+        current.attempts += row.attempts;
+        current.titles.push(row.item.title || 'Titolo senza nome');
+        groups.set(value, current);
+      }
+      return [...groups.values()].sort((a, b) => b.errors - a.errors || b.attempts - a.attempts || a.label.localeCompare(b.label, 'it'));
+    };
+    return {
+      errors,
+      byProvider: group('provider', 'Fonte non identificata'),
+      byCategory: group('errorCategory', 'Errore non classificato'),
+      topTitles: errors.slice().sort((a, b) => b.attempts - a.attempts || Number(!!b.error) - Number(!!a.error) || String(a.item.title).localeCompare(String(b.item.title), 'it')).slice(0, 10)
+    };
+  }
+
+  function metadataErrorAnalysisHtml(analysis) {
+    const list = (rows, empty) => rows.length ? `<ol class="metadata-analysis-list">${rows.map(row => `<li><span>${esc(row.label)}</span><strong>${row.errors} errori · ${row.attempts} tentativi</strong></li>`).join('')}</ol>` : `<p class="metadata-analysis-empty">${empty}</p>`;
+    const topTitles = analysis.topTitles.length ? `<ol class="metadata-analysis-list">${analysis.topTitles.map(row => `<li><span>${esc(row.item.title || 'Titolo senza nome')}</span><strong>${row.attempts} tentativi${row.error ? ` · ${esc(row.errorCategory || 'errore')}` : ''}</strong></li>`).join('')}</ol>` : '<p class="metadata-analysis-empty">Nessun tentativo fallito registrato.</p>';
+    return `<section class="metadata-analysis"><div><h3>Diagnostica aggregata</h3><p>Raggruppamento degli errori persistiti per fonte, categoria e titolo. I dati si aggiornano insieme al dettaglio.</p></div><div class="metadata-analysis-grid"><article><h4>Errori per fonte</h4>${list(analysis.byProvider, 'Nessun errore associato a una fonte.')}</article><article><h4>Errori per categoria</h4>${list(analysis.byCategory, 'Nessuna categoria di errore registrata.')}</article><article><h4>Titoli con più tentativi</h4>${topTitles}</article></div></section>`;
+  }
+
   function metadataGlobalStatus() {
     const allRows = [
       ...state.series.map(item => metadataItemDiagnostics(item, 'series')),
@@ -1786,7 +1815,7 @@
     return `<article class="metadata-issue-row" data-kind="${row.kind}" data-id="${esc(row.item.id)}"><div class="metadata-issue-main"><span class="result-kicker">${type}${row.item.year?` · ${esc(row.item.year)}`:''}</span><h4>${esc(row.item.title||'Titolo senza nome')}</h4><p><strong>Da completare:</strong> ${esc(missing)}</p>${row.error?`<p class="metadata-error-copy"><strong>Errore tecnico:</strong> ${esc(row.error)}</p>`:''}${diagnostics?`<p class="metadata-diagnostics">${esc(diagnostics)}</p>`:''}</div><div class="metadata-issue-actions"><a class="ghost compact" data-metadata-open href="${route}">Apri scheda</a><button class="secondary compact" type="button" data-metadata-retry>Riprova</button></div></article>`;
   }
 
-  function showMetadataIssues(filter = 'all') {
+  function showMetadataIssuesLegacy(filter = 'all') {
     const all = metadataGlobalStatus().diagnostics.filter(row => !row.essentialComplete || row.error || row.failedAt || row.missing.length);
     const rows = all.filter(row => filter === 'all' || row.kind === filter).sort((a,b)=>Number(!b.essentialComplete)-Number(!a.essentialComplete)||Number(!!b.error)-Number(!!a.error)||String(a.item.title).localeCompare(String(b.item.title),'it'));
     const coreIssues = rows.filter(row => !row.essentialComplete).length;
@@ -1848,6 +1877,29 @@
     $('#openMetadataIssues')?.addEventListener('click',()=>showMetadataIssues('all'));
     $('#retryMetadata')?.addEventListener('click',()=>{for(const item of [...state.series,...state.movies])if(item.publicMetadata?.failedAt||item.publicMetadata?.error)item.publicMetadata={...(item.publicMetadata||{}),failedAt:null,error:null,nextRetryAt:null,parts:{...(item.publicMetadata?.parts||{}),coreComplete:false}};state.metadataBackgroundStarted=false;state.metadataRecoveryScheduled=false;state.metadataRecoveryDone=false;state.metadataAutoBudget+=50;scheduleBackgroundMetadataSync(true);syncDefaultPublicSources(true);closeModal();showToast('Nuovo tentativo avviato','Le fonti non riuscite verranno ricontrollate.','â†»');});
     $('#resumeMetadata')?.addEventListener('click', () => { state.metadataBackgroundStarted = false; state.metadataAutoBudget += 50; scheduleBackgroundMetadataSync(true); syncDefaultPublicSources(true); closeModal(); showToast('Aggiornamento in background', 'Catalogo, streaming, TV e cinema verranno controllati secondo le fonti configurate.', 'â†»', 4200); });
+  }
+
+  function showMetadataIssues(filter = 'all') {
+    const all = metadataGlobalStatus().diagnostics.filter(row => !row.essentialComplete || row.error || row.failedAt || row.missing.length);
+    const rows = all.filter(row => filter === 'all' || row.kind === filter).sort((a,b)=>Number(!b.essentialComplete)-Number(!a.essentialComplete)||Number(!!b.error)-Number(!!a.error)||String(a.item.title).localeCompare(String(b.item.title),'it'));
+    const coreIssues = rows.filter(row => !row.essentialComplete).length;
+    const technicalErrors = rows.filter(row => row.error || row.failedAt).length;
+    const analysis = metadataErrorAnalysis(all);
+    openModal('Dettaglio metadati', `<div class="metadata-issues"><div class="metadata-issues-summary"><div><strong>${coreIssues}</strong><span>Titoli senza locandina o descrizione</span></div><div><strong>${technicalErrors}</strong><span>Errori tecnici registrati</span></div><div><strong>${rows.length}</strong><span>Elementi mostrati</span></div></div>${metadataErrorAnalysisHtml(analysis)}<div class="metadata-issue-filters" role="tablist" aria-label="Filtra elementi"><button type="button" role="tab" class="${filter==='all'?'active':''}" data-metadata-filter="all">Tutti</button><button type="button" role="tab" class="${filter==='movie'?'active':''}" data-metadata-filter="movie">Film</button><button type="button" role="tab" class="${filter==='series'?'active':''}" data-metadata-filter="series">Serie TV</button></div><p class="notice">La percentuale metadati usa lo stesso criterio in header, librerie e pannello fonti: un titolo è coperto quando dispone almeno di locandina e descrizione. Cast ed episodi incompleti sono indicati nel dettaglio, ma non alterano questa percentuale.</p><div class="metadata-issue-list">${rows.length?rows.map(metadataIssueRowHtml).join(''):'<div class="empty-state compact"><h3>Nessun elemento da verificare</h3><p>La copertura dei metadati essenziali è completa.</p></div>'}</div></div>`, `<button class="secondary" id="retryAllMetadataIssues" type="button">Riprova tutti gli elementi mostrati</button><button class="primary" id="closeMetadataIssues" type="button">Chiudi</button>`);
+    $$('[data-metadata-filter]').forEach(button => button.addEventListener('click', () => showMetadataIssues(button.dataset.metadataFilter)));
+    $$('[data-metadata-open]').forEach(link => link.addEventListener('click', closeModal));
+    $$('[data-metadata-retry]').forEach(button => button.addEventListener('click', async () => {
+      const row = rows.find(candidate => candidate.item.id === button.closest('[data-id]')?.dataset.id && candidate.kind === button.closest('[data-kind]')?.dataset.kind);
+      if (!row) return;
+      row.item.publicMetadata = { ...(row.item.publicMetadata || {}), failedAt:null, error:null, nextRetryAt:null, parts:{ ...(row.item.publicMetadata?.parts || {}), coreComplete:false } };
+      await dbPut(row.kind === 'series' ? 'series' : 'movies', row.item);
+      state.metadataBackgroundStarted = false; state.metadataAutoBudget += 1; scheduleBackgroundMetadataSync(true); showToast('Retry avviato', row.item.title, '↻'); showMetadataIssues(filter);
+    }));
+    $('#retryAllMetadataIssues')?.addEventListener('click', async () => {
+      for (const row of rows) { row.item.publicMetadata = { ...(row.item.publicMetadata || {}), failedAt:null, error:null, nextRetryAt:null, parts:{ ...(row.item.publicMetadata?.parts || {}), coreComplete:false } }; await dbPut(row.kind === 'series' ? 'series' : 'movies', row.item); }
+      state.metadataBackgroundStarted = false; state.metadataAutoBudget += rows.length; scheduleBackgroundMetadataSync(true); showToast('Retry avviato', `${rows.length} titoli rimessi in coda.`, '↻'); closeModal();
+    });
+    $('#closeMetadataIssues')?.addEventListener('click', closeModal);
   }
 
   function openModal(title, body, actions = '', options = {}) {

@@ -41,5 +41,10 @@ assert(app.includes('nextRetryAt = allRows'), 'Il prossimo retry non viene calco
 assert(app.includes('Retry automatico avviato'), 'Il retry automatico non comunica la ripresa dei titoli falliti');
 assert(app.includes('state.metadataRecoveryTimer = setTimeout'), 'Il retry automatico non viene pianificato alla scadenza');
 assert(app.includes('const pendingRetry ='), 'Il ciclo metadati può chiudersi mentre restano retry pendenti');
+assert(app.includes('function metadataErrorAnalysis('), 'Manca l’aggregazione degli errori metadati');
+assert(app.includes('byProvider'), 'Manca il raggruppamento degli errori per fonte');
+assert(app.includes('byCategory'), 'Manca il raggruppamento degli errori per categoria');
+assert(app.includes('topTitles'), 'Manca la classifica dei titoli con più tentativi');
+assert(app.includes('metadata-analysis'), 'Manca la sezione UI della diagnostica aggregata');
 
 console.log('✓ Fix Sprint 1 e raccomandazioni verificate');
