@@ -198,6 +198,10 @@ Test automatici e build superati. Entrambe le issue sono state portate in **Revi
 
 Portate in **In corso** per la lavorazione successiva: `WVERSE-164` runner E2E/CI, `WVERSE-165` test E2E mobile, `WVERSE-168` hardening deploy, `WVERSE-169` build e deploy ripetibile, `WVERSE-191` redirect dopo aggiunta dalla Ricerca.
 
+### Retest WVERSE-193 — nuovo KO (19 luglio 2026)
+
+Il collaudo ha confermato che lo chevron restava sempre rivolto verso il basso e cambiava posizione nel box della stagione. Applicata una correzione con wrapper fisso 36×36, ancoraggio a destra e orientamento della sola geometria CSS in base a `aria-expanded`. La issue è stata riportata in **In corso** per nuovo retest.
+
 ### Evidenza collaudo desktop — WVERSE-192 (19 luglio 2026)
 
 Retest KO: nella scheda dettaglio la sezione “Programmazione Italia” è ancora visivamente attaccata alla sezione precedente. Il ticket torna in corso per correggere il distacco verticale.

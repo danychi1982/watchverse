@@ -232,7 +232,8 @@ select { min-height:44px; }
 .season { margin-bottom:13px; border:1px solid var(--line); border-radius:16px; overflow:hidden; background:var(--surface); }
 .season-head { width:100%; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:16px; border:0; color:var(--text); background:var(--surface-2); }
 .season-head strong { font-size:18px; }
-.season-chevron { display:grid; width:36px; height:36px; place-items:center; flex:0 0 36px; color:var(--text); font-size:0; line-height:1; transform:rotate(180deg); transition:transform .18s ease, color .18s ease; }
+/* The wrapper stays fixed; direction is applied only to the pseudo-element (not transform:rotate(180deg)). */
+.season-chevron { display:grid; width:36px; height:36px; place-items:center; flex:0 0 36px; margin-left:auto; box-sizing:border-box; color:var(--text); font-size:0; line-height:1; transform:none; }
 .season-chevron::before { content:""; width:10px; height:10px; border-right:3px solid currentColor; border-bottom:3px solid currentColor; transform:rotate(45deg); transition:transform .18s ease, color .18s ease; }
 .season-head:hover .season-chevron,.season-head:focus-visible .season-chevron { color:var(--accent-2); }
 .season-head[aria-expanded="false"] .season-chevron { transform:none; }
