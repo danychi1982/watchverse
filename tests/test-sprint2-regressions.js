@@ -30,6 +30,9 @@ assert(app.includes('function captureActiveField()'));
 assert(app.includes('function restoreActiveField(snapshot)'));
 assert(app.includes('const preservedField = preserveScroll ? captureActiveField() : null'));
 assert(app.includes('restoreActiveField(preservedField)'));
+assert(app.includes('function renderInitialCloudErrorHome()'));
+assert(app.includes('La Home non viene presentata come vuota'));
+assert(app.includes('state.initialCloudHydrationError = error?.message'));
 
 // WVERSE-175/177: la rimozione usa il percorso cloud/local comune e torna alla
 // libreria corretta dopo il dettaglio.

@@ -198,7 +198,7 @@
     detailTab: 'info', tvScheduleFilter: 'today', importPreview: null, gdprPreview: null, deferredInstall: null,
     notifications: [], tmdbResults: [], publicResults: [], catalogResults: [], recommendationResults: [], isLoading: false, pendingAvatarProfileId: null, personFilmographyFilter: 'all', profileSettingsTab: 'identity',
     catalogEntries: [], catalogIndex: new Map(), catalogHydratedThisSession: 0, catalogNetworkAvoidedThisSession: 0,
-    metadataQueue: [], metadataRunning: 0, metadataQueuedIds: new Set(), metadataAutoBudget: 36, metadataRenderPending: false, metadataRerenderTimer: null, metadataBackgroundStarted: false, metadataContinuationTimer: null, metadataHeaderTimer: null, metadataCompletedThisSession: 0, metadataFailedThisSession: 0, metadataRecoveryScheduled: false, metadataRecoveryDone: false, wcagStatusFilter: 'all', wcagLevelFilter: 'all', accessibilityTab: 'declaration', searchRecommendationFilter: 'all', navigationLoaderToken: 0, navigationRequestId: 0, initialCloudHydrationPending: false,
+    metadataQueue: [], metadataRunning: 0, metadataQueuedIds: new Set(), metadataAutoBudget: 36, metadataRenderPending: false, metadataRerenderTimer: null, metadataBackgroundStarted: false, metadataContinuationTimer: null, metadataHeaderTimer: null, metadataCompletedThisSession: 0, metadataFailedThisSession: 0, metadataRecoveryScheduled: false, metadataRecoveryDone: false, wcagStatusFilter: 'all', wcagLevelFilter: 'all', accessibilityTab: 'declaration', searchRecommendationFilter: 'all', navigationLoaderToken: 0, navigationRequestId: 0, initialCloudHydrationPending: false, initialCloudHydrationError: null,
     sidebarCollapsed: localStorage.getItem('watchverse.sidebarCollapsed') === '1', cinemaSearchLocation: null, cinemaSearchQuery: '', cinemaLocationFeedback: null, aivengersInitialized: false, lastRenderedRoute: '', defaultSourceStatus: null, defaultSourceSyncRunning: false, viewActionBusy: false, pendingFavoriteKeys: new Set(), cloudRefreshRunning: false, cloudRefreshAt: 0, lastUserInteractionAt: 0, cloudRefreshTimer: null, routeProgressTimer: null, dataRevision: 0, viewCache: { revision: -1, searchRecommendations: null, programmingMarkup: null }
   };
 
@@ -2430,9 +2430,22 @@
     </section>`);
   }
 
+  function renderInitialCloudErrorHome() {
+    const profile = currentProfile();
+    setMain(`<section class="home-loading-state home-loading-error" aria-live="assertive">
+      <span class="kicker">Profilo attivo · ${esc(profile?.name || 'spettatore')}</span>
+      <h1>Libreria non disponibile</h1>
+      <p>La sincronizzazione cloud non è terminata correttamente. La Home non viene presentata come vuota per evitare di confondere un errore con un profilo senza contenuti.</p>
+      <p class="notice danger">${esc(state.initialCloudHydrationError || 'Riprova tra poco oppure verifica la connessione cloud.')}</p>
+      <button class="primary" type="button" id="retryCloudHydration">Riprova</button>
+    </section>`);
+    $('#retryCloudHydration')?.addEventListener('click', () => window.location.reload());
+  }
+
   function renderHome(options = {}) {
     setPage('Home', 'Cosa guardare adesso', 'home');
     if (state.initialCloudHydrationPending && libraryIsEmpty()) { renderInitialCloudLoadingHome(); return; }
+    if (state.initialCloudHydrationError && libraryIsEmpty()) { renderInitialCloudErrorHome(); return; }
     if (libraryIsEmpty()) { renderEmptyLibraryHome(); return; }
     if (options.background === true) { renderHomeContent(); return; }
 
@@ -4472,6 +4485,7 @@
       await reloadData({ migrate:false });
       const shouldHydrateCloud = libraryIsEmpty() && navigator.onLine && window.WatchverseCloudSync?.isEnabled();
       state.initialCloudHydrationPending = Boolean(shouldHydrateCloud);
+      state.initialCloudHydrationError = null;
       showAppShell();
       renderNav('home');
       state.lastRenderedRoute = '';
@@ -4488,6 +4502,7 @@
           if (state.profileId !== id) return;
           await reloadData({ migrate:true });
           state.initialCloudHydrationPending = false;
+          state.initialCloudHydrationError = null;
           const refresh = () => {
             if (!state.profileSelected || state.profileId !== id) return;
             if (Date.now() - state.lastUserInteractionAt < 1200) {
@@ -4499,6 +4514,7 @@
           refresh();
         } catch (error) {
           state.initialCloudHydrationPending = false;
+          state.initialCloudHydrationError = error?.message || 'Sincronizzazione cloud non riuscita.';
           console.warn('Watchverse background profile sync:', error);
           if (state.profileSelected && state.profileId === id) void route({ loader:false, skipCloudRefresh:true });
         }
