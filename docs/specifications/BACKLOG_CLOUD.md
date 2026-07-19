@@ -643,3 +643,25 @@ Aggiornamento 18 luglio 2026: il retry mirato di `Accidentally Famous: The Story
 | Import sostitutivo: Continua e sostituisci | Alta | Implementato, da verificare | Codex | Basso | Il callback è stato corretto; ripetere l’importazione e verificare salvataggio completo, report finale e persistenza dopo refresh. |
 | Import sostitutivo completato | Verificato desktop | Superato: Continua e sostituisci avvia l’importazione, mostra l’avanzamento e conserva i dati dopo refresh. |
 | Retry mirato titolo da verificare | Verificato desktop | Esito parziale: il retry è avviato e la scheda resta reattiva, ma `Accidentally Famous: The Story of 883` resta senza corrispondenza pubblica; la copertura è passata a 69%, con 792 titoli da verificare e 4 errori tecnici. |
+
+## Evidenza test Sprint 1 — aggiornamento metadati — 19 luglio 2026
+
+Durante il collaudo di `WVERSE-186`, il pannello ha mostrato una copertura ferma al 10% con 2310 titoli da verificare e 5 errori tecnici. Dopo `Aggiorna ora` gli errori sono scesi a 4, ma il pannello ha continuato a mostrare **Aggiornamento in corso** con **0 elaborazioni attive** e **0 titoli in coda**, senza ulteriore avanzamento della percentuale.
+
+| Nome intervento | Priorità | Stato | Owner | Effort | Cosa resta da fare |
+|---|---|---|---|---|---|
+| Revisione ciclo aggiornamento metadati | Alta | KO da approfondire | Codex | Alto | Rivedere il ciclo per distinguere chiaramente aggiornamento attivo, coda esaurita in attesa di retry, titoli parziali, assenza legittima di fonte ed errori tecnici; garantire avanzamento osservabile o uno stato finale esplicito e ridurre la quota persistente di titoli incompleti. |
+
+Il collaudo di `WVERSE-185` resta **KO**: la rail “Continua a guardare” mostra serie ancora al primo episodio come se avessero la stessa ultima visione (`19 lug 2026`). L’ordinamento sta quindi usando un’attività artificiale o un fallback aggiornato anche per titoli non iniziati, invece della reale visione/progresso dell’utente.
+
+Il collaudo di `WVERSE-171` resta **KO**: nella ricerca il testo viene cancellato dopo la prima digitazione, quando arriva il primo aggiornamento asincrono dei risultati. Il campo deve conservare valore, focus e tastiera durante il rerender.
+
+Il collaudo di `WVERSE-173` è **parziale**: il dettaglio mostra correttamente titolo, tipo/anno, parti mancanti, errore e azioni, ma non rende visibili per titolo tentativi, ultimo tentativo, prossimo retry e una diagnosi distinta di fonte/identificazione.
+
+Il collaudo di `WVERSE-174` è **superato sul caso provato**: il retry ha mostrato prima il toast di aggiornamento e poi quello di metadati aggiornati; riaprendo il dettaglio, il titolo non era più presente tra quelli da verificare.
+
+Il collaudo desktop di `WVERSE-178` è **superato**: la sostituzione usa una conferma interna, mostra la pulizia e l’avanzamento, completa l’importazione senza errori e presenta il riepilogo dei dati salvati nel profilo corrente.
+
+Il collaudo desktop delle interazioni del pannello metadati è **superato**: durante l’aggiornamento i comandi `Vedi fonti`, `Dettaglio titoli`, `Riprova non riusciti`, `Aggiorna ora` e la chiusura hanno risposto correttamente.
+
+Il collaudo desktop di mostra/nascondi password e PIN è **superato** in login, recupero/cambio password e gestione PIN: i campi partono nascosti, il valore resta conservato e il controllo resta interno al campo.

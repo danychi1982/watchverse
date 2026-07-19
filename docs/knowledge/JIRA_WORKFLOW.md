@@ -150,6 +150,34 @@ Durante il test sono stati aperti due bug nello Sprint 1:
 
 Entrambi i bug sono assegnati a Daniela, collegati alle rispettive Epic, con priorità High, complessità Media e componenti tecnici valorizzati. Lo screenshot del collaudo è allegato a `WVERSE-18` e referenziato nei due bug.
 
+## Aggiornamento collaudo e presa in carico — 19 luglio 2026
+
+La ripresa dei test ha distinto gli esiti funzionali desktop dai test che richiedono un secondo dispositivo:
+
+| Issue | Esito corrente | Azione |
+| --- | --- | --- |
+| `WVERSE-171` | KO: la prima digitazione della ricerca viene ancora cancellata | Preso in carico; query persistente e guardia sui risultati asincroni implementate |
+| `WVERSE-172` | Superato desktop: risultati pertinenti, senza persone e duplicati | Da portare a Completata |
+| `WVERSE-173` | Parziale: il retry singolo può riuscire, ma restano errori senza copertura | Preso in carico insieme alla revisione del ciclo metadati |
+| `WVERSE-174` | Superato: comandi del pannello recepiti | Da portare a Completata |
+| `WVERSE-175` | Superato: rimozione persistente dopo refresh | Da portare a Completata |
+| `WVERSE-176` | Non eseguito: richiede modifica da altro dispositivo | Resta in Revisione |
+| `WVERSE-177` | Superato: redirect alla libreria corretta | Da portare a Completata |
+| `WVERSE-178` | Superato desktop: conferma, avanzamento e riepilogo import | Da portare a Completata |
+| `WVERSE-185` | KO: “Continua a guardare” include serie mai iniziate e non segue la visione reale | Preso in carico; rimosso il fallback basato su aggiunta/aggiornamento |
+| `WVERSE-186` | KO parziale: stato coerente, ma ciclo fermo con zero coda/attività e molti incompleti | Preso in carico; stato di attesa retry e diagnostica implementati |
+| `WVERSE-188` | Da verificare | Preso in carico; label delle card resa contenibile |
+| `WVERSE-189` | Superato: cambio profilo ripristina la Home | Da portare a Completata |
+| `WVERSE-190` | KO: prima query cancellata | Preso in carico insieme a `WVERSE-171` |
+| `WVERSE-192` | Fix desktop già presente, da confermare visivamente | Preso in carico per retest |
+| `WVERSE-193` | Da verificare | Preso in carico; chevron con stato aperto/chiuso visibile implementato |
+| `WVERSE-194` | Non eseguito: richiede viewport mobile | Resta in Revisione |
+| `WVERSE-195` | Fix implementato, da confermare con controllo manuale | Resta in Revisione |
+| `WVERSE-197` | Fix implementato, da confermare con retest | Resta in Revisione |
+| `WVERSE-198` | KO confermato: toast “Rimozione in corso” resta visibile | Preso in carico; toast pendente chiuso al completamento |
+
+La suite automatica e la build statica sono verdi. Gli E2E browser locali restano sospesi per `spawn EPERM`; i test multidispositivo e mobile non sono stati considerati completati.
+
 ## Analisi delle Story in backlog
 
 Nel ciclo di analisi sono stati prodotti deliverable funzionali e tecnici versionati in `docs/knowledge/analysis/`. Per le Story che erano ancora in `Da completare`:
