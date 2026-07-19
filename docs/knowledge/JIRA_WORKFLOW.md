@@ -234,3 +234,18 @@ Nel ciclo di analisi sono stati prodotti deliverable funzionali e tecnici versio
 Sono stati inoltre completati e ricondotti alla gerarchia corretta due deliverable già associati a Story in `Review`: `WVERSE-138` alla Story `WVERSE-37` e `WVERSE-147` alla Story `WVERSE-39`.
 
 I deliverable descrivono flussi, contratti dati, stati, errori, dipendenze e criteri tecnici. I relativi subtask di analisi sono stati portati direttamente in `Done`; le Story principali sono passate in `In Progress`. Dopo l'analisi di WVERSE-38 la complessità è stata rivalutata da Media ad Alta, con Story Points da 5 a 8 e stima da 24h a 32h.
+
+## Workflow per segnalazioni ricevute tramite Moduli
+
+Le segnalazioni create dal modulo pubblico `Todo da analizzare` sono elementi grezzi di tipo Task, inizialmente in **Da completare**, senza assegnatario e con le label automatiche `form` e `form-34`. La label `intake` identifica gli elementi da sottoporre a triage.
+
+Durante il triage:
+
+- mantenere la segnalazione originale nella descrizione, in una sezione `Segnalazione originale`;
+- aggiungere una sezione `Analisi` con riproducibilità, impatto, decisione e prossimi passi;
+- aggiungere un commento iniziale che registri l'esito del triage e l'eventuale tipizzazione;
+- mantenere l'elemento non assegnato fino alla presa in carico effettiva.
+
+Se la segnalazione porta a una sola attività, si aggiorna lo stesso elemento con tipo, summary, Epic, versione, Sprint, stima e assegnatario. Se richiede più attività, si lascia intatto l'elemento `form`, si creano uno o più Bug/Task/Story finali e si collegano alla segnalazione sorgente. Il commento sulla sorgente deve elencare le issue generate e l'elemento originale passa a uno stato coerente, ad esempio **Analizzata** o **Convertita**.
+
+Non sovrascrivere integralmente la descrizione ricevuta: la cronologia Jira registra i cambiamenti dei campi, ma la conservazione esplicita del testo originale rende il triage verificabile anche quando la segnalazione viene scomposta.

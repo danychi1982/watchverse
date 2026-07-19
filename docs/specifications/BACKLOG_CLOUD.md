@@ -779,3 +779,18 @@ Il collaudo desktop di `WVERSE-178` è **superato**: la sostituzione usa una con
 Il collaudo desktop delle interazioni del pannello metadati è **superato**: durante l’aggiornamento i comandi `Vedi fonti`, `Dettaglio titoli`, `Riprova non riusciti`, `Aggiorna ora` e la chiusura hanno risposto correttamente.
 
 Il collaudo desktop di mostra/nascondi password e PIN è **superato** in login, recupero/cambio password e gestione PIN: i campi partono nascosti, il valore resta conservato e il controllo resta interno al campo.
+
+## Workflow segnalazioni da Moduli
+
+Il modulo pubblico `Todo da analizzare` crea Task grezzi in **Da completare**, senza assegnatario. Jira aggiunge automaticamente le label `form` e `form-34`; la label `intake` identifica le segnalazioni da analizzare.
+
+Regole operative:
+
+- preservare nella descrizione la sezione `Segnalazione originale`;
+- aggiungere una sezione `Analisi` e un commento di triage;
+- per una sola attività, aggiornare lo stesso Task con tipologia, Epic, versione, Sprint, stima e assegnatario;
+- per più attività, mantenere la segnalazione sorgente e creare Bug/Task/Story collegati;
+- riportare sulla sorgente le issue generate e portarla a uno stato come **Analizzata** o **Convertita**;
+- lasciare vuoto l'assegnatario finché il lavoro non viene preso in carico.
+
+La descrizione originale non va sovrascritta integralmente: deve rimanere disponibile per ricostruire il contesto della richiesta.
