@@ -132,6 +132,10 @@ Questa tabella prevale sulle righe storiche precedenti. Le attivita tecniche sen
 
 Nota di consolidamento: la fix per la persistenza delle rimozioni ora scrive un tombstone cloud con revisione e timestamp aggiornati; resta solo la verifica manuale. La copertura metadati resta invece un'analisi sui dati reali: il retry non riduce i titoli da verificare e va campionato dal pannello fonti.
 
+### Evidenza collaudo desktop — WVERSE-185 (19 luglio 2026)
+
+Test superato: in Home la sezione “Continua a guardare” mostra solo serie già iniziate e le presenta secondo la visione più recente; le serie mai iniziate non compaiono.
+
 ### Evidenza collaudo desktop — WVERSE-197 (19 luglio 2026)
 
 Test superato su entrambe le tipologie: la rimozione immediata dalla libreria è stata verificata su una serie e su un film; il titolo non ricompare dopo refresh.
