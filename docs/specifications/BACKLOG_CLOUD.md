@@ -144,6 +144,10 @@ Verificate le cinque issue Jira ancora in sviluppo. Le fix sono state completate
 | WVERSE-192 | Gap esplicito nella colonna laterale del dettaglio | Esistente |
 | WVERSE-193 | Chevron accordion centrato: giù chiuso, su aperto | Esistente |
 
+### Evidenza collaudo desktop — WVERSE-188 (19 luglio 2026)
+
+Test superato su più card di serie completate: il pulsante “Completata” è stato rimosso, il check statico è leggibile e “Dettagli” occupa tutta la larghezza disponibile. La issue è pronta per la chiusura.
+
 ### Stato workflow — WVERSE-186 (19 luglio 2026)
 
 La lavorazione tecnica è stata completata: il ticket passa da In corso a Revisione per il retest desktop del pannello Stato aggiornamento fonti.
