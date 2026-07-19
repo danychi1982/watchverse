@@ -10,7 +10,8 @@ assert(app.includes('function addFromSharedCatalogResult('), 'Aggiunta senza dow
 assert(app.includes('sharedCatalogIsReusable(type,cached.data||{},true)'), 'Cache-first TMDB mancante');
 assert(app.includes('Catalogo condiviso sul dispositivo'), 'Spiegazione architetturale nel profilo mancante');
 assert(app.includes('Dati comuni') && app.includes('Dati del profilo'), 'Separazione dati statici/personali non documentata');
-assert(app.includes('Già scaricati sul dispositivo'), 'Ricerca nel catalogo condiviso mancante');
+assert(app.includes('Nel catalogo'), 'Stato prodotto del catalogo condiviso mancante');
+assert(app.includes("source==='catalog'?' · Nel catalogo':''"), 'Stato del catalogo condiviso non coerente');
 assert(app.includes('catalogNetworkAvoidedThisSession'), 'Contatore download evitati mancante');
 assert(!/for\(const store of \[[^\]]*catalog/.test(app), 'Lo svuotamento profilo non deve eliminare il catalogo condiviso');
 console.log('✓ Catalogo condiviso e dati personali separati verificati');

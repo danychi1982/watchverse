@@ -3260,7 +3260,7 @@
       const sharedKeys = new Set(sharedMatches.map(resultKey));
       state.catalogResults=sharedMatches;
       const localHtml=`${localMatches.length?'<h3>Già nella libreria del profilo</h3>':''}${localMatches.map(x=>searchResultHtml({kind:x.kind,id:x.id,title:x.title,originalTitle:x.originalTitle,year:x.year,overview:x.overview,poster:x.poster},true)).join('')}`;
-      const sharedHtml=sharedMatches.length?`<h3 style="margin-top:20px">Già scaricati sul dispositivo</h3>${sharedMatches.map(x=>searchResultHtml(x,false,'catalog')).join('')}`:'';
+      const sharedHtml=sharedMatches.map(x=>searchResultHtml(x,false,'catalog')).join('');
       result.innerHTML=`${localHtml}${sharedHtml}${inlineCinemaLoaderHtml('Ricerca in corso', 'Sto cercando serie, film e persone.')}`;
       bindSearchActions();
       const api=publicMetadataApi();
@@ -3276,7 +3276,8 @@
         const uniquePublic=publicRows.filter(row=>{const key=resultKey(row);if(seenPublic.has(key))return false;seenPublic.add(key);return true;});
         const uniqueTmdb=tmdbRows.filter(row=>{const key=resultKey(row);if(seenPublic.has(key))return false;seenPublic.add(key);return true;});
         state.publicResults=uniquePublic;state.tmdbResults=uniqueTmdb;
-        result.innerHTML=`${localHtml}${sharedHtml}<h3 style="margin-top:20px">Risultati disponibili</h3>${uniquePublic.map(x=>searchResultHtml(x,false)).join('')}${uniqueTmdb.map(x=>searchResultHtml(x,false,'tmdb')).join('')||(!uniquePublic.length?'<p class="notice">Nessun risultato disponibile da aggiungere.</p>':'')}`;
+        const availableHtml=`${sharedHtml}${uniquePublic.map(x=>searchResultHtml(x,false)).join('')}${uniqueTmdb.map(x=>searchResultHtml(x,false,'tmdb')).join('')}`;
+        result.innerHTML=`${localHtml}${availableHtml?`<h3 style="margin-top:20px">Risultati disponibili</h3>${availableHtml}`:''}${availableHtml?'':'<p class="notice">Nessun risultato disponibile da aggiungere.</p>'}`;
         bindSearchActions();
       }catch(e){result.innerHTML+=`<p class="notice danger">${esc(e.message)}</p>`;}
     },420);input.addEventListener('input',run);
@@ -3317,8 +3318,8 @@
   function searchResultHtml(x,local=false,source='public'){
     const typeLabel=x.kind==='tv'?'Serie TV':x.kind==='movie'?'Film':'Persona';
     const fallback=x.kind==='person'?'👤':x.kind==='tv'?'TV':'FILM';
-    const sourceLabel=local?' · Nella tua libreria':source==='catalog'?' · Già scaricato':'';
-    const actionLabel=x.kind==='person'?'Apri':source==='catalog'?'＋ Aggiungi senza download':'＋ Aggiungi';
+    const sourceLabel=local?' · Nella tua libreria':source==='catalog'?' · Nel catalogo':'';
+    const actionLabel=x.kind==='person'?'Apri':'＋ Aggiungi';
     return `<article class="search-result" data-result-kind="${esc(x.kind)}" data-result-id="${esc(x.id)}" data-result-source="${local?'local':source}" data-local="${local}"><div class="thumb" style="background:${gradient(x.title)}">${x.poster?`<img src="${esc(x.poster)}" alt="${x.kind==='person'?'Foto':'Locandina'} di ${esc(x.title)}" loading="lazy" decoding="async">`:`<span>${fallback}</span>`}</div><div class="search-result-copy"><span class="result-kicker">${typeLabel}${x.year?` · ${esc(x.year)}`:''}${sourceLabel}</span><h3>${esc(x.title)}</h3>${x.originalTitle&&normalizeSearch(x.originalTitle)!==normalizeSearch(x.title)?`<small class="row-original-title">Titolo originale: ${esc(x.originalTitle)}</small>`:''}<p>${x.overview?esc(x.overview):'Descrizione non ancora disponibile.'}</p></div><div class="search-result-action">${local?`<a class="secondary" href="${x.kind==='tv'?'#/series/':'#/movie/'}${encodeURIComponent(x.id)}">Apri ${x.kind==='tv'?'serie':'film'}</a>`:`<button class="primary" data-add-result>${actionLabel}</button>`}</div></article>`;
   }
   function searchTitleMatchesQuery(title, query) {
