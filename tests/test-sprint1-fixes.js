@@ -20,5 +20,7 @@ assert(app.includes("const waitingForRetry = !active && remainingWork && failed 
 assert(app.includes('options.pendingToast?.remove?.()'), 'Il toast di rimozione in corso non viene chiuso al termine');
 assert(app.includes('class="season-chevron"'), 'Lo stato dello chevron delle stagioni non è rappresentato');
 assert(app.includes('metadata-diagnostics'), 'La diagnostica per titolo non mostra i dettagli del retry');
+assert(!app.includes('class="poster-badge"'), 'Le card mostrano ancora badge di stato ridondanti');
+assert(!css.includes('.poster-badge'), 'Il CSS del badge di stato è ancora mantenuto dopo la rimozione globale');
 
 console.log('✓ Fix Sprint 1 e raccomandazioni verificate');

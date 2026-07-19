@@ -166,7 +166,7 @@ La ripresa dei test ha distinto gli esiti funzionali desktop dai test che richie
 | `WVERSE-178` | Superato desktop: conferma, avanzamento e riepilogo import | Da portare a Completata |
 | `WVERSE-185` | KO: “Continua a guardare” include serie mai iniziate e non segue la visione reale | Preso in carico; rimosso il fallback basato su aggiunta/aggiornamento |
 | `WVERSE-186` | KO parziale: stato coerente, ma ciclo fermo con zero coda/attività e molti incompleti | Preso in carico; stato di attesa retry e diagnostica implementati |
-| `WVERSE-188` | Da verificare | Preso in carico; label delle card resa contenibile |
+| `WVERSE-188` | KO: la label `Da iniziare` resta ingombrante/tagliata sulle card | Preso in carico; rimozione globale degli indicatori di stato dalle card, con controllo a tappeto richiesto |
 | `WVERSE-189` | Superato: cambio profilo ripristina la Home | Da portare a Completata |
 | `WVERSE-190` | KO: prima query cancellata | Preso in carico insieme a `WVERSE-171` |
 | `WVERSE-192` | Fix desktop già presente, da confermare visivamente | Preso in carico per retest |

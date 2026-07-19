@@ -1820,7 +1820,6 @@
     return `<article class="media-card" data-id="${esc(item.id)}" data-kind="${kind}">
       <a href="${href}" class="poster" style="background:${item.posterGradient || gradient(item.title)}">
         ${posterInner(item)}
-        ${options.hideStatusBadge ? '' : `<span class="poster-badge">${isSeries ? esc(completed ? 'COMPLETATA' : statusLabel(item.status)) : (item.watched ? 'VISTO' : 'DA VEDERE')}</span>`}
       </a>
       <button class="favorite-button ${item.favorite ? 'active' : ''}" data-action="favorite" aria-label="${item.favorite ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'}">♥</button>
       <div class="card-body">
