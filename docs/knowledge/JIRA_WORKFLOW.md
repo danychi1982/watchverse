@@ -169,7 +169,7 @@ La ripresa dei test ha distinto gli esiti funzionali desktop dai test che richie
 | `WVERSE-188` | KO: la label `Da iniziare` resta ingombrante/tagliata sulle card | Preso in carico; rimozione globale degli indicatori di stato dalle card, con controllo a tappeto richiesto |
 | `WVERSE-189` | Superato: cambio profilo ripristina la Home | Da portare a Completata |
 | `WVERSE-190` | Superato desktop: la prima query resta visibile e produce risultati pertinenti | Da portare a Completata |
-| `WVERSE-192` | Fix desktop già presente, da confermare visivamente | Preso in carico per retest |
+| `WVERSE-192` | KO desktop: la sezione “Programmazione Italia” resta attaccata alla sezione precedente | Riportato in In corso; serve correzione del distacco visivo |
 | `WVERSE-193` | Da verificare | Preso in carico; chevron con stato aperto/chiuso visibile implementato |
 | `WVERSE-194` | Non eseguito: richiede viewport mobile | Resta in Revisione |
 | `WVERSE-195` | Fix implementato, da confermare con controllo manuale | Resta in Revisione |
