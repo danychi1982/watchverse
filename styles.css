@@ -4307,6 +4307,11 @@ html[data-theme="last-of-us"] .mini-reel {
 
 /* Samsung/mobile detail pass: keep navigation readable and detail media bounded. */
 @media (max-width:720px) {
+  .search-recommendation-head { display:block; }
+  .search-recommendation-head h2,
+  .search-recommendation-head p { max-width:none; overflow-wrap:normal; word-break:normal; }
+  .search-recommendation-actions { width:100%; justify-content:flex-start; align-items:flex-start; margin-top:12px; }
+  .search-recommendation-actions .recommendation-filter { max-width:100%; overflow-x:auto; }
   .bottom-nav .nav-item.active,
   .bottom-nav .nav-item.active .nav-icon,
   .bottom-nav .nav-item.active .nav-label {
@@ -4334,6 +4339,14 @@ html[data-theme="last-of-us"] .mini-reel {
   .cast-strip.cast-grid .cast-copy { overflow:hidden; }
   .cast-strip.cast-grid .cast-copy strong,
   .cast-strip.cast-grid .cast-copy small { overflow-wrap:anywhere; word-break:break-word; }
+}
+
+.metadata-cycle-duration {
+  margin:16px 0 0;
+  padding:12px 14px;
+  border:1px solid color-mix(in srgb,var(--accent) 45%,var(--line));
+  border-radius:10px;
+  background:color-mix(in srgb,var(--accent) 8%,var(--surface));
 }
 
 @media (max-width:380px) {

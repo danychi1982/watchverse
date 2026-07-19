@@ -204,6 +204,11 @@ Misurare la durata complessiva del ciclo fonti e mostrarla quando il ciclo è co
 
 ### Convenzione filtro mobile Jira
 
+### Lavorazione Sprint 1 — WVERSE-200/201/202/203
+
+Le quattro issue sono state lavorate e portate in **Revisione**. Sono inclusi: toast esplicito per l’episodio segnato come visto, layout mobile corretto per le proposte della Ricerca, mantenimento in viewport del filtro selezionato e misurazione persistente della durata del ciclo fonti.
+Il ciclo fonti usa ora 4 elaborazioni parallele e lotti da 72 titoli. La verifica della durata effettiva sarà completata dopo il reimport dello ZIP pulito.
+
 Issue mobile aggiunte in Sprint 1:
 - `WVERSE-202` — `[Ricerca] [Mobile] Testo delle proposte non correttamente impaginato`; Bug, Epic `WVERSE-2`, R2, 3 SP / 16h / 2 giorni uomo.
 - `WVERSE-203` — `[Libreria] [Mobile] Tab filtri: selezione non mantenuta visibile dopo lo scroll orizzontale`; Bug, Epic `WVERSE-2`, R2, 5 SP / 24h / 3 giorni uomo.

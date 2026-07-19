@@ -127,6 +127,40 @@
   function saveDefaultSourceStatus() {
     localStorage.setItem(sourceStatusStorageKey(), JSON.stringify(state.defaultSourceStatus || emptyDefaultSourceStatus()));
   }
+  function metadataCycleStorageKey() { return `watchverse.metadataCycle.v1.${state.profileId || 'account'}`; }
+  function loadMetadataCycle() {
+    const saved = safeJson(localStorage.getItem(metadataCycleStorageKey()), {});
+    state.metadataCycleStartedAt = saved.startedAt || null;
+    state.metadataCycleCompletedAt = saved.completedAt || null;
+    state.metadataCycleDurationMs = Number.isFinite(Number(saved.durationMs)) ? Number(saved.durationMs) : null;
+  }
+  function saveMetadataCycle() {
+    localStorage.setItem(metadataCycleStorageKey(), JSON.stringify({
+      startedAt: state.metadataCycleStartedAt,
+      completedAt: state.metadataCycleCompletedAt,
+      durationMs: state.metadataCycleDurationMs
+    }));
+  }
+  function startMetadataCycle() {
+    state.metadataCycleStartedAt = new Date().toISOString();
+    state.metadataCycleCompletedAt = null;
+    state.metadataCycleDurationMs = null;
+    saveMetadataCycle();
+  }
+  function metadataDurationLabel(durationMs) {
+    if (!Number.isFinite(Number(durationMs))) return '';
+    const totalSeconds = Math.max(0, Math.round(Number(durationMs) / 1000));
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    return hours ? `${hours}h ${minutes}m ${seconds}s` : minutes ? `${minutes}m ${seconds}s` : `${seconds}s`;
+  }
+  function completeMetadataCycle() {
+    if (!state.metadataCycleStartedAt || state.metadataCycleCompletedAt) return;
+    state.metadataCycleCompletedAt = new Date().toISOString();
+    state.metadataCycleDurationMs = Math.max(0, Date.parse(state.metadataCycleCompletedAt) - Date.parse(state.metadataCycleStartedAt));
+    saveMetadataCycle();
+  }
   const PROFILE_SETTINGS_TABS = Object.freeze([
     { id:'identity', label:'Identità', icon:'◉' },
     { id:'stats', label:'Statistiche', icon:'▥' },
@@ -198,7 +232,7 @@
     detailTab: 'info', tvScheduleFilter: 'today', importPreview: null, gdprPreview: null, deferredInstall: null,
     notifications: [], tmdbResults: [], publicResults: [], catalogResults: [], recommendationResults: [], searchQuery: '', isLoading: false, pendingAvatarProfileId: null, personFilmographyFilter: 'all', profileSettingsTab: 'identity',
     catalogEntries: [], catalogIndex: new Map(), catalogHydratedThisSession: 0, catalogNetworkAvoidedThisSession: 0,
-    metadataQueue: [], metadataRunning: 0, metadataQueuedIds: new Set(), metadataAutoBudget: 36, metadataRenderPending: false, metadataRerenderTimer: null, metadataBackgroundStarted: false, metadataContinuationTimer: null, metadataHeaderTimer: null, metadataCompletedThisSession: 0, metadataFailedThisSession: 0, metadataRecoveryScheduled: false, metadataRecoveryDone: false, wcagStatusFilter: 'all', wcagLevelFilter: 'all', accessibilityTab: 'declaration', searchRecommendationFilter: 'all', navigationLoaderToken: 0, navigationRequestId: 0, initialCloudHydrationPending: false, initialCloudHydrationError: null,
+    metadataQueue: [], metadataRunning: 0, metadataQueuedIds: new Set(), metadataAutoBudget: 72, metadataConcurrency: 4, metadataRenderPending: false, metadataRerenderTimer: null, metadataBackgroundStarted: false, metadataContinuationTimer: null, metadataHeaderTimer: null, metadataCompletedThisSession: 0, metadataFailedThisSession: 0, metadataRecoveryScheduled: false, metadataRecoveryDone: false, metadataCycleStartedAt: null, metadataCycleCompletedAt: null, metadataCycleDurationMs: null, wcagStatusFilter: 'all', wcagLevelFilter: 'all', accessibilityTab: 'declaration', searchRecommendationFilter: 'all', navigationLoaderToken: 0, navigationRequestId: 0, initialCloudHydrationPending: false, initialCloudHydrationError: null,
     sidebarCollapsed: localStorage.getItem('watchverse.sidebarCollapsed') === '1', cinemaSearchLocation: null, cinemaSearchQuery: '', cinemaLocationFeedback: null, aivengersInitialized: false, lastRenderedRoute: '', defaultSourceStatus: null, defaultSourceSyncRunning: false, viewActionBusy: false, pendingFavoriteKeys: new Set(), cloudRefreshRunning: false, cloudRefreshAt: 0, lastUserInteractionAt: 0, cloudRefreshTimer: null, routeProgressTimer: null, dataRevision: 0, viewCache: { revision: -1, searchRecommendations: null, programmingMarkup: null }
   };
 
@@ -270,6 +304,12 @@
         group.removeAttribute('aria-busy');
       });
     }
+  }
+  function keepActiveTabVisible(containerSelector, value) {
+    const container = document.querySelector(containerSelector);
+    const active = container?.querySelector(`[data-filter="${CSS.escape(String(value))}"]`);
+    if (!active || !container) return;
+    active.scrollIntoView({ block:'nearest', inline:'nearest' });
   }
   function showBlockingLoader(title = 'Caricamento Watchverse', detail = 'Sto preparando i tuoi contenuti.') {
     const loader = $('#blockingLoader');
@@ -1552,7 +1592,7 @@
     const active = state.metadataQueue.length + state.metadataRunning > 0;
     const remainingWork = totalTitles > 0 && allRows.some(row => needsPublicMetadata(row.item, row.kind, true));
     const waitingForRetry = !active && remainingWork && failed > 0;
-    const batchCompleted = totalTitles === 0 || (!active && state.metadataBackgroundStarted && !remainingWork);
+    const batchCompleted = totalTitles === 0 || (!active && !remainingWork && !!state.metadataCycleCompletedAt);
     const cyclePercent = batchCompleted ? 100 : (active ? Math.max(1, Math.min(99, Math.round((state.metadataCompletedThisSession + state.metadataFailedThisSession) / Math.max(1, state.metadataCompletedThisSession + state.metadataFailedThisSession + state.metadataQueue.length + state.metadataRunning) * 100))) : (remainingWork ? Math.min(99, coveragePercent) : 0));
     return {
       totalTitles,
@@ -1579,7 +1619,11 @@
       running: state.metadataRunning,
       active,
       remainingWork,
-      waitingForRetry
+      waitingForRetry,
+      cycleStartedAt: state.metadataCycleStartedAt,
+      cycleCompletedAt: state.metadataCycleCompletedAt,
+      cycleDurationMs: state.metadataCycleDurationMs,
+      cycleDurationLabel: metadataDurationLabel(state.metadataCycleDurationMs)
     };
   }
 
@@ -1754,7 +1798,8 @@
     const s = metadataGlobalStatus();
     const groups=syncSourceGroups(s);
     const cycleLabel = s.active ? 'Aggiornamento in corso' : s.waitingForRetry ? 'In attesa di retry' : s.remainingWork ? 'Ciclo parziale' : 'Ciclo completato';
-    openModal('Stato aggiornamento fonti', `<div class="metadata-status-detail"><div class="metadata-status-big"><strong>${s.coveragePercent}%</strong><div><span>Copertura effettiva dei metadati</span><small class="metadata-cycle-state">${cycleLabel}</small></div></div><div class="progress-track metadata-progress large"><div class="progress-fill" style="width:${s.coveragePercent}%"></div></div><div class="metadata-recap-grid"><div><strong>${s.totalTitles.toLocaleString('it-IT')}</strong><span>Titoli del profilo</span></div><div><strong>${s.essentialIncomplete.toLocaleString('it-IT')}</strong><span>Titoli da verificare</span></div><div><strong>${s.failed.toLocaleString('it-IT')}</strong><span>Errori tecnici</span></div></div><div class="sync-source-groups">${groups.map(syncGroupHtml).join('')}</div>${s.active ? `<p class="metadata-live-line"><span class="inline-spinner" aria-hidden="true"></span>Aggiornamento in corso: ${s.running} elaborazioni attive e ${s.queued} titoli in coda. Puoi continuare a usare l’app.</p>` : ''}</div>`, `<button class="ghost" id="openSourceDetails">Vedi fonti</button><button class="ghost" id="openMetadataIssues">Dettaglio titoli</button><button class="secondary" id="retryMetadata">Riprova non riusciti</button><button class="primary" id="resumeMetadata">Aggiorna ora</button>`);
+    const durationCopy = s.cycleDurationLabel ? `<p class="metadata-cycle-duration"><strong>Durata complessiva del ciclo:</strong> ${esc(s.cycleDurationLabel)}</p>` : '';
+    openModal('Stato aggiornamento fonti', `<div class="metadata-status-detail"><div class="metadata-status-big"><strong>${s.coveragePercent}%</strong><div><span>Copertura effettiva dei metadati</span><small class="metadata-cycle-state">${cycleLabel}</small></div></div><div class="progress-track metadata-progress large"><div class="progress-fill" style="width:${s.coveragePercent}%"></div></div><div class="metadata-recap-grid"><div><strong>${s.totalTitles.toLocaleString('it-IT')}</strong><span>Titoli del profilo</span></div><div><strong>${s.essentialIncomplete.toLocaleString('it-IT')}</strong><span>Titoli da verificare</span></div><div><strong>${s.failed.toLocaleString('it-IT')}</strong><span>Errori tecnici</span></div></div><div class="sync-source-groups">${groups.map(syncGroupHtml).join('')}</div>${s.active ? `<p class="metadata-live-line"><span class="inline-spinner" aria-hidden="true"></span>Aggiornamento in corso: ${s.running} elaborazioni attive e ${s.queued} titoli in coda. Puoi continuare a usare l’app.</p>` : durationCopy}</div>`, `<button class="ghost" id="openSourceDetails">Vedi fonti</button><button class="ghost" id="openMetadataIssues">Dettaglio titoli</button><button class="secondary" id="retryMetadata">Riprova non riusciti</button><button class="primary" id="resumeMetadata">Aggiorna ora</button>`);
     $('#openSourceDetails')?.addEventListener('click',()=>{closeModal();state.profileSettingsTab='data';location.hash='#/settings';route();});
     $('#openMetadataIssues')?.addEventListener('click',()=>showMetadataIssues('all'));
     $('#retryMetadata')?.addEventListener('click',()=>{for(const item of [...state.series,...state.movies])if(item.publicMetadata?.failedAt||item.publicMetadata?.error)item.publicMetadata={...item.publicMetadata,failedAt:null,error:null,nextRetryAt:null,parts:{...(item.publicMetadata?.parts||{}),coreComplete:false}};state.metadataBackgroundStarted=false;state.metadataRecoveryScheduled=false;state.metadataRecoveryDone=false;state.metadataAutoBudget+=50;scheduleBackgroundMetadataSync(true);syncDefaultPublicSources(true);closeModal();showToast('Nuovo tentativo avviato','Le fonti non riuscite verranno ricontrollate.','↻');});
@@ -2102,6 +2147,8 @@
   }
   async function toggleEpisode(seriesId, season, episode, episodeTitle = '') {
     const existing = progressRecord(seriesId, season, episode);
+    const series = state.series.find(item => item.id === seriesId);
+    const markedWatched = !existing || !existing.watched;
     if (existing) {
       existing.watched = !existing.watched;
       existing.watchedAt = existing.watched ? new Date().toISOString() : null;
@@ -2113,6 +2160,7 @@
     }
     rebuildIndexes();
     void route({ loader:false, preserveScroll:true });
+    if (markedWatched) showToast('Episodio segnato come visto', `${series?.title || 'Serie'} · ${episodeTitle || `S${pad2(season)} E${pad2(episode)}`}`, '✓', 3600);
   }
   async function legacyToggleEpisode(seriesId, season, episode, episodeTitle = '') {
     const existing = progressRecord(seriesId, season, episode);
@@ -2709,7 +2757,7 @@
       <div class="toolbar-right"><div class="view-toggle" aria-label="Vista serie"><button data-view="grid" class="${view==='grid'?'active':''}" aria-label="Vista locandine" aria-pressed="${view==='grid'}">▦</button><button data-view="list" class="${view==='list'?'active':''}" aria-label="Vista elenco" aria-pressed="${view==='list'}">☷</button></div></div></div>
       ${items.length ? `<div class="${view==='grid'?'media-grid':'media-list'}">${visible.map(s => view==='grid'?mediaCard(s,'series'):mediaRow(s,'series')).join('')}</div>${visible.length < items.length ? `<div class="load-more"><button class="secondary" id="loadMoreSeries">Mostra altre ${Math.min(60, items.length-visible.length)} serie</button><span>${visible.length} di ${items.length}</span></div>` : ''}` : `<div class="empty-state"><div class="empty-icon">▣</div><h3>Nessuna serie trovata</h3><p>Cambia filtro o importa la tua cronologia.</p><a class="primary" href="#/import">Importa dati</a></div>`}`);
 
-    $$('[data-filter]').forEach(b => b.addEventListener('click', () => runViewAction(b, () => { state.seriesFilter=b.dataset.filter; state.seriesVisible=60; state.settings.seriesFilter=state.seriesFilter; saveSettings(); renderSeriesLibrary(); })));
+    $$('[data-filter]').forEach(b => b.addEventListener('click', () => runViewAction(b, () => { state.seriesFilter=b.dataset.filter; state.seriesVisible=60; state.settings.seriesFilter=state.seriesFilter; saveSettings(); renderSeriesLibrary(); keepActiveTabVisible('#main .tabbar[aria-label="Filtri serie"]', state.seriesFilter); })));
     const updateSeriesResults = debounce(() => { state.seriesVisible=60; renderLibraryResultsOnly('series'); }, 360);
     $('#seriesSearch').addEventListener('input', e => { state.seriesSearch=e.target.value; updateSeriesResults(); });
     $$('[data-view]').forEach(b => b.addEventListener('click', () => runViewAction(b, () => { state.settings.seriesView=b.dataset.view; saveSettings(); renderSeriesLibrary(); })));
@@ -2743,7 +2791,7 @@
       <div class="toolbar"><div class="toolbar-left"><label class="search-box"><span>⌕</span><input id="movieSearch" type="search" placeholder="Cerca nei tuoi film" value="${esc(state.movieSearch)}" aria-label="Cerca film"></label>
       <select id="movieSort" aria-label="Ordina film"><option value="recent" ${state.movieSort==='recent'?'selected':''}>${state.movieFilter==='watchlist'?'Data aggiunta':'Data visione'}</option><option value="rating" ${state.movieSort==='rating'?'selected':''}>Voto</option><option value="title" ${state.movieSort==='title'?'selected':''}>Titolo</option></select></div><div class="toolbar-right"><div class="view-toggle" aria-label="Vista film"><button data-view="grid" class="${view==='grid'?'active':''}" aria-label="Vista locandine" aria-pressed="${view==='grid'}">▦</button><button data-view="list" class="${view==='list'?'active':''}" aria-label="Vista elenco" aria-pressed="${view==='list'}">☷</button></div></div></div>
       ${items.length?`<div class="${view==='grid'?'media-grid':'media-list'}">${visible.map(m=>view==='grid'?mediaCard(m,'movie'):mediaRow(m,'movie')).join('')}</div>${visible.length<items.length?`<div class="load-more"><button class="secondary" id="loadMoreMovies">Mostra altri ${Math.min(60,items.length-visible.length)} film</button><span>${visible.length} di ${items.length}</span></div>`:''}`:`<div class="empty-state"><div class="empty-icon">🎬</div><h3>Nessun film trovato</h3><p>Aggiungi un titolo o cambia filtro.</p></div>`}`);
-    $$('[data-filter]').forEach(b=>b.addEventListener('click',()=>runViewAction(b,()=>{state.movieFilter=b.dataset.filter;state.movieVisible=60;state.settings.movieFilter=state.movieFilter;saveSettings();renderMovieLibrary();})));
+    $$('[data-filter]').forEach(b=>b.addEventListener('click',()=>runViewAction(b,()=>{state.movieFilter=b.dataset.filter;state.movieVisible=60;state.settings.movieFilter=state.movieFilter;saveSettings();renderMovieLibrary();keepActiveTabVisible('#main .tabbar[aria-label="Filtri film"]', state.movieFilter);})));
     const updateMovieResults = debounce(() => { state.movieVisible=60; renderLibraryResultsOnly('movies'); }, 360);
     $('#movieSearch').addEventListener('input', e => { state.movieSearch=e.target.value; updateMovieResults(); });
     $$('[data-view]').forEach(b=>b.addEventListener('click',()=>runViewAction(b,()=>{state.settings.movieView=b.dataset.view;saveSettings();renderMovieLibrary();})));
@@ -3179,12 +3227,13 @@
       return needsPublicMetadata(item, kind, true);
     });
     if (!remaining) {
+      completeMetadataCycle();
       state.metadataBackgroundStarted = false;
       return;
     }
     state.metadataContinuationTimer = setTimeout(() => {
       state.metadataContinuationTimer = null;
-      state.metadataAutoBudget = 36;
+      state.metadataAutoBudget = 72;
       state.metadataBackgroundStarted = false;
       scheduleBackgroundMetadataSync();
     }, 1500);
@@ -3192,7 +3241,7 @@
 
   function pumpMetadataQueue() {
     scheduleMetadataHeaderUpdate();
-    while (state.metadataRunning < 2 && state.metadataQueue.length) {
+    while (state.metadataRunning < state.metadataConcurrency && state.metadataQueue.length) {
       const task = state.metadataQueue.shift();
       state.metadataRunning++;
       scheduleMetadataHeaderUpdate();
@@ -3222,7 +3271,7 @@
             scheduleMetadataRecoveryPass();
             scheduleNextMetadataBatch();
           }
-          setTimeout(pumpMetadataQueue, 180);
+          pumpMetadataQueue();
         });
     }
   }
@@ -3254,6 +3303,11 @@
         if (item.publicMetadata?.failedAt || item.publicMetadata?.error) item.publicMetadata = { ...item.publicMetadata, failedAt: null, error: null, nextRetryAt: null };
       }
     }
+    const hasRemainingMetadata = [...state.series, ...state.movies].some(item => {
+      const kind = state.series.includes(item) ? 'series' : 'movie';
+      return needsPublicMetadata(item, kind, true);
+    });
+    if (hasRemainingMetadata && (!state.metadataBackgroundStarted && (!state.metadataCycleStartedAt || state.metadataCycleCompletedAt))) startMetadataCycle();
     state.metadataBackgroundStarted = true;
     idle(() => {
       const seriesTargets = sortSeriesItems(state.series, 'recent').filter(item => needsPublicMetadata(item, 'series', true));
@@ -4572,11 +4626,11 @@
     await nextPaint();
     try {
       state.profileId=id;state.profileSelected=true;localStorage.setItem('watchverse.currentProfile',id);
-      loadSettings();loadDefaultSourceStatus();
+      loadSettings();loadDefaultSourceStatus();loadMetadataCycle();
       void window.WatchverseCloudSync?.saveSettings(profile, state.settings).catch(error => console.warn('Watchverse cloud settings sync:', error));
       state.seriesFilter=state.settings.seriesFilter||'unwatched';state.movieFilter=state.settings.movieFilter||'watched';
       state.seriesSort=state.settings.seriesSort||'latestEpisode';state.movieSort=state.settings.movieSort||'recent';
-      state.seriesVisible=60;state.movieVisible=60;state.metadataAutoBudget=36;state.metadataQueue=[];state.metadataQueuedIds.clear();clearTimeout(state.metadataContinuationTimer);state.metadataContinuationTimer=null;state.metadataBackgroundStarted=false;state.metadataCompletedThisSession=0;state.metadataFailedThisSession=0;state.metadataRecoveryScheduled=false;state.metadataRecoveryDone=false;
+      state.seriesVisible=60;state.movieVisible=60;state.metadataAutoBudget=72;state.metadataQueue=[];state.metadataQueuedIds.clear();clearTimeout(state.metadataContinuationTimer);state.metadataContinuationTimer=null;state.metadataBackgroundStarted=false;state.metadataCompletedThisSession=0;state.metadataFailedThisSession=0;state.metadataRecoveryScheduled=false;state.metadataRecoveryDone=false;
       // Dalla 2.0.3 i profili partono vuoti. Rimuove automaticamente eventuali demo create da versioni precedenti.
       if(state.settings.demoSeeded){
         for(const store of ['series','movies','progress','imports']) await dbClearProfile(store);
