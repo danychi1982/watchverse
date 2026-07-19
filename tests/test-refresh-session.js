@@ -2,8 +2,11 @@ const fs = require('node:fs');
 
 const app = fs.readFileSync('app.js', 'utf8');
 
-if (!app.includes("const requestedHash = location.hash && location.hash !== '#/' ? location.hash : '#/home';")) {
+if (!app.includes("const requestedHash = state.profileSwitchInProgress ? '#/home' : (location.hash && location.hash !== '#/' ? location.hash : '#/home');")) {
   throw new Error('La rotta corrente non viene conservata durante il ripristino del profilo.');
+}
+if (!app.includes('state.profileSwitchInProgress = state.profileSelected;')) {
+  throw new Error('Il cambio profilo non forza il ritorno alla Home.');
 }
 if (!app.includes("const savedProfileId = localStorage.getItem('watchverse.currentProfile');")) {
   throw new Error('Il profilo corrente non viene ripristinato dopo il refresh.');
