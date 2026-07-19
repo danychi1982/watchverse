@@ -202,6 +202,12 @@ Portate in **In corso** per la lavorazione successiva: `WVERSE-164` runner E2E/C
 
 Il collaudo ha confermato che lo chevron restava sempre rivolto verso il basso e cambiava posizione nel box della stagione. Applicata una correzione con wrapper fisso 36×36, ancoraggio a destra e orientamento della sola geometria CSS in base a `aria-expanded`. La issue è stata riportata in **In corso** per nuovo retest.
 
+### Nuova attività Sprint 1 — WVERSE-200
+
+Uniformare le card delle serie tra Home e Serie usando la versione Home più completa, mostrare il prossimo episodio e aggiungere in entrambe le viste un toast esplicito con serie ed episodio marcato come visto. Epic `WVERSE-2`, versione `R2`, stima 5 Story Points / 24h / 3 giorni uomo.
+
+Retest desktop `WVERSE-193` superato: posizione e verso dello chevron verificati; issue chiusa.
+
 ### Evidenza collaudo desktop — WVERSE-192 (19 luglio 2026)
 
 Retest KO: nella scheda dettaglio la sezione “Programmazione Italia” è ancora visivamente attaccata alla sezione precedente. Il ticket torna in corso per correggere il distacco verticale.
