@@ -132,6 +132,10 @@ Questa tabella prevale sulle righe storiche precedenti. Le attivita tecniche sen
 
 Nota di consolidamento: la fix per la persistenza delle rimozioni ora scrive un tombstone cloud con revisione e timestamp aggiornati; resta solo la verifica manuale. La copertura metadati resta invece un'analisi sui dati reali: il retry non riduce i titoli da verificare e va campionato dal pannello fonti.
 
+### Evidenza collaudo desktop — WVERSE-190 (19 luglio 2026)
+
+La ricerca al primo inserimento è stata verificata su desktop con una query completa (`House of Cards`): il testo resta nel campo durante il caricamento e i risultati rimangono pertinenti. Esito: superato.
+
 ## Stato sintetico
 
 | Area | Stato | Priorita | Note |
