@@ -192,6 +192,10 @@ Presa in carico Sprint 3: `WVERSE-164`, `WVERSE-165`, `WVERSE-168`, `WVERSE-169`
 
 Nuovo retest `WVERSE-193`: KO. Il verso risultava sempre basso e la posizione variava nel box; issue riportata in **In corso** per una correzione con wrapper fisso e stato CSS pilotato da `aria-expanded`.
 
+Nuova attività `WVERSE-200`: uniformazione delle card serie tra Home e Serie, mantenimento del contesto del prossimo episodio e toast esplicito dopo la marcatura come visto. Associata all’Epic `WVERSE-2`, versione `R2`, Sprint 1, con stima **5 Story Points / 24h / 3 giorni uomo**.
+
+Retest `WVERSE-193` superato su desktop; issue portata in **Completata**.
+
 ## Analisi delle Story in backlog
 
 Nel ciclo di analisi sono stati prodotti deliverable funzionali e tecnici versionati in `docs/knowledge/analysis/`. Per le Story che erano ancora in `Da completare`:
