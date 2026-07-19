@@ -194,6 +194,10 @@ La task è associata all’Epic `WVERSE-2` (**Libreria, progressi e preferiti**)
 
 Test automatici e build superati. Entrambe le issue sono state portate in **Revisione**.
 
+### Presa in carico Sprint 3 — 19 luglio 2026
+
+Portate in **In corso** per la lavorazione successiva: `WVERSE-164` runner E2E/CI, `WVERSE-165` test E2E mobile, `WVERSE-168` hardening deploy, `WVERSE-169` build e deploy ripetibile, `WVERSE-191` redirect dopo aggiunta dalla Ricerca.
+
 ### Evidenza collaudo desktop — WVERSE-192 (19 luglio 2026)
 
 Retest KO: nella scheda dettaglio la sezione “Programmazione Italia” è ancora visivamente attaccata alla sezione precedente. Il ticket torna in corso per correggere il distacco verticale.
