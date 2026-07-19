@@ -210,6 +210,10 @@ Retest desktop `WVERSE-193` superato: posizione e verso dello chevron verificati
 
 Retest mobile `WVERSE-194` superato: schede Cast consultabili e leggibili senza tagli o sovrapposizioni; issue chiusa.
 
+### Retest mobile WVERSE-171 — 19 luglio 2026
+
+Su Samsung S26+ la ricerca mantiene testo e focus correttamente; issue superata e chiusa. Il collaudo ha evidenziato due nuovi problemi da tracciare separatamente: impaginazione del testo delle proposte e riposizionamento automatico della tabbar filtri dopo la selezione di una voce non visibile.
+
 ### Evidenza collaudo desktop — WVERSE-192 (19 luglio 2026)
 
 Retest KO: nella scheda dettaglio la sezione “Programmazione Italia” è ancora visivamente attaccata alla sezione precedente. Il ticket torna in corso per correggere il distacco verticale.
