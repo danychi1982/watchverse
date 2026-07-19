@@ -34,5 +34,9 @@ assert(app.includes('keepActiveTabVisible'), 'La tab selezionata non viene mante
 assert(css.includes('.search-recommendation-head { display:block; }'), 'La testata delle proposte non ha il layout mobile dedicato');
 assert(app.includes('metadataCycleDurationMs'), 'La durata del ciclo fonti non viene persistita');
 assert(app.includes('metadataConcurrency: 4'), 'Il ciclo fonti non usa il parallelismo ottimizzato');
+assert(app.includes('metadataStatusModalHtml'), 'La modale fonti non ha un renderer aggiornabile');
+assert(app.includes('setInterval(updateMetadataStatusModal, 1000)'), 'La modale fonti non aggiorna il contenuto mentre resta aperta');
+assert(app.includes('metadata-retry-line'), 'La modale fonti non mostra l’evidenza del retry in attesa');
+assert(app.includes('nextRetryAt = allRows'), 'Il prossimo retry non viene calcolato per il pannello fonti');
 
 console.log('✓ Fix Sprint 1 e raccomandazioni verificate');
