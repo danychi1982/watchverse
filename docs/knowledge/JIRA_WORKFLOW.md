@@ -156,9 +156,9 @@ La ripresa dei test ha distinto gli esiti funzionali desktop dai test che richie
 
 | Issue | Esito corrente | Azione |
 | --- | --- | --- |
-| `WVERSE-171` | KO: la prima digitazione della ricerca viene ancora cancellata | Preso in carico; query persistente e guardia sui risultati asincroni implementate |
+| `WVERSE-171` | Fix implementato: query, focus e cursore vengono ripristinati dopo rendering asincrono/cloud | Pronto per retest mobile; portato in Revisione |
 | `WVERSE-172` | Superato desktop: risultati pertinenti, senza persone e duplicati | Da portare a Completata |
-| `WVERSE-173` | Parziale: il retry singolo può riuscire, ma restano errori senza copertura | Preso in carico insieme alla revisione del ciclo metadati |
+| `WVERSE-173` | Fix implementato: retry singolo/massivo azzera anche il retry pianificato e rimette correttamente gli elementi in coda | Pronto per retest desktop; portato in Revisione |
 | `WVERSE-174` | Superato: comandi del pannello recepiti | Da portare a Completata |
 | `WVERSE-175` | Superato: rimozione persistente dopo refresh | Da portare a Completata |
 | `WVERSE-176` | Non eseguito: richiede modifica da altro dispositivo | Resta in Revisione |
@@ -166,11 +166,11 @@ La ripresa dei test ha distinto gli esiti funzionali desktop dai test che richie
 | `WVERSE-178` | Superato desktop: conferma, avanzamento e riepilogo import | Da portare a Completata |
 | `WVERSE-185` | Superato desktop: “Continua a guardare” mostra solo serie iniziate e ordinate per visione recente | Da portare a Completata |
 | `WVERSE-186` | Fix implementato: stato ciclo, attesa retry e diagnostica aggiornati | Pronto per retest desktop; portato in Revisione |
-| `WVERSE-188` | KO: la label `Da iniziare` resta ingombrante/tagliata sulle card | Preso in carico; rimozione globale degli indicatori di stato dalle card, con controllo a tappeto richiesto |
+| `WVERSE-188` | Fix implementato: indicatori di stato rimossi dalle card; completate con check statico e Dettagli a larghezza piena | Pronto per retest desktop; 3 SP / 2 giorni uomo; portato in Revisione |
 | `WVERSE-189` | Superato: cambio profilo ripristina la Home | Da portare a Completata |
 | `WVERSE-190` | Superato desktop: la prima query resta visibile e produce risultati pertinenti | Da portare a Completata |
-| `WVERSE-192` | KO desktop: la sezione “Programmazione Italia” resta attaccata alla sezione precedente | Riportato in In corso; serve correzione del distacco visivo |
-| `WVERSE-193` | KO desktop: chevron piccolo/decentrato e direzione orizzontale incoerente | Riportato in corso; adottare pattern accordion con chevron giù chiuso / su aperto, centrato e coerente |
+| `WVERSE-192` | Fix implementato: colonna laterale del dettaglio usa gap esplicito tra i box | Pronto per retest desktop; portato in Revisione |
+| `WVERSE-193` | Fix implementato: chevron senza cerchio, centrato, giù da chiuso e su da aperto | Pronto per retest desktop; portato in Revisione |
 | `WVERSE-194` | Non eseguito: richiede viewport mobile | Resta in Revisione |
 | `WVERSE-195` | Superato desktop: controllo a campione senza testi tecnici residui nell’interfaccia | Da portare a Completata |
 | `WVERSE-197` | Superato desktop: rimozione immediata verificata su serie e film, anche dopo refresh | Da portare a Completata |

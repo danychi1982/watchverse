@@ -1734,13 +1734,13 @@
       const row=button.closest('.metadata-issue-row');
       const kind=row.dataset.kind; const collection=kind==='series'?state.series:state.movies; const item=collection.find(x=>x.id===row.dataset.id);
       if(!item)return;
-      item.publicMetadata={...(item.publicMetadata||{}),failedAt:null,error:null,parts:{...(item.publicMetadata?.parts||{}),coreComplete:false}};
+      item.publicMetadata={...(item.publicMetadata||{}),failedAt:null,error:null,nextRetryAt:null,parts:{...(item.publicMetadata?.parts||{}),coreComplete:false}};
       state.metadataAutoBudget+=2;
       queuePublicMetadata(kind,[item],{force:true,unlimited:true,includeCast:true,silent:false});
       closeModal(); showToast('Nuovo tentativo avviato',item.title,'↻');
     }));
     $('#retryAllMetadataIssues')?.addEventListener('click',()=>{
-      for(const row of rows){row.item.publicMetadata={...(row.item.publicMetadata||{}),failedAt:null,error:null,parts:{...(row.item.publicMetadata?.parts||{}),coreComplete:false}};}
+      for(const row of rows){row.item.publicMetadata={...(row.item.publicMetadata||{}),failedAt:null,error:null,nextRetryAt:null,parts:{...(row.item.publicMetadata?.parts||{}),coreComplete:false}};}
       const series=rows.filter(row=>row.kind==='series').map(row=>row.item); const movies=rows.filter(row=>row.kind==='movie').map(row=>row.item);
       state.metadataAutoBudget+=rows.length;
       queuePublicMetadata('series',series,{force:true,unlimited:true,includeCast:true,silent:true});
@@ -1757,7 +1757,7 @@
     openModal('Stato aggiornamento fonti', `<div class="metadata-status-detail"><div class="metadata-status-big"><strong>${s.coveragePercent}%</strong><div><span>Copertura effettiva dei metadati</span><small class="metadata-cycle-state">${cycleLabel}</small></div></div><div class="progress-track metadata-progress large"><div class="progress-fill" style="width:${s.coveragePercent}%"></div></div><div class="metadata-recap-grid"><div><strong>${s.totalTitles.toLocaleString('it-IT')}</strong><span>Titoli del profilo</span></div><div><strong>${s.essentialIncomplete.toLocaleString('it-IT')}</strong><span>Titoli da verificare</span></div><div><strong>${s.failed.toLocaleString('it-IT')}</strong><span>Errori tecnici</span></div></div><div class="sync-source-groups">${groups.map(syncGroupHtml).join('')}</div>${s.active ? `<p class="metadata-live-line"><span class="inline-spinner" aria-hidden="true"></span>Aggiornamento in corso: ${s.running} elaborazioni attive e ${s.queued} titoli in coda. Puoi continuare a usare l’app.</p>` : ''}</div>`, `<button class="ghost" id="openSourceDetails">Vedi fonti</button><button class="ghost" id="openMetadataIssues">Dettaglio titoli</button><button class="secondary" id="retryMetadata">Riprova non riusciti</button><button class="primary" id="resumeMetadata">Aggiorna ora</button>`);
     $('#openSourceDetails')?.addEventListener('click',()=>{closeModal();state.profileSettingsTab='data';location.hash='#/settings';route();});
     $('#openMetadataIssues')?.addEventListener('click',()=>showMetadataIssues('all'));
-    $('#retryMetadata')?.addEventListener('click',()=>{for(const item of [...state.series,...state.movies])if(item.publicMetadata?.failedAt||item.publicMetadata?.error)item.publicMetadata={...item.publicMetadata,failedAt:null,error:null,parts:{...(item.publicMetadata?.parts||{}),coreComplete:false}};state.metadataBackgroundStarted=false;state.metadataRecoveryScheduled=false;state.metadataRecoveryDone=false;state.metadataAutoBudget+=50;scheduleBackgroundMetadataSync(true);syncDefaultPublicSources(true);closeModal();showToast('Nuovo tentativo avviato','Le fonti non riuscite verranno ricontrollate.','↻');});
+    $('#retryMetadata')?.addEventListener('click',()=>{for(const item of [...state.series,...state.movies])if(item.publicMetadata?.failedAt||item.publicMetadata?.error)item.publicMetadata={...item.publicMetadata,failedAt:null,error:null,nextRetryAt:null,parts:{...(item.publicMetadata?.parts||{}),coreComplete:false}};state.metadataBackgroundStarted=false;state.metadataRecoveryScheduled=false;state.metadataRecoveryDone=false;state.metadataAutoBudget+=50;scheduleBackgroundMetadataSync(true);syncDefaultPublicSources(true);closeModal();showToast('Nuovo tentativo avviato','Le fonti non riuscite verranno ricontrollate.','↻');});
     $('#resumeMetadata')?.addEventListener('click', () => { state.metadataBackgroundStarted = false; state.metadataAutoBudget += 50; scheduleBackgroundMetadataSync(true); syncDefaultPublicSources(true); closeModal(); showToast('Aggiornamento in background', 'Catalogo, streaming, TV e cinema verranno controllati secondo le fonti configurate.', '↻', 4200); });
   }
 
@@ -1815,6 +1815,7 @@
   }
   function mediaCard(item, kind = 'series', options = {}) {
     const isSeries = kind === 'series'; const prog = isSeries ? seriesProgress(item) : null; const completed = isSeries && seriesIsCompleted(item);
+    const hasNextEpisode = isSeries && !!nextEpisode(item);
     const meta = isSeries ? `${item.year || '—'} · ${prog.remaining} episodi residui` : `${item.year || '—'} · ${item.runtime ? minutesToText(item.runtime) : 'Durata n.d.'}`;
     const href = isSeries ? `#/series/${encodeURIComponent(item.id)}` : `#/movie/${encodeURIComponent(item.id)}`;
     return `<article class="media-card" data-id="${esc(item.id)}" data-kind="${kind}">
@@ -1825,10 +1826,11 @@
       <div class="card-body">
         <p class="card-title">${esc(item.title)}</p>
         <div class="card-meta"><span>${esc(meta)}</span>${item.rating ? `<span>★ ${item.rating}</span>` : ''}</div>
+        ${completed ? '<span class="completion-indicator" role="status" aria-label="Serie completata"><span aria-hidden="true">✓</span> Completata</span>' : ''}
         ${isSeries ? `<div class="progress-track" aria-label="Avanzamento ${prog.percent}%"><div class="progress-fill" style="width:${prog.percent}%"></div></div>` : ''}
-        <div class="card-actions">
-          ${isSeries ? `<button data-action="next">${nextEpisode(item) ? 'Prossimo' : 'Completata'}</button>` : `<button class="${item.watched ? 'watched' : ''}" data-action="watched">${item.watched ? '✓ Visto' : 'Segna visto'}</button>`}
-          <a class="secondary" href="${href}" style="display:grid;place-items:center;padding:0 10px">Dettagli</a>
+        <div class="card-actions ${isSeries && !hasNextEpisode ? 'card-actions-single' : ''}">
+          ${isSeries ? (hasNextEpisode ? '<button data-action="next">Prossimo</button>' : '') : `<button class="${item.watched ? 'watched' : ''}" data-action="watched">${item.watched ? '✓ Visto' : 'Segna visto'}</button>`}
+          <a class="secondary card-details-action" href="${href}" style="display:grid;place-items:center;padding:0 10px">Dettagli</a>
         </div>
       </div>
     </article>`;
@@ -3249,7 +3251,7 @@
     }
     if (force) {
       for (const item of [...state.series, ...state.movies]) {
-        if (item.publicMetadata?.failedAt) item.publicMetadata = { ...item.publicMetadata, failedAt: null, error: null, nextRetryAt: null };
+        if (item.publicMetadata?.failedAt || item.publicMetadata?.error) item.publicMetadata = { ...item.publicMetadata, failedAt: null, error: null, nextRetryAt: null };
       }
     }
     state.metadataBackgroundStarted = true;
@@ -3339,6 +3341,11 @@
     bindHorizontalRails($('#main'));
     const input=$('#globalSearch'), result=$('#searchResults');
     if (state.searchQuery) input.value = state.searchQuery;
+    if (state.searchQuery) requestAnimationFrame(() => {
+      if (!input.isConnected || document.activeElement === input) return;
+      input.focus({ preventScroll:true });
+      input.setSelectionRange(input.value.length, input.value.length);
+    });
     const run=debounce(async()=>{
       const q=input.value.trim();
       state.searchQuery = input.value;

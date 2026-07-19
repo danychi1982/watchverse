@@ -132,6 +132,18 @@ Questa tabella prevale sulle righe storiche precedenti. Le attivita tecniche sen
 
 Nota di consolidamento: la fix per la persistenza delle rimozioni ora scrive un tombstone cloud con revisione e timestamp aggiornati; resta solo la verifica manuale. La copertura metadati resta invece un'analisi sui dati reali: il retry non riduce i titoli da verificare e va campionato dal pannello fonti.
 
+## Audit fix bug ancora in corso — 19 luglio 2026
+
+Verificate le cinque issue Jira ancora in sviluppo. Le fix sono state completate e la suite/build sono verdi; i ticket sono stati portati in Revisione per il collaudo:
+
+| Issue | Fix applicata | Stima |
+| --- | --- | --- |
+| WVERSE-171 | Ripristino query, focus e cursore dopo rendering asincrono/cloud | Esistente |
+| WVERSE-173 | Retry singolo/massivo con reset di `nextRetryAt` e reinserimento in coda | Esistente |
+| WVERSE-188 | Rimozione status dalle card; check statico per completate e Dettagli full width | 3 SP / 2 giorni uomo |
+| WVERSE-192 | Gap esplicito nella colonna laterale del dettaglio | Esistente |
+| WVERSE-193 | Chevron accordion centrato: giù chiuso, su aperto | Esistente |
+
 ### Stato workflow — WVERSE-186 (19 luglio 2026)
 
 La lavorazione tecnica è stata completata: il ticket passa da In corso a Revisione per il retest desktop del pannello Stato aggiornamento fonti.

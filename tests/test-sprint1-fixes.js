@@ -22,5 +22,12 @@ assert(app.includes('class="season-chevron"'), 'Lo stato dello chevron delle sta
 assert(app.includes('metadata-diagnostics'), 'La diagnostica per titolo non mostra i dettagli del retry');
 assert(!app.includes('class="poster-badge"'), 'Le card mostrano ancora badge di stato ridondanti');
 assert(!css.includes('.poster-badge'), 'Il CSS del badge di stato è ancora mantenuto dopo la rimozione globale');
+assert(app.includes('completion-indicator'), 'Le serie completate non hanno un indicatore statico');
+assert(app.includes('card-actions-single'), 'Le card completate non prevedono Dettagli a larghezza piena');
+assert(css.includes('.two-column > aside { display:grid; gap:18px'), 'La colonna dettaglio non garantisce il distacco tra i box');
+assert(css.includes('.season-head[aria-expanded="false"] .season-chevron { transform:none; }'), 'Lo chevron chiuso non punta verso il basso');
+assert(css.includes('transform:rotate(180deg)'), 'Lo chevron aperto non punta verso l’alto');
+assert(app.includes('nextRetryAt:null'), 'Il retry metadati non azzera la pianificazione precedente');
+assert(app.includes('input.setSelectionRange(input.value.length, input.value.length)'), 'La ricerca non ripristina il cursore dopo il rendering');
 
 console.log('✓ Fix Sprint 1 e raccomandazioni verificate');
