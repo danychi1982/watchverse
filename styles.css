@@ -173,6 +173,9 @@ select { min-height:44px; }
 .card-actions { display:flex; gap:7px; margin-top:11px; }
 .card-actions button { flex:1; min-height:36px; border-radius:10px; border:1px solid var(--line); background:var(--surface-2); color:var(--text); font-weight:750; }
 .card-actions button.watched { color:#111; background:var(--success); border-color:var(--success); }
+.card-actions.card-actions-single .card-details-action { flex:1; }
+.completion-indicator { display:inline-flex; align-items:center; gap:5px; width:max-content; max-width:100%; margin-top:8px; padding:3px 8px; border:1px solid rgba(119,214,91,.48); border-radius:999px; color:var(--success); font-size:11px; font-weight:850; pointer-events:none; }
+.completion-indicator span { font-size:13px; line-height:1; }
 .card-remove { width:100%; min-height:34px; margin-top:8px; padding:0 8px; font-size:11px; }
 
 .media-list { display:grid; gap:12px; }
@@ -229,9 +232,9 @@ select { min-height:44px; }
 .season { margin-bottom:13px; border:1px solid var(--line); border-radius:16px; overflow:hidden; background:var(--surface); }
 .season-head { width:100%; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:16px; border:0; color:var(--text); background:var(--surface-2); }
 .season-head strong { font-size:18px; }
-.season-chevron { display:inline-grid; width:32px; height:32px; place-items:center; flex:0 0 32px; border:1px solid var(--line); border-radius:50%; font-size:22px; line-height:1; transition:transform .18s ease, background .18s ease; }
-.season-head:hover .season-chevron,.season-head:focus-visible .season-chevron { background:var(--surface); }
-.season-head[aria-expanded="false"] .season-chevron { transform:rotate(-90deg); }
+.season-chevron { display:grid; width:36px; height:36px; place-items:center; flex:0 0 36px; color:var(--text); font-size:28px; font-weight:800; line-height:1; transform:rotate(180deg); transition:transform .18s ease, color .18s ease; }
+.season-head:hover .season-chevron,.season-head:focus-visible .season-chevron { color:var(--accent-2); }
+.season-head[aria-expanded="false"] .season-chevron { transform:none; }
 .season-meta { color:var(--muted); font-size:13px; }
 .episode-list { display:grid; }
 .episode-row { display:grid; grid-template-columns:72px 1fr auto; gap:14px; align-items:center; padding:12px 15px; border-top:1px solid var(--line); }
@@ -1051,6 +1054,7 @@ main:focus { outline: none; }
 .schedule-italy { color:var(--warning-text); }
 .schedule-muted { color:var(--muted); }
 .italy-schedule-card { margin-top:18px; }
+.two-column > aside { display:grid; gap:18px; align-content:start; }
 .italy-schedule-card p { margin:0 0 14px; color:var(--muted); font-size:13px; }
 .notification-list { display:grid; gap:12px; }
 .notification-item { display:grid; grid-template-columns:64px minmax(0,1fr) auto; gap:14px; align-items:center; padding:10px; border:1px solid var(--line); border-radius:15px; background:var(--surface); }
