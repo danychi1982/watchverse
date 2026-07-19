@@ -38,5 +38,8 @@ assert(app.includes('metadataStatusModalHtml'), 'La modale fonti non ha un rende
 assert(app.includes('setInterval(updateMetadataStatusModal, 1000)'), 'La modale fonti non aggiorna il contenuto mentre resta aperta');
 assert(app.includes('metadata-retry-line'), 'La modale fonti non mostra l’evidenza del retry in attesa');
 assert(app.includes('nextRetryAt = allRows'), 'Il prossimo retry non viene calcolato per il pannello fonti');
+assert(app.includes('Retry automatico avviato'), 'Il retry automatico non comunica la ripresa dei titoli falliti');
+assert(app.includes('state.metadataRecoveryTimer = setTimeout'), 'Il retry automatico non viene pianificato alla scadenza');
+assert(app.includes('const pendingRetry ='), 'Il ciclo metadati può chiudersi mentre restano retry pendenti');
 
 console.log('✓ Fix Sprint 1 e raccomandazioni verificate');

@@ -1745,7 +1745,7 @@
     const cinemaShowtimes=state.movies.reduce((sum,x)=>sum+(x.cinemaShowtimes||[]).length,0);
     const linkedCinemas=preferredCinemas().filter(x=>x.officialUrl).length;
     return [
-      {name:'Catalogo e metadati',percent:status.coveragePercent,state:status.active?`Aggiornamento in corso · copertura ${status.coveragePercent}%`:(status.essentialIncomplete||status.failed)?`Copertura ${status.coveragePercent}% · ${status.essentialIncomplete} titoli da verificare${status.failed?` · ${status.failed} errori tecnici`:''}`:'Catalogo completo',updated:status.coreReady,updatedLabel:'Titoli con locandina e descrizione',errors:status.failed,last:state.catalogEntries.map(x=>x.updatedAt).sort().at(-1)||null,next:status.active?'In corso':status.essentialIncomplete?'Riprova automatica e correzione dal dettaglio elementi':'Controllo incrementale al prossimo avvio'},
+      {name:'Catalogo e metadati',percent:status.coveragePercent,state:status.active?`Aggiornamento in corso · copertura ${status.coveragePercent}%`:status.waitingForRetry?`In attesa di retry · copertura ${status.coveragePercent}%`:(status.essentialIncomplete||status.failed)?`Copertura ${status.coveragePercent}% · ${status.essentialIncomplete} titoli da verificare${status.failed?` · ${status.failed} errori tecnici`:''}`:'Catalogo completo',updated:status.coreReady,updatedLabel:'Titoli con locandina e descrizione',errors:status.failed,last:state.catalogEntries.map(x=>x.updatedAt).sort().at(-1)||null,next:status.active?'In corso':status.waitingForRetry?(status.nextRetryAt?`Retry automatico: ${fmtDateTime(status.nextRetryAt)}`:'Retry automatico pianificato'):status.essentialIncomplete?'Retry automatico e correzione dal dettaglio elementi':'Controllo incrementale al prossimo avvio'},
       {name:'Disponibilità streaming in Italia',percent:Math.round(streamingCount/total*100),state:streamingCount?`Disponibilità effettiva trovata per ${streamingCount} titoli`:tmdbReady?'Nessuna disponibilità ancora trovata':'TMDB non configurato',updated:sourceState.streaming.checked||0,updatedLabel:'Titoli controllati',errors:0,last:sourceState.streaming.last||null,next:tmdbReady?'Su apertura o aggiornamento del titolo':'Configura TMDB per il controllo JustWatch'},
       {name:'Palinsesti TV italiani',percent:publicMetadataApi()?100:0,state:publicMetadataApi()?`Fonte pubblica preconfigurata${sourceState.tv.matches?` · ${sourceState.tv.matches} passaggi trovati`:''}`:'Da configurare',updated:sourceState.tv.checked||tvCount,updatedLabel:'Titoli controllati',errors:0,last:sourceState.tv.last||null,next:`Controllo automatico ogni ${Number(defaults.tvSchedule.refreshHours||12)} ore`},
       {name:'Programmazione cinema',percent:state.movies.length?Math.round(state.movies.filter(x=>x.cinemaCheckedAt).length/state.movies.length*100):0,state:linkedCinemas?`${linkedCinemas} siti ufficiali collegati${cinemaShowtimes?` · ${cinemaShowtimes} spettacoli trovati`:' · nessun orario ancora trovato'}`:'Da configurare',updated:state.movies.filter(x=>x.cinemaCheckedAt).length,updatedLabel:'Film controllati',errors:0,last:sourceState.cinema.last||null,next:'Su apertura del film; solo orari dai siti ufficiali'}
@@ -3244,14 +3244,32 @@
     state.metadataRerenderTimer = setTimeout(refresh, delay);
   }
   function scheduleMetadataRecoveryPass() {
-    if (state.metadataRecoveryScheduled || state.metadataRecoveryDone || !navigator.onLine || !state.settings.publicMetadataEnabled || !publicMetadataApi()) return;
+    if (!navigator.onLine || !state.settings.publicMetadataEnabled || !publicMetadataApi()) return;
     const failedSeries = state.series.filter(item => item.publicMetadata?.failedAt);
     const failedMovies = state.movies.filter(item => item.publicMetadata?.failedAt);
-    if (!failedSeries.length && !failedMovies.length) return;
-    // Gli errori persistenti non vengono ritentati automaticamente all'accesso:
-    // l'utente decide dal pannello fonti quando consumare nuove richieste.
-    state.metadataRecoveryDone = true;
-    showToast('Metadati da verificare', `${failedSeries.length + failedMovies.length} titoli richiedono un nuovo tentativo manuale.`, '!', 5200, { kind:'warning' });
+    const failed = [...failedSeries.map(item => ({ kind:'series', item })), ...failedMovies.map(item => ({ kind:'movie', item }))];
+    if (!failed.length) return;
+    clearTimeout(state.metadataRecoveryTimer);
+    const now = Date.now();
+    const due = failed.filter(({ item }) => !item.publicMetadata?.nextRetryAt || dateMs(item.publicMetadata.nextRetryAt) <= now);
+    if (!due.length) {
+      const nextRetryAt = failed.map(({ item }) => dateMs(item.publicMetadata?.nextRetryAt)).filter(Number.isFinite).sort((a, b) => a - b)[0];
+      state.metadataRecoveryScheduled = true;
+      state.metadataRecoveryTimer = setTimeout(() => {
+        state.metadataRecoveryScheduled = false;
+        scheduleMetadataRecoveryPass();
+      }, Math.max(1000, nextRetryAt - now));
+      return;
+    }
+    state.metadataRecoveryScheduled = true;
+    state.metadataRecoveryDone = false;
+    state.metadataBackgroundStarted = true;
+    for (const { kind, item } of due) {
+      item.publicMetadata = { ...(item.publicMetadata || {}), failedAt:null, error:null, errorCode:null, errorCategory:null, nextRetryAt:null };
+      queuePublicMetadata(kind, [item], { force:true, unlimited:true, includeCast:true, silent:true });
+    }
+    state.metadataRecoveryScheduled = false;
+    showToast('Retry automatico avviato', `${due.length} titoli non riusciti verranno ricontrollati.`, '↻', 4200, { kind:'warning' });
   }
 
   function scheduleNextMetadataBatch() {
@@ -3260,9 +3278,15 @@
       const kind = state.series.includes(item) ? 'series' : 'movie';
       return needsPublicMetadata(item, kind, true);
     });
-    if (!remaining) {
+    const pendingRetry = [...state.series, ...state.movies].some(item => item.publicMetadata?.failedAt || item.publicMetadata?.error || (item.publicMetadata?.nextRetryAt && dateMs(item.publicMetadata.nextRetryAt) > Date.now()));
+    if (!remaining && !pendingRetry) {
       completeMetadataCycle();
       state.metadataBackgroundStarted = false;
+      return;
+    }
+    if (!remaining && pendingRetry) {
+      state.metadataBackgroundStarted = false;
+      scheduleMetadataRecoveryPass();
       return;
     }
     state.metadataContinuationTimer = setTimeout(() => {
@@ -3328,10 +3352,7 @@
   }
   function scheduleBackgroundMetadataSync(force = false) {
     if ((!force && state.metadataBackgroundStarted) || !navigator.onLine || !state.settings.publicMetadataEnabled || libraryIsEmpty()) return;
-    if (!force && [...state.series, ...state.movies].some(item => item.publicMetadata?.failedAt || item.publicMetadata?.error)) {
-      scheduleMetadataRecoveryPass();
-      return;
-    }
+    if (!force && [...state.series, ...state.movies].some(item => item.publicMetadata?.failedAt || item.publicMetadata?.error)) scheduleMetadataRecoveryPass();
     if (force) {
       for (const item of [...state.series, ...state.movies]) {
         if (item.publicMetadata?.failedAt || item.publicMetadata?.error) item.publicMetadata = { ...item.publicMetadata, failedAt: null, error: null, nextRetryAt: null };

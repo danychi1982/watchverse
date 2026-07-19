@@ -52,7 +52,7 @@ Sono presenti proxy Supabase per TMDB e fonti pubbliche. I segreti restano nelle
 - Il primo rendering deve mostrare rapidamente la home personale senza flash della home vuota o della composizione demo.
 - Il caricamento deve essere progressivo: autenticazione, profilo e dati minimi prima; immagini/metadati non visibili e resto della libreria in background.
 - Ogni interazione lenta deve avere uno stato di caricamento coerente e deve evitare click concorrenti o UI apparentemente bloccata.
-- I retry dei metadati non partono automaticamente: l'utente decide quando riprovare.
+- I retry dei metadati partono automaticamente alla scadenza del backoff; l'utente mantiene anche l'azione manuale per forzare un nuovo tentativo.
 - Un retry manuale puo lasciare invariato o aumentare l'elenco dei titoli da verificare e gli errori tecnici; serve una diagnostica per distinguere assenza legittima di fonte, identificazione errata e errore tecnico.
 - Le azioni distruttive richiedono conferma interna all'app, aderente al design system; non usare `window.confirm`.
 - Dopo rimozione di un titolo, il risultato atteso e redirect a lista film/serie o home e persistenza anche dopo refresh.
