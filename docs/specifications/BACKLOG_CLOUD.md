@@ -205,8 +205,8 @@ Misurare la durata complessiva del ciclo fonti e mostrarla quando il ciclo è co
 ### Convenzione filtro mobile Jira
 
 Issue mobile aggiunte in Sprint 1:
-- `WVERSE-202` — `[Mobile] Cerca: testo delle proposte non correttamente impaginato`; Bug, Epic `WVERSE-2`, R2, 3 SP / 16h / 2 giorni uomo.
-- `WVERSE-203` — `[Mobile] Tab filtri: selezione non mantenuta visibile dopo lo scroll orizzontale`; Bug, Epic `WVERSE-2`, R2, 5 SP / 24h / 3 giorni uomo.
+- `WVERSE-202` — `[Ricerca] [Mobile] Testo delle proposte non correttamente impaginato`; Bug, Epic `WVERSE-2`, R2, 3 SP / 16h / 2 giorni uomo.
+- `WVERSE-203` — `[Libreria] [Mobile] Tab filtri: selezione non mantenuta visibile dopo lo scroll orizzontale`; Bug, Epic `WVERSE-2`, R2, 5 SP / 24h / 3 giorni uomo.
 Entrambe hanno label `mobile`, componente Front-end e stato **Da completare**.
 
 Le issue esclusivamente mobile/responsive sono marcate con la label `mobile`. Applicata a `WVERSE-165`, `WVERSE-166`, `WVERSE-171` e `WVERSE-194`. JQL per il quick filter: `project = WVERSE AND labels = mobile ORDER BY priority DESC, key ASC`.
