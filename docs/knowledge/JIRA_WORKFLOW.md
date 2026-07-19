@@ -202,6 +202,8 @@ Retest `WVERSE-171` superato su Samsung S26+: la ricerca mantiene testo e focus 
 
 Nuova attività `WVERSE-201`: misurare e mostrare la durata complessiva del ciclo di aggiornamento fonti, per valutare la performance. Associata all’Epic `WVERSE-4`, versione `R2`, Sprint 1, con stima **3 Story Points / 16h / 2 giorni uomo**. WVERSE-186 resta in verifica fino al completamento del ciclo.
 
+Miglioramento per un prossimo rilascio: incorporare la durata nella label dello stato, ad esempio **Ciclo completato (durata aggiornamento 2h 10m 4s)**, invece di mostrarla come informazione separata nel pannello.
+
 Convenzione Jira aggiornata: le issue che riguardano esclusivamente mobile/responsive usano anche la label `mobile`. Applicata a `WVERSE-165`, `WVERSE-166`, `WVERSE-171` e `WVERSE-194`. Quick filter consigliato: `project = WVERSE AND labels = mobile ORDER BY priority DESC, key ASC`.
 
 ## Analisi delle Story in backlog
