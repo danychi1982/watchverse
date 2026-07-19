@@ -132,6 +132,10 @@ Questa tabella prevale sulle righe storiche precedenti. Le attivita tecniche sen
 
 Nota di consolidamento: la fix per la persistenza delle rimozioni ora scrive un tombstone cloud con revisione e timestamp aggiornati; resta solo la verifica manuale. La copertura metadati resta invece un'analisi sui dati reali: il retry non riduce i titoli da verificare e va campionato dal pannello fonti.
 
+### Evidenza collaudo desktop — WVERSE-195 (19 luglio 2026)
+
+Controllo a campione superato su Home, Serie, Film, Cerca e dettaglio titoli: non sono emersi testi tecnici interni o messaggi da sviluppatore nell’interfaccia.
+
 ### Evidenza collaudo desktop — WVERSE-193 (19 luglio 2026)
 
 Retest KO: il controllo delle stagioni mostra un cerchio non risolutivo, con chevron piccolo e decentrato; nello stato chiuso il simbolo punta a destra. Da correggere secondo il pattern accordion/disclosure: `aria-expanded` coerente con lo stato, chevron verso il basso da chiuso e verso l'alto da aperto, dimensione e allineamento centrati.
