@@ -178,6 +178,10 @@ La ripresa dei test ha distinto gli esiti funzionali desktop dai test che richie
 
 La suite automatica e la build statica sono verdi. Gli E2E browser locali restano sospesi per `spawn EPERM`; i test multidispositivo e mobile non sono stati considerati completati.
 
+## Nuova attività Sprint 1 — WVERSE-199
+
+Creata la Task `WVERSE-199` per sostituire la label “Prossimo” con “Visto” nelle card delle serie, mantenendo invariata la logica di registrazione dell’episodio. La Task è assegnata a Daniela, nello Sprint 1, con stima **3 Story Points / 16h / 2 giorni uomo**.
+
 ## Analisi delle Story in backlog
 
 Nel ciclo di analisi sono stati prodotti deliverable funzionali e tecnici versionati in `docs/knowledge/analysis/`. Per le Story che erano ancora in `Da completare`:

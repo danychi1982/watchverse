@@ -148,6 +148,10 @@ Verificate le cinque issue Jira ancora in sviluppo. Le fix sono state completate
 
 Test superato su più card di serie completate: il pulsante “Completata” è stato rimosso, il check statico è leggibile e “Dettagli” occupa tutta la larghezza disponibile. La issue è pronta per la chiusura.
 
+### Nuova attività Sprint 1 — WVERSE-199
+
+Sostituire la label “Prossimo” con “Visto” nel pulsante delle card serie non completate, perché l’azione marca come visto l’episodio corrente. Stima: 3 Story Points / 16h / 2 giorni uomo.
+
 ### Stato workflow — WVERSE-186 (19 luglio 2026)
 
 La lavorazione tecnica è stata completata: il ticket passa da In corso a Revisione per il retest desktop del pannello Stato aggiornamento fonti.
