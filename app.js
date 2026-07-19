@@ -1829,7 +1829,7 @@
         ${completed ? '<span class="completion-indicator" role="status" aria-label="Serie completata"><span aria-hidden="true">✓</span> Completata</span>' : ''}
         ${isSeries ? `<div class="progress-track" aria-label="Avanzamento ${prog.percent}%"><div class="progress-fill" style="width:${prog.percent}%"></div></div>` : ''}
         <div class="card-actions ${isSeries && !hasNextEpisode ? 'card-actions-single' : ''}">
-          ${isSeries ? (hasNextEpisode ? '<button data-action="next">Prossimo</button>' : '') : `<button class="${item.watched ? 'watched' : ''}" data-action="watched">${item.watched ? '✓ Visto' : 'Segna visto'}</button>`}
+          ${isSeries ? (hasNextEpisode ? '<button data-action="next">Visto</button>' : '') : `<button class="${item.watched ? 'watched' : ''}" data-action="watched">${item.watched ? '✓ Visto' : 'Segna visto'}</button>`}
           <a class="secondary card-details-action" href="${href}" style="display:grid;place-items:center;padding:0 10px">Dettagli</a>
         </div>
       </div>

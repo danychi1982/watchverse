@@ -186,6 +186,8 @@ Aggiornamento Jira: `WVERSE-199` è associata all’Epic `WVERSE-2` (**Libreria,
 
 Retest `WVERSE-193`: KO su desktop. Lo chevron cambia posizione percepita tra aperto e chiuso; la issue è stata riportata in **In corso** con richiesta di geometria a dimensione fissa e ancoraggio stabile.
 
+Aggiornamento lavorazione: `WVERSE-193` è stata corretta con una geometria CSS a contenitore fisso ed è tornata in **Revisione** per retest. `WVERSE-199` è stata implementata con label **Visto** e portata in **Revisione**.
+
 ## Analisi delle Story in backlog
 
 Nel ciclo di analisi sono stati prodotti deliverable funzionali e tecnici versionati in `docs/knowledge/analysis/`. Per le Story che erano ancora in `Da completare`:
