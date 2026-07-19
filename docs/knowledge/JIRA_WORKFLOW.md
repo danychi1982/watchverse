@@ -139,6 +139,17 @@ I subtask tecnici restano intermedi: quando il loro output è completato vengono
 
 Gli output di analisi e le decisioni tecniche riproducibili sono conservati in `docs/knowledge/analysis/` con nome `WVERSE-<numero>.md`. I test di regressione condivisi dello Sprint 2 sono raccolti in `tests/test-sprint2-regressions.js` e inclusi nella suite `npm test`.
 
+## Esiti dei test Sprint 1
+
+Il test manuale di `WVERSE-18` è stato completato con esito funzionale positivo: il profilo Daniela viene caricato e la Home è utilizzabile. La Story è stata portata in `Done`.
+
+Durante il test sono stati aperti due bug nello Sprint 1:
+
+- `WVERSE-185`: ordine della sezione “Continua a guardare” non coerente con l’attività recente;
+- `WVERSE-186`: stato “Ciclo completato” incoerente con copertura metadati all’1%.
+
+Entrambi i bug sono assegnati a Daniela, collegati alle rispettive Epic, con priorità High, complessità Media e componenti tecnici valorizzati. Lo screenshot del collaudo è allegato a `WVERSE-18` e referenziato nei due bug.
+
 ## Analisi delle Story in backlog
 
 Nel ciclo di analisi sono stati prodotti deliverable funzionali e tecnici versionati in `docs/knowledge/analysis/`. Per le Story che erano ancora in `Da completare`:
