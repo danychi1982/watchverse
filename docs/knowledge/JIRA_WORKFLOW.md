@@ -164,7 +164,7 @@ La ripresa dei test ha distinto gli esiti funzionali desktop dai test che richie
 | `WVERSE-176` | Non eseguito: richiede modifica da altro dispositivo | Resta in Revisione |
 | `WVERSE-177` | Superato: redirect alla libreria corretta | Da portare a Completata |
 | `WVERSE-178` | Superato desktop: conferma, avanzamento e riepilogo import | Da portare a Completata |
-| `WVERSE-185` | KO: “Continua a guardare” include serie mai iniziate e non segue la visione reale | Preso in carico; rimosso il fallback basato su aggiunta/aggiornamento |
+| `WVERSE-185` | Superato desktop: “Continua a guardare” mostra solo serie iniziate e ordinate per visione recente | Da portare a Completata |
 | `WVERSE-186` | KO parziale: stato coerente, ma ciclo fermo con zero coda/attività e molti incompleti | Preso in carico; stato di attesa retry e diagnostica implementati |
 | `WVERSE-188` | KO: la label `Da iniziare` resta ingombrante/tagliata sulle card | Preso in carico; rimozione globale degli indicatori di stato dalle card, con controllo a tappeto richiesto |
 | `WVERSE-189` | Superato: cambio profilo ripristina la Home | Da portare a Completata |
