@@ -166,7 +166,7 @@ La ripresa dei test ha distinto gli esiti funzionali desktop dai test che richie
 | `WVERSE-178` | Superato desktop: conferma, avanzamento e riepilogo import | Da portare a Completata |
 | `WVERSE-185` | Superato desktop: “Continua a guardare” mostra solo serie iniziate e ordinate per visione recente | Da portare a Completata |
 | `WVERSE-186` | Fix implementato: stato ciclo, attesa retry e diagnostica aggiornati | Pronto per retest desktop; portato in Revisione |
-| `WVERSE-188` | Fix implementato: indicatori di stato rimossi dalle card; completate con check statico e Dettagli a larghezza piena | Pronto per retest desktop; 3 SP / 2 giorni uomo; portato in Revisione |
+| `WVERSE-188` | Superato desktop: indicatori di stato rimossi; completate con check statico e Dettagli a larghezza piena | Da portare a Completata; 3 SP / 2 giorni uomo |
 | `WVERSE-189` | Superato: cambio profilo ripristina la Home | Da portare a Completata |
 | `WVERSE-190` | Superato desktop: la prima query resta visibile e produce risultati pertinenti | Da portare a Completata |
 | `WVERSE-192` | Fix implementato: colonna laterale del dettaglio usa gap esplicito tra i box | Pronto per retest desktop; portato in Revisione |
