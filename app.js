@@ -1592,6 +1592,7 @@
     const active = state.metadataQueue.length + state.metadataRunning > 0;
     const remainingWork = totalTitles > 0 && allRows.some(row => needsPublicMetadata(row.item, row.kind, true));
     const waitingForRetry = !active && remainingWork && failed > 0;
+    const nextRetryAt = allRows.map(row => row.nextRetryAt).filter(value => value && dateMs(value) > Date.now()).sort((a, b) => dateMs(a) - dateMs(b))[0] || null;
     const batchCompleted = totalTitles === 0 || (!active && !remainingWork && !!state.metadataCycleCompletedAt);
     const cyclePercent = batchCompleted ? 100 : (active ? Math.max(1, Math.min(99, Math.round((state.metadataCompletedThisSession + state.metadataFailedThisSession) / Math.max(1, state.metadataCompletedThisSession + state.metadataFailedThisSession + state.metadataQueue.length + state.metadataRunning) * 100))) : (remainingWork ? Math.min(99, coveragePercent) : 0));
     return {
@@ -1620,6 +1621,7 @@
       active,
       remainingWork,
       waitingForRetry,
+      nextRetryAt,
       cycleStartedAt: state.metadataCycleStartedAt,
       cycleCompletedAt: state.metadataCycleCompletedAt,
       cycleDurationMs: state.metadataCycleDurationMs,
@@ -1639,6 +1641,7 @@
       return;
     }
     const status = metadataGlobalStatus();
+    updateMetadataStatusModal();
     button.classList.remove('hidden');
     button.classList.toggle('is-working', status.active);
     const hasIssues = !status.active && (status.failed > 0 || status.incomplete > 0);
@@ -1752,6 +1755,23 @@
     return `<article class="sync-source-group"><div class="sync-source-head"><div><strong>${esc(group.name)}</strong><span>${esc(group.state)}</span></div><b>${group.percent}%</b></div><div class="progress-track"><div class="progress-fill" style="width:${Math.max(0,Math.min(100,group.percent))}%"></div></div><div class="sync-source-meta"><span>${esc(group.updatedLabel||'Elementi aggiornati')}: <strong>${Number(group.updated||0).toLocaleString('it-IT')}</strong></span><span>Errori: <strong>${Number(group.errors||0).toLocaleString('it-IT')}</strong></span><span>Ultimo tentativo: <strong>${group.last?fmtDateTime(group.last):'—'}</strong></span><span>Prossimo aggiornamento: <strong>${esc(group.next||'—')}</strong></span></div></article>`;
   }
 
+  function metadataStatusModalHtml(s) {
+    const groups = syncSourceGroups(s);
+    const cycleLabel = s.active ? 'Aggiornamento in corso' : s.waitingForRetry ? 'In attesa di retry' : s.remainingWork ? 'Ciclo parziale' : 'Ciclo completato';
+    const durationCopy = s.cycleDurationLabel ? `<p class="metadata-cycle-duration"><strong>Durata complessiva del ciclo:</strong> ${esc(s.cycleDurationLabel)}</p>` : '';
+    const liveCopy = s.active
+      ? `<p class="metadata-live-line"><span class="inline-spinner" aria-hidden="true"></span>Aggiornamento in corso: ${s.running} elaborazioni attive e ${s.queued} titoli in coda. Puoi continuare a usare l’app.</p>`
+      : s.waitingForRetry
+        ? `<p class="metadata-live-line metadata-retry-line"><strong>In attesa di retry.</strong> ${s.failed} errori tecnici registrati${s.nextRetryAt ? ` · prossimo tentativo ${fmtDateTime(s.nextRetryAt)}` : ' · prossimo tentativo pianificato'}.</p>`
+        : durationCopy;
+    return `<div class="metadata-status-detail"><div class="metadata-status-big"><strong>${s.coveragePercent}%</strong><div><span>Copertura effettiva dei metadati</span><small class="metadata-cycle-state">${cycleLabel}</small></div></div><div class="progress-track metadata-progress large"><div class="progress-fill" style="width:${s.coveragePercent}%"></div></div><div class="metadata-recap-grid"><div><strong>${s.totalTitles.toLocaleString('it-IT')}</strong><span>Titoli del profilo</span></div><div><strong>${s.essentialIncomplete.toLocaleString('it-IT')}</strong><span>Titoli da verificare</span></div><div><strong>${s.failed.toLocaleString('it-IT')}</strong><span>Errori tecnici</span></div></div><div class="sync-source-groups">${groups.map(syncGroupHtml).join('')}</div>${liveCopy}</div>`;
+  }
+
+  function updateMetadataStatusModal() {
+    const content = $('#metadataStatusModalContent');
+    if (content) content.innerHTML = metadataStatusModalHtml(metadataGlobalStatus());
+  }
+
   function metadataIssueRowHtml(row) {
     const route = row.kind === 'series' ? `#/series/${encodeURIComponent(row.item.id)}` : `#/movie/${encodeURIComponent(row.item.id)}`;
     const type = row.kind === 'series' ? 'Serie TV' : 'Film';
@@ -1794,7 +1814,7 @@
     $('#closeMetadataIssues')?.addEventListener('click',closeModal);
   }
 
-  function showMetadataStatus() {
+  function showMetadataStatusLegacy() {
     const s = metadataGlobalStatus();
     const groups=syncSourceGroups(s);
     const cycleLabel = s.active ? 'Aggiornamento in corso' : s.waitingForRetry ? 'In attesa di retry' : s.remainingWork ? 'Ciclo parziale' : 'Ciclo completato';
@@ -1816,6 +1836,18 @@
     $('.toast-close', el).addEventListener('click', remove);
     if (Number(timeout) > 0) setTimeout(remove, Number(timeout));
     return el;
+  }
+
+  // Override del pannello fonti: il contenuto resta sincronizzato anche quando la modale rimane aperta.
+  function showMetadataStatus() {
+    const s = metadataGlobalStatus();
+    openModal('Stato aggiornamento fonti', `<div id="metadataStatusModalContent">${metadataStatusModalHtml(s)}</div>`, `<button class="ghost" id="openSourceDetails">Vedi fonti</button><button class="ghost" id="openMetadataIssues">Dettaglio titoli</button><button class="secondary" id="retryMetadata">Riprova non riusciti</button><button class="primary" id="resumeMetadata">Aggiorna ora</button>`);
+    clearInterval(state.metadataStatusModalTimer);
+    state.metadataStatusModalTimer = setInterval(updateMetadataStatusModal, 1000);
+    $('#openSourceDetails')?.addEventListener('click',()=>{closeModal();state.profileSettingsTab='data';location.hash='#/settings';route();});
+    $('#openMetadataIssues')?.addEventListener('click',()=>showMetadataIssues('all'));
+    $('#retryMetadata')?.addEventListener('click',()=>{for(const item of [...state.series,...state.movies])if(item.publicMetadata?.failedAt||item.publicMetadata?.error)item.publicMetadata={...(item.publicMetadata||{}),failedAt:null,error:null,nextRetryAt:null,parts:{...(item.publicMetadata?.parts||{}),coreComplete:false}};state.metadataBackgroundStarted=false;state.metadataRecoveryScheduled=false;state.metadataRecoveryDone=false;state.metadataAutoBudget+=50;scheduleBackgroundMetadataSync(true);syncDefaultPublicSources(true);closeModal();showToast('Nuovo tentativo avviato','Le fonti non riuscite verranno ricontrollate.','â†»');});
+    $('#resumeMetadata')?.addEventListener('click', () => { state.metadataBackgroundStarted = false; state.metadataAutoBudget += 50; scheduleBackgroundMetadataSync(true); syncDefaultPublicSources(true); closeModal(); showToast('Aggiornamento in background', 'Catalogo, streaming, TV e cinema verranno controllati secondo le fonti configurate.', 'â†»', 4200); });
   }
 
   function openModal(title, body, actions = '', options = {}) {
@@ -1846,6 +1878,8 @@
     else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
   }
   function closeModal() {
+    clearInterval(state.metadataStatusModalTimer);
+    state.metadataStatusModalTimer = null;
     document.removeEventListener('keydown', modalKeydown);
     document.documentElement.classList.remove('modal-open');
     document.body.classList.remove('modal-open');
