@@ -660,6 +660,8 @@ Il collaudo di `WVERSE-173` è **parziale**: il dettaglio mostra correttamente t
 
 Il collaudo di `WVERSE-174` è **superato sul caso provato**: il retry ha mostrato prima il toast di aggiornamento e poi quello di metadati aggiornati; riaprendo il dettaglio, il titolo non era più presente tra quelli da verificare.
 
+Il retest di `WVERSE-188` è **KO**: anche con il wrapping la label `Da iniziare` resta troppo ingombrante e viene spezzata sulla locandina. Decisione di correzione: rimuovere globalmente gli indicatori di stato dalle card, perché i filtri e le sezioni già raggruppano i titoli per stato. La rimozione va verificata su Serie, Film, Home, rail, viste griglia/elenco e stati vuoti.
+
 Il collaudo desktop di `WVERSE-178` è **superato**: la sostituzione usa una conferma interna, mostra la pulizia e l’avanzamento, completa l’importazione senza errori e presenta il riepilogo dei dati salvati nel profilo corrente.
 
 Il collaudo desktop delle interazioni del pannello metadati è **superato**: durante l’aggiornamento i comandi `Vedi fonti`, `Dettaglio titoli`, `Riprova non riusciti`, `Aggiorna ora` e la chiusura hanno risposto correttamente.

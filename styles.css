@@ -163,7 +163,6 @@ select { min-height:44px; }
 .poster { aspect-ratio:2/3; position:relative; background:linear-gradient(145deg,#40331d,#151515); overflow:hidden; display:flex; align-items:flex-end; }
 .poster::after { content:""; position:absolute; inset:0; background:linear-gradient(to top,rgba(0,0,0,.85),transparent 55%); }
 .poster-title { position:relative; z-index:1; padding:14px; font-weight:950; text-transform:uppercase; letter-spacing:.4px; font-size:19px; text-shadow:0 3px 12px rgba(0,0,0,.8); }
-.poster-badge { position:absolute; top:10px; left:10px; z-index:2; display:inline-flex; max-width:calc(100% - 20px); align-items:center; justify-content:center; text-align:center; white-space:normal; overflow-wrap:anywhere; line-height:1.15; background:rgba(0,0,0,.72); border:1px solid rgba(255,255,255,.18); border-radius:999px; padding:5px 9px; font-size:11px; font-weight:900; }
 .favorite-button { position:absolute; z-index:4; top:9px; right:9px; width:36px; height:36px; border-radius:50%; border:1px solid rgba(255,255,255,.26); color:white; background:rgba(0,0,0,.56); }
 .favorite-button.active { color:#fff; background:var(--danger); border-color:var(--danger-strong); }
 .card-body { padding:13px; }
@@ -4249,7 +4248,6 @@ html[data-theme="last-of-us"] .mini-reel {
   .media-card .card-actions button[data-action="next"] { font-size:10px; padding-inline:2px !important; }
   .media-card .card-remove { font-size:10px; white-space:normal; line-height:1.2; }
   .poster-title { max-width:100%; overflow-wrap:anywhere; font-size:clamp(13px,4vw,18px); line-height:1.08; }
-  .poster-badge { max-width:calc(100% - 20px); overflow-wrap:anywhere; font-size:10px; line-height:1.15; }
   .toolbar, .tabbar { max-width:100%; overflow-x:auto; }
   .toolbar-left { min-width:0; }
   .search-box { min-width:0; width:100%; }
