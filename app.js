@@ -4464,6 +4464,7 @@
     });
   }
   function showProfileGate() {
+    state.profileSwitchInProgress = state.profileSelected;
     state.profileSelected=false; hideAppShell();
     $('#authRoot').innerHTML = `<section class="profile-gate"><div class="profile-gate-inner"><img class="profile-brand-mark" src="assets/brand/watchverse-dragon-w.svg" alt="Watchverse"><h1>Chi sta guardando?</h1><p>Scegli il profilo. Le librerie, i voti e le statistiche restano separati.</p>
       <div class="profile-choice-grid">${orderedProfiles(state.profiles).map(p=>`<button class="profile-choice" data-profile-choice="${esc(p.id)}">${avatarHtml(p,'avatar-large')}<strong>${esc(p.name)}</strong><small>${p.pinHash?'Protetto da PIN':'Nessun PIN'}</small></button>`).join('')}</div>
@@ -4483,7 +4484,8 @@
   }
   async function activateProfile(id) {
     const profile = state.profiles.find(item => item.id === id);
-    const requestedHash = location.hash && location.hash !== '#/' ? location.hash : '#/home';
+    const requestedHash = state.profileSwitchInProgress ? '#/home' : (location.hash && location.hash !== '#/' ? location.hash : '#/home');
+    state.profileSwitchInProgress = false;
     const loaderToken = showBlockingLoader(`Apro il profilo di ${profile?.name || 'Watchverse'}`, 'Carico libreria, preferenze e catalogo condiviso.');
     await nextPaint();
     try {
