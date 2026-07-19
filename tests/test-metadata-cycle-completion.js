@@ -10,5 +10,5 @@ assert(app.includes('function scheduleMetadataRecoveryPass()'), 'Manca il recupe
 assert(app.includes('tentativo manuale'), "Manca l'indicazione per il nuovo tentativo manuale");
 assert(app.includes("$('#retryMetadata')"), "Manca l'azione esplicita di retry dei metadati");
 assert(app.includes('function scheduleNextMetadataBatch()'), 'Manca la continuazione automatica dei lotti metadati');
-assert(app.includes('state.metadataAutoBudget = 36'), 'Manca il reset del budget per il lotto successivo');
+assert(app.includes('state.metadataAutoBudget = 72'), 'Manca il reset del budget per il lotto successivo');
 console.log('✓ ciclo e copertura metadati separati e coerenti');

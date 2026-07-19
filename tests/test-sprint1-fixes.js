@@ -29,5 +29,10 @@ assert(css.includes('.season-head[aria-expanded="false"] .season-chevron { trans
 assert(css.includes('transform:rotate(180deg)'), 'Lo chevron aperto non punta verso l’alto');
 assert(app.includes('nextRetryAt:null'), 'Il retry metadati non azzera la pianificazione precedente');
 assert(app.includes('input.setSelectionRange(input.value.length, input.value.length)'), 'La ricerca non ripristina il cursore dopo il rendering');
+assert(app.includes("Episodio segnato come visto"), 'Manca il feedback esplicito dopo aver segnato un episodio come visto');
+assert(app.includes('keepActiveTabVisible'), 'La tab selezionata non viene mantenuta visibile dopo il rendering');
+assert(css.includes('.search-recommendation-head { display:block; }'), 'La testata delle proposte non ha il layout mobile dedicato');
+assert(app.includes('metadataCycleDurationMs'), 'La durata del ciclo fonti non viene persistita');
+assert(app.includes('metadataConcurrency: 4'), 'Il ciclo fonti non usa il parallelismo ottimizzato');
 
 console.log('✓ Fix Sprint 1 e raccomandazioni verificate');

@@ -212,6 +212,12 @@ Convenzione Jira aggiornata: le issue che riguardano esclusivamente mobile/respo
 `WVERSE-203` — `[Libreria] [Mobile] Tab filtri: selezione non mantenuta visibile dopo lo scroll orizzontale`; **5 Story Points / 24h / 3 giorni uomo**.
 Entrambe sono Bug associate all’Epic `WVERSE-2`, versione `R2`, componente Front-end, label `mobile`, Sprint 1 e stato **Da completare**.
 
+### Lavorazione Sprint 1 — ciclo fonti e bug mobile
+
+Implementate e portate in **Revisione** le issue `WVERSE-200`, `WVERSE-201`, `WVERSE-202` e `WVERSE-203`.
+La lavorazione include il toast esplicito per l’episodio segnato come visto, il layout mobile della testata delle proposte Cerca, il mantenimento in viewport del filtro selezionato e la misurazione persistente della durata del ciclo fonti.
+Per il ciclo fonti è stato inoltre aumentato il parallelismo a 4 elaborazioni e il budget dei lotti a 72 titoli. La verifica finale della durata richiede il reimport dello ZIP pulito e l’attesa del completamento del ciclo.
+
 Nel ciclo di analisi sono stati prodotti deliverable funzionali e tecnici versionati in `docs/knowledge/analysis/`. Per le Story che erano ancora in `Da completare`:
 
 - `WVERSE-43`: preferenze e impostazioni personali;
