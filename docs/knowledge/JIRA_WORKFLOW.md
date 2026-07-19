@@ -218,6 +218,8 @@ Implementate e portate in **Revisione** le issue `WVERSE-200`, `WVERSE-201`, `WV
 La lavorazione include il toast esplicito per l’episodio segnato come visto, il layout mobile della testata delle proposte Cerca, il mantenimento in viewport del filtro selezionato e la misurazione persistente della durata del ciclo fonti.
 Per il ciclo fonti è stato inoltre aumentato il parallelismo a 4 elaborazioni e il budget dei lotti a 72 titoli. La verifica finale della durata richiede il reimport dello ZIP pulito e l’attesa del completamento del ciclo.
 
+Regressione post-pubblicazione su `WVERSE-201`: con cache svuotata `safeJson(null)` restituiva `null` e bloccava l’attivazione del profilo prima dell’apertura della Home. Corretto il fallback della lettura dello stato ciclo; aggiunta copertura automatica e richiesta verifica manuale di login + selezione Daniela.
+
 Nel ciclo di analisi sono stati prodotti deliverable funzionali e tecnici versionati in `docs/knowledge/analysis/`. Per le Story che erano ancora in `Da completare`:
 
 - `WVERSE-43`: preferenze e impostazioni personali;

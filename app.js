@@ -129,7 +129,7 @@
   }
   function metadataCycleStorageKey() { return `watchverse.metadataCycle.v1.${state.profileId || 'account'}`; }
   function loadMetadataCycle() {
-    const saved = safeJson(localStorage.getItem(metadataCycleStorageKey()), {});
+    const saved = safeJson(localStorage.getItem(metadataCycleStorageKey()), {}) || {};
     state.metadataCycleStartedAt = saved.startedAt || null;
     state.metadataCycleCompletedAt = saved.completedAt || null;
     state.metadataCycleDurationMs = Number.isFinite(Number(saved.durationMs)) ? Number(saved.durationMs) : null;
