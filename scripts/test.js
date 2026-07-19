@@ -35,6 +35,7 @@ const checks = [
   ["node", ["tests/test-search-results.js"]],
   ["node", ["tests/test-refresh-session.js"]],
   ["node", ["tests/test-sprint2-regressions.js"]],
+  ["node", ["tests/test-sprint1-fixes.js"]],
   ["node", ["tests/test-loading-orchestration.js"]],
   ["node", ["--check", "tests/e2e-browser.js"]],
   ["node", ["tests/test-aivengers-launcher-position.js"]],

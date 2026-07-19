@@ -953,6 +953,47 @@
   function invalidateSeriesComputed(seriesId = null) {
     if (seriesId) state.indexes.seriesComputed.delete(seriesId); else state.indexes.seriesComputed.clear();
   }
+  function pendingLibraryRemovalsKey() {
+    return `watchverse.pending-library-removals.${state.profileId || 'anonymous'}`;
+  }
+  function readPendingLibraryRemovals() {
+    try {
+      const rows = JSON.parse(localStorage.getItem(pendingLibraryRemovalsKey()) || '[]');
+      return Array.isArray(rows) ? rows.filter(row => row?.id && row?.kind) : [];
+    } catch { return []; }
+  }
+  function writePendingLibraryRemovals(rows) {
+    try { localStorage.setItem(pendingLibraryRemovalsKey(), JSON.stringify(rows)); } catch {}
+  }
+  function addPendingLibraryRemoval(entry) {
+    const rows = readPendingLibraryRemovals().filter(row => !(row.kind === entry.kind && row.id === entry.id));
+    rows.push(entry); writePendingLibraryRemovals(rows);
+  }
+  function removePendingLibraryRemoval(entry) {
+    writePendingLibraryRemovals(readPendingLibraryRemovals().filter(row => !(row.kind === entry.kind && row.id === entry.id)));
+  }
+  const pendingRemovalRuns = new Set();
+  async function completePendingLibraryRemoval(entry, options = {}) {
+    const runKey = `${entry.kind}:${entry.id}`;
+    if (pendingRemovalRuns.has(runKey)) return;
+    pendingRemovalRuns.add(runKey);
+    try {
+      const store = entry.kind === 'series' ? 'series' : 'movies';
+      await dbDelete(store, entry.id);
+      for (const progressId of entry.progressIds || []) await dbDelete('progress', progressId);
+      removePendingLibraryRemoval(entry);
+      if (options.feedback !== false) showToast('Titolo rimosso dalla libreria', entry.title, '×');
+    } catch (error) {
+      removePendingLibraryRemoval(entry);
+      await reloadData();
+      showToast('Rimozione non completata', 'La sincronizzazione non è riuscita. Il titolo è stato ripristinato: controlla la connessione e riprova.', '!', 8000, { kind:'error' });
+    } finally {
+      pendingRemovalRuns.delete(runKey);
+    }
+  }
+  function resumePendingLibraryRemovals() {
+    for (const entry of readPendingLibraryRemovals()) void completePendingLibraryRemoval(entry, { feedback:false });
+  }
   async function reloadData(options = {}) {
     const [series, movies, progress, people, catalog] = await Promise.all([
       dbGetAll('series'), dbGetAll('movies'), dbGetAll('progress'), dbGetAll('people'), dbGetAll('catalog')
@@ -961,15 +1002,17 @@
     // Migrazione trasparente: i metadati già presenti nelle librerie delle versioni precedenti
     // alimentano il catalogo comune, senza spostare o cancellare i dati personali.
     if (options.migrate !== false) await migrateLegacyRecordsIntoSharedCatalog(series, movies);
-    state.series = series.filter(x => x.profileId === state.profileId);
-    state.movies = movies.filter(x => x.profileId === state.profileId);
+    const pendingRemovals = readPendingLibraryRemovals();
+    const pendingIds = new Set(pendingRemovals.map(entry => `${entry.kind}:${entry.id}`));
+    state.series = series.filter(x => x.profileId === state.profileId && !pendingIds.has(`series:${x.id}`));
+    state.movies = movies.filter(x => x.profileId === state.profileId && !pendingIds.has(`movie:${x.id}`));
     const seriesAddedAtUpdates = state.series.filter(item => ensureLibraryAddedAt(item));
     const movieAddedAtUpdates = state.movies.filter(item => ensureLibraryAddedAt(item));
     if (seriesAddedAtUpdates.length) await dbBulkPut('series', seriesAddedAtUpdates);
     if (movieAddedAtUpdates.length) await dbBulkPut('movies', movieAddedAtUpdates);
     for (const item of state.series) mergeSharedCatalogData('series', item, findSharedCatalogEntry('series', item));
     for (const item of state.movies) mergeSharedCatalogData('movie', item, findSharedCatalogEntry('movie', item));
-    state.progress = progress.filter(x => x.profileId === state.profileId);
+    state.progress = progress.filter(x => x.profileId === state.profileId && !pendingIds.has(`series:${x.seriesId}`));
     state.people = people.filter(x => x.profileId === state.profileId);
     // Migrazione 2.0.8: converte i codici voto storici di TV Time in stelle.
     // Viene eseguita anche sulle librerie già importate con versioni precedenti.
@@ -987,6 +1030,7 @@
     buildNotifications();
     state.dataRevision += 1;
     state.viewCache = { revision: state.dataRevision, searchRecommendations: null, programmingMarkup: null };
+    idle(resumePendingLibraryRemovals);
   }
 
   function progressRecord(seriesId, season, episode) {
@@ -1499,8 +1543,9 @@
     const coveragePercent = totalTitles ? Math.max(0, Math.min(100, Math.round(coreReady / totalTitles * 100))) : 100;
     const extendedCoveragePercent = totalTitles ? Math.max(0, Math.min(100, Math.round(allRows.filter(row => row.extendedComplete).length / totalTitles * 100))) : 100;
     const active = state.metadataQueue.length + state.metadataRunning > 0;
-    const batchCompleted = !active && (state.metadataBackgroundStarted || totalTitles === 0);
-    const cyclePercent = batchCompleted ? 100 : (active ? Math.max(1, Math.min(99, Math.round((state.metadataCompletedThisSession + state.metadataFailedThisSession) / Math.max(1, state.metadataCompletedThisSession + state.metadataFailedThisSession + state.metadataQueue.length + state.metadataRunning) * 100))) : 0);
+    const remainingWork = totalTitles > 0 && allRows.some(row => needsPublicMetadata(row.item, row.kind, true));
+    const batchCompleted = totalTitles === 0 || (!active && state.metadataBackgroundStarted && !remainingWork);
+    const cyclePercent = batchCompleted ? 100 : (active ? Math.max(1, Math.min(99, Math.round((state.metadataCompletedThisSession + state.metadataFailedThisSession) / Math.max(1, state.metadataCompletedThisSession + state.metadataFailedThisSession + state.metadataQueue.length + state.metadataRunning) * 100))) : (remainingWork ? Math.min(99, coveragePercent) : 0));
     return {
       totalTitles,
       coreReady,
@@ -1524,7 +1569,8 @@
       diagnostics: allRows,
       queued: state.metadataQueue.length,
       running: state.metadataRunning,
-      active
+      active,
+      remainingWork
     };
   }
 
@@ -1551,6 +1597,8 @@
     if (label) label.textContent = `Metadati ${status.coveragePercent}%`;
     if (summary) summary.textContent = status.active
       ? `${status.running} in corso · ${status.queued} in coda · copertura ${status.coveragePercent}%`
+      : status.remainingWork
+        ? `${status.incomplete} titoli da verificare · ciclo ancora in corso`
       : status.incomplete > 0
         ? `${status.incomplete} titoli incompleti${status.failed ? ` · ${status.failed} errori` : ''}`
         : 'Catalogo completo';
@@ -1689,6 +1737,7 @@
   function showMetadataStatus() {
     const s = metadataGlobalStatus();
     const groups=syncSourceGroups(s);
+    if (!s.active && s.remainingWork) s.active = true;
     openModal('Stato aggiornamento fonti', `<div class="metadata-status-detail"><div class="metadata-status-big"><strong>${s.coveragePercent}%</strong><div><span>Copertura effettiva dei metadati</span><small class="metadata-cycle-state">${s.active ? 'Aggiornamento in corso' : 'Ciclo completato'}</small></div></div><div class="progress-track metadata-progress large"><div class="progress-fill" style="width:${s.coveragePercent}%"></div></div><div class="metadata-recap-grid"><div><strong>${s.totalTitles.toLocaleString('it-IT')}</strong><span>Titoli del profilo</span></div><div><strong>${s.essentialIncomplete.toLocaleString('it-IT')}</strong><span>Titoli da verificare</span></div><div><strong>${s.failed.toLocaleString('it-IT')}</strong><span>Errori tecnici</span></div></div><div class="sync-source-groups">${groups.map(syncGroupHtml).join('')}</div>${s.active ? `<p class="metadata-live-line"><span class="inline-spinner" aria-hidden="true"></span>Aggiornamento in corso: ${s.running} elaborazioni attive e ${s.queued} titoli in coda. Puoi continuare a usare l’app.</p>` : ''}</div>`, `<button class="ghost" id="openSourceDetails">Vedi fonti</button><button class="ghost" id="openMetadataIssues">Dettaglio titoli</button><button class="secondary" id="retryMetadata">Riprova non riusciti</button><button class="primary" id="resumeMetadata">Aggiorna ora</button>`);
     $('#openSourceDetails')?.addEventListener('click',()=>{closeModal();state.profileSettingsTab='data';location.hash='#/settings';route();});
     $('#openMetadataIssues')?.addEventListener('click',()=>showMetadataIssues('all'));
@@ -1929,7 +1978,7 @@
     const total=mainCastMembers(item.cast||[],Number.MAX_SAFE_INTEGER).length;
     const shown=Math.min(total,10);
     const fullCast=fullCastExternalLink(item,kind);
-    const description=total?`${shown} interpreti principali${total>shown?` su ${total} disponibili`:''}. I nomi e i personaggi sono mostrati per esteso.`:'Apri una scheda per vedere i titoli collegati.';
+    const description=total?`${shown} interpreti principali${total>shown?` su ${total} disponibili`:''}.`:'Apri una scheda per vedere i titoli collegati.';
     return `<section class="content-card section cast-section"><div class="section-head"><div><h3>Cast</h3><p>${esc(description)}</p></div>${fullCast?`<a class="secondary compact external-cast-link" href="${esc(fullCast.url)}" target="_blank" rel="noopener noreferrer">${esc(fullCast.label)} ↗</a>`:''}</div>${total?`<div class="cast-strip cast-grid" role="list" aria-label="Interpreti principali">${castSectionHtml(item)}</div>`:castSectionHtml(item)}</section>`;
   }
 
@@ -1997,24 +2046,18 @@
     const list = kind === 'series' ? state.series : state.movies;
     const item = list.find(x => x.id === id);
     if (!item || !(await confirmLibraryRemoval(item.title))) return;
-    try {
-      await dbDelete(store, id);
-      if (kind === 'series') {
-        const related = state.progress.filter(x => x.seriesId === id);
-        for (const record of related) await dbDelete('progress', record.id);
-        state.series = state.series.filter(x => x.id !== id);
-        state.progress = state.progress.filter(x => x.seriesId !== id);
-      } else {
-        state.movies = state.movies.filter(x => x.id !== id);
-      }
-    } catch (error) {
-      showToast('Rimozione non completata', 'La rimozione non è stata sincronizzata. Controlla la connessione e riprova.', '!', 8000, { kind:'error' });
-      return;
-    }
+    const related = kind === 'series' ? state.progress.filter(x => x.seriesId === id) : [];
+    const pending = { kind, id, title: item.title, progressIds: related.map(record => record.id), startedAt: new Date().toISOString() };
+    addPendingLibraryRemoval(pending);
+    if (kind === 'series') {
+      state.series = state.series.filter(x => x.id !== id);
+      state.progress = state.progress.filter(x => x.seriesId !== id);
+    } else state.movies = state.movies.filter(x => x.id !== id);
     rebuildIndexes();
-    showToast('Titolo rimosso dalla libreria', item.title, '×');
+    showToast('Rimozione in corso', item.title, '…', 0);
     location.hash = kind === 'series' ? '#/series' : '#/movies';
     await route({ loader:false });
+    void completePendingLibraryRemoval(pending);
   }
   function confirmLibraryRemoval(title) {
     return new Promise(resolve => {
@@ -2478,7 +2521,7 @@
   function renderHomeContent() {
 
     const recentlyWatched = state.series
-      .map(s => ({ s, ep: nextEpisode(s), watchedAt: latestWatchedAt(s.id) }))
+      .map(s => ({ s, ep: nextEpisode(s), watchedAt: latestWatchedAt(s.id) || s.watchedAt || s.updatedAt || s.addedAt }))
       .filter(x => x.ep && x.watchedAt)
       .sort((a, b) => dateMs(b.watchedAt) - dateMs(a.watchedAt))
       .slice(0, 12);
@@ -2759,13 +2802,21 @@
   }
   function profileRecommendations(limit = 10) {
     const exclusions = buildLibraryExclusionIndex();
-    const liked=[...state.series.map(x=>({item:x,kind:'series'})),...state.movies.map(x=>({item:x,kind:'movie'}))].filter(row=>row.item.favorite||Number(row.item.rating||0)>=8);
-    if(!liked.length)return [];
+    const seeds=[...state.series.map(x=>({item:x,kind:'series'})),...state.movies.map(x=>({item:x,kind:'movie'}))];
+    if(!seeds.length)return [];
     // Le proposte devono essere titoli nuovi per il profilo.
     const candidates = state.catalogEntries
       .map(entry => ({ item: { ...(entry.data || {}), id: entry.id, sharedCatalogId: entry.id }, kind: entry.kind }))
       .filter(row => row.item.title && !isCandidateInLibrary(row, exclusions));
-    const ranked = candidates.map(row=>{let score=0;for(const seed of liked)score=Math.max(score,recommendationScore(seed.item,row.item,seed.kind,row.kind));return{...row,score};}).sort((a,b)=>b.score-a.score||String(a.item.title).localeCompare(String(b.item.title),'it'));
+    const ranked = candidates.map(row=>{
+      let score=0;
+      for(const seed of seeds) {
+        const base=recommendationScore(seed.item,row.item,seed.kind,row.kind);
+        const profileSignal=(seed.item.favorite?3:0)+(Number(seed.item.rating||0)>=8?2:0);
+        score=Math.max(score,base+profileSignal);
+      }
+      return {...row,score};
+    }).sort((a,b)=>b.score-a.score||String(a.item.title).localeCompare(String(b.item.title),'it'));
     const relevant = ranked.filter(row => row.score > 0);
     return (relevant.length >= Math.min(4, limit) ? relevant : ranked).slice(0, limit);
   }

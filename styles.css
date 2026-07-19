@@ -4365,3 +4365,13 @@ html[data-theme="buffy"] .brand-mark {
   letter-spacing:0;
 }
 .brand-name { text-rendering:geometricPrecision; }
+
+/* WVERSE-194: il cast deve restare consultabile anche su viewport strette. */
+@media (max-width:600px) {
+  .cast-section { overflow:hidden; }
+  .cast-strip.cast-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .cast-strip.cast-grid .cast-photo { aspect-ratio:1 / 1; max-height:132px; }
+  .cast-strip.cast-grid .cast-copy { min-height:58px; padding:7px; }
+  .cast-strip.cast-grid .cast-copy strong,
+  .cast-strip.cast-grid .cast-copy small { font-size:11px; line-height:1.2; }
+}
