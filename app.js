@@ -2735,7 +2735,9 @@
     const pool = state.catalogEntries
       .map(entry => ({ item: { ...(entry.data || {}), id: entry.id, sharedCatalogId: entry.id }, kind: entry.kind }))
       .filter(row => row.item.title && !isCandidateInLibrary(row, exclusions));
-    return pool.map(row=>({...row,score:recommendationScore(item,row.item,kind,row.kind)})).filter(row=>row.score>0).sort((a,b)=>b.score-a.score||String(a.item.title).localeCompare(String(b.item.title),'it')).slice(0,limit);
+    const ranked = pool.map(row=>({...row,score:recommendationScore(item,row.item,kind,row.kind)})).sort((a,b)=>b.score-a.score||String(a.item.title).localeCompare(String(b.item.title),'it'));
+    const relevant = ranked.filter(row => row.score > 0);
+    return (relevant.length >= Math.min(4, limit) ? relevant : ranked).slice(0, limit);
   }
   // Keep the one-argument helper contract for existing checks; indexed callers pass a second argument.
   // Legacy filter expression: !isCandidateInLibrary(row)
@@ -2763,7 +2765,9 @@
     const candidates = state.catalogEntries
       .map(entry => ({ item: { ...(entry.data || {}), id: entry.id, sharedCatalogId: entry.id }, kind: entry.kind }))
       .filter(row => row.item.title && !isCandidateInLibrary(row, exclusions));
-    return candidates.map(row=>{let score=0;for(const seed of liked)score=Math.max(score,recommendationScore(seed.item,row.item,seed.kind,row.kind));return{...row,score};}).filter(row=>row.score>0).sort((a,b)=>b.score-a.score||String(a.item.title).localeCompare(String(b.item.title),'it')).slice(0,limit);
+    const ranked = candidates.map(row=>{let score=0;for(const seed of liked)score=Math.max(score,recommendationScore(seed.item,row.item,seed.kind,row.kind));return{...row,score};}).sort((a,b)=>b.score-a.score||String(a.item.title).localeCompare(String(b.item.title),'it'));
+    const relevant = ranked.filter(row => row.score > 0);
+    return (relevant.length >= Math.min(4, limit) ? relevant : ranked).slice(0, limit);
   }
   function suggestionReason(seed, candidate) {
     const shared=(candidate.genres||[]).filter(g=>(seed.genres||[]).some(x=>normalizeSearch(x)===normalizeSearch(g))).slice(0,2);
@@ -2775,8 +2779,7 @@
     const action = item.sharedCatalogId ? `<button class="suggestion-card" type="button" data-add-suggestion="${esc(item.sharedCatalogId)}" aria-label="Aggiungi ${esc(item.title)}"><span class="suggestion-poster" style="background:${item.posterGradient||gradient(item.title)}">${item.poster?`<img class="poster-img" src="${esc(item.poster)}" alt="" loading="lazy" decoding="async">`:esc(item.title.slice(0,2).toUpperCase())}</span><span class="suggestion-copy"><strong>${esc(item.title)}</strong><small>${esc([item.year,row.kind==='series'?'Serie':'Film'].filter(Boolean).join(' · '))}</small><em>${esc(reason)}</em><b>Aggiungi</b></span></button>` : `<a class="suggestion-card" href="${href}" aria-label="Apri ${esc(item.title)}"><span class="suggestion-poster" style="background:${item.posterGradient||gradient(item.title)}">${item.poster?`<img class="poster-img" src="${esc(item.poster)}" alt="" loading="lazy" decoding="async">`:esc(item.title.slice(0,2).toUpperCase())}</span><span class="suggestion-copy"><strong>${esc(item.title)}</strong><small>${esc([item.year,row.kind==='series'?'Serie':'Film'].filter(Boolean).join(' · '))}</small><em>${esc(reason)}</em></span></a>`;
     return action;
   }
-  function similarSectionHtml(item, kind) {
-    const suggestions=similarSuggestions(item,kind,12);
+  function similarSectionHtml(item, kind, suggestions = similarSuggestions(item,kind,12)) {
     const railId=`similar-rail-${kind}-${slug(item.id||item.title)}`;
     return `<section class="content-card section similar-section"><div class="section-head"><div><h3>Potrebbero piacerti anche</h3><p>Suggerimenti basati su generi, interpreti e titoli del profilo.</p></div>${suggestions.length?railControlsHtml(railId,'Potrebbero piacerti anche'):''}</div>${suggestions.length?`<div class="suggestion-rail" id="${esc(railId)}" data-rail tabindex="0" role="list" aria-label="Potrebbero piacerti anche">${suggestions.map(row=>suggestionCardHtml(row,item)).join('')}</div>`:'<p class="notice">Aggiungi altri titoli e valutazioni per ottenere suggerimenti più precisi.</p>'}</section>`;
   }
@@ -2790,10 +2793,12 @@
       if ((kind === 'series' && current.page !== 'series') || (kind === 'movie' && current.page !== 'movie') || current.id !== item.id) return;
       const shell = $$('[data-similar-shell]').find(element => element.dataset.similarKind === kind && element.dataset.similarId === item.id);
       if (!shell) return;
+      const suggestions = similarSuggestions(item, kind, 12);
       const wrapper = document.createElement('div');
-      wrapper.innerHTML = similarSectionHtml(item, kind);
+      wrapper.innerHTML = similarSectionHtml(item, kind, suggestions);
       shell.replaceWith(wrapper.firstElementChild);
       bindHorizontalRails($('#main'));
+      bindRecommendationActions(suggestions);
     });
   }
 
@@ -3311,19 +3316,19 @@
     });
   }
 
-  function bindRecommendationActions() {
+  function bindRecommendationActions(rows = state.recommendationResults) {
     $$('[data-add-suggestion]').forEach(button => {
       if (button.dataset.bound === '1') return;
       button.dataset.bound = '1';
       button.addEventListener('click', async () => {
-        const row = state.recommendationResults.find(item => item.item.sharedCatalogId === button.dataset.addSuggestion);
+        const row = rows.find(item => item.item.sharedCatalogId === button.dataset.addSuggestion);
         if (!row) return;
         button.disabled = true;
         try {
           const item = await addFromSharedCatalogResult({ catalogEntryId: row.item.sharedCatalogId, id: row.item.sharedCatalogId, kind: row.kind === 'series' ? 'tv' : 'movie', title: row.item.title });
           showToast('Aggiunto alla libreria', item.title);
           await reloadData();
-          renderSearch();
+          location.hash = row.kind === 'series' ? `#/series/${encodeURIComponent(item.id)}` : `#/movie/${encodeURIComponent(item.id)}`;
         } catch (error) {
           showToast('Impossibile aggiungere', error.message, '!', 6000, { kind: 'error' });
           button.disabled = false;

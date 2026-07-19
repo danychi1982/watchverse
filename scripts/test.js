@@ -22,6 +22,7 @@ const checks = [
   ["node", ["tests/test-appearance-accessibility.js"]],
   ["node", ["tests/test-theme-contrast.js"]],
   ["node", ["tests/test-shared-catalog.js"]],
+  ["node", ["tests/test-recommendation-actions.js"]],
   ["node", ["tests/test-localized-metadata.js"]],
   ["node", ["tests/test-ui-2.0.18.js"]],
   ["node", ["tests/test-cinema-location-spacing.js"]],
