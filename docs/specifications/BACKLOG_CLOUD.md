@@ -202,6 +202,8 @@ Portate in **In corso** per la lavorazione successiva: `WVERSE-164` runner E2E/C
 
 Misurare la durata complessiva del ciclo fonti e mostrarla quando il ciclo è completato, mantenendo il dato dopo la riapertura del pannello. Contesto: reimport pulito fermo al 4% con 2.449 titoli da verificare e 0 errori. Epic `WVERSE-4`, versione `R2`, stima 3 Story Points / 16h / 2 giorni uomo.
 
+Miglioramento per un prossimo rilascio: incorporare la durata nella label dello stato, ad esempio **Ciclo completato (durata aggiornamento 2h 10m 4s)**, invece di mostrarla come informazione separata nel pannello.
+
 ### Convenzione filtro mobile Jira
 
 ### Lavorazione Sprint 1 — WVERSE-200/201/202/203
