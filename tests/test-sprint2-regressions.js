@@ -37,6 +37,10 @@ assert(app.includes('state.initialCloudHydrationError = error?.message'));
 // WVERSE-175/177: la rimozione usa il percorso cloud/local comune e torna alla
 // libreria corretta dopo il dettaglio.
 assert(app.includes("await dbDelete(store, id);"));
+assert(app.includes('async function dbDelete(store, id)'));
+assert(app.includes('await window.WatchverseCloudSync.deleteRecord(currentProfile(), store, deletion);'));
+assert(!app.includes('void window.WatchverseCloudSync?.deleteRecord(currentProfile(), store, deletion)'));
+assert(app.includes('La tombstone cloud deve essere persistita prima di eliminare il dato locale'));
 assert(app.includes("location.hash = kind === 'series' ? '#/series' : '#/movies';"));
 assert(cloud.includes('deleted_at'));
 assert(cloud.includes('revision'));

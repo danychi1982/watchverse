@@ -538,23 +538,35 @@
     }
     return done;
   }
-  function dbDelete(store, id) {
-    const valuePromise = dbGetAll(store).then(values => values.find(value => value.id === id));
-    const syncDelete = value => {
-      if (!value) return;
-      // Una rimozione esplicita deve vincere sul record cloud precedente e lasciare un tombstone persistente.
+  async function dbDelete(store, id) {
+    const value = state.db?.memory
+      ? memoryStores[store].get(id)
+      : (await dbGetAll(store)).find(item => item.id === id);
+    if (!value) return;
+
+    // La tombstone cloud deve essere persistita prima di eliminare il dato locale:
+    // altrimenti un pull concorrente può ripristinare il record appena rimosso.
+    const cloudDelete = navigator.onLine && window.WatchverseCloudSync?.isEnabled?.() && window.WatchverseCloudSync?.deleteRecord;
+    if (cloudDelete) {
       const deletion = { ...value, revision: Number(value.revision || 0) + 1, updatedAt: new Date().toISOString() };
-      void window.WatchverseCloudSync?.deleteRecord(currentProfile(), store, deletion).catch(error => {
+      try {
+        await window.WatchverseCloudSync.deleteRecord(currentProfile(), store, deletion);
+      } catch (error) {
         console.warn('Watchverse cloud delete sync:', error);
         state.cloudSyncPending = true;
-      });
-    };
-    if (state.db?.memory) { const value = memoryStores[store].get(id); memoryStores[store].delete(id); syncDelete(value); return Promise.resolve(); }
-    return valuePromise.then(value => new Promise((resolve, reject) => {
+        throw error;
+      }
+    }
+
+    if (state.db?.memory) {
+      memoryStores[store].delete(id);
+      return;
+    }
+    await new Promise((resolve, reject) => {
       const r = dbTx(store, 'readwrite').delete(id);
-      r.onsuccess = () => { syncDelete(value); resolve(); };
+      r.onsuccess = resolve;
       r.onerror = () => reject(r.error);
-    }));
+    });
   }
   function dbDeleteLocal(store, id) {
     if (state.db?.memory) { memoryStores[store].delete(id); return Promise.resolve(); }
@@ -1985,14 +1997,19 @@
     const list = kind === 'series' ? state.series : state.movies;
     const item = list.find(x => x.id === id);
     if (!item || !(await confirmLibraryRemoval(item.title))) return;
-    await dbDelete(store, id);
-    if (kind === 'series') {
-      const related = state.progress.filter(x => x.seriesId === id);
-      for (const record of related) await dbDelete('progress', record.id);
-      state.series = state.series.filter(x => x.id !== id);
-      state.progress = state.progress.filter(x => x.seriesId !== id);
-    } else {
-      state.movies = state.movies.filter(x => x.id !== id);
+    try {
+      await dbDelete(store, id);
+      if (kind === 'series') {
+        const related = state.progress.filter(x => x.seriesId === id);
+        for (const record of related) await dbDelete('progress', record.id);
+        state.series = state.series.filter(x => x.id !== id);
+        state.progress = state.progress.filter(x => x.seriesId !== id);
+      } else {
+        state.movies = state.movies.filter(x => x.id !== id);
+      }
+    } catch (error) {
+      showToast('Rimozione non completata', 'La rimozione non è stata sincronizzata. Controlla la connessione e riprova.', '!', 8000, { kind:'error' });
+      return;
     }
     rebuildIndexes();
     showToast('Titolo rimosso dalla libreria', item.title, '×');
