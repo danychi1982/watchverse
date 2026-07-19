@@ -169,7 +169,7 @@ La ripresa dei test ha distinto gli esiti funzionali desktop dai test che richie
 | `WVERSE-188` | Superato desktop: indicatori di stato rimossi; completate con check statico e Dettagli a larghezza piena | Da portare a Completata; 3 SP / 2 giorni uomo |
 | `WVERSE-189` | Superato: cambio profilo ripristina la Home | Da portare a Completata |
 | `WVERSE-190` | Superato desktop: la prima query resta visibile e produce risultati pertinenti | Da portare a Completata |
-| `WVERSE-192` | Fix implementato: colonna laterale del dettaglio usa gap esplicito tra i box | Pronto per retest desktop; portato in Revisione |
+| `WVERSE-192` | Superato desktop: colonna laterale del dettaglio mantiene il distacco tra i box | Da portare a Completata |
 | `WVERSE-193` | Fix implementato: chevron senza cerchio, centrato, giù da chiuso e su da aperto | Pronto per retest desktop; portato in Revisione |
 | `WVERSE-194` | Non eseguito: richiede viewport mobile | Resta in Revisione |
 | `WVERSE-195` | Superato desktop: controllo a campione senza testi tecnici residui nell’interfaccia | Da portare a Completata |
@@ -181,6 +181,10 @@ La suite automatica e la build statica sono verdi. Gli E2E browser locali restan
 ## Nuova attività Sprint 1 — WVERSE-199
 
 Creata la Task `WVERSE-199` per sostituire la label “Prossimo” con “Visto” nelle card delle serie, mantenendo invariata la logica di registrazione dell’episodio. La Task è assegnata a Daniela, nello Sprint 1, con stima **3 Story Points / 16h / 2 giorni uomo**.
+
+Aggiornamento Jira: `WVERSE-199` è associata all’Epic `WVERSE-2` (**Libreria, progressi e preferiti**) e alla versione di correzione `R2`.
+
+Retest `WVERSE-193`: KO su desktop. Lo chevron cambia posizione percepita tra aperto e chiuso; la issue è stata riportata in **In corso** con richiesta di geometria a dimensione fissa e ancoraggio stabile.
 
 ## Analisi delle Story in backlog
 
