@@ -196,6 +196,8 @@ Nuova attività `WVERSE-200`: uniformazione delle card serie tra Home e Serie, m
 
 Retest `WVERSE-193` superato su desktop; issue portata in **Completata**.
 
+Retest `WVERSE-194` superato su mobile: le schede del Cast sono leggibili e consultabili; issue portata in **Completata**.
+
 ## Analisi delle Story in backlog
 
 Nel ciclo di analisi sono stati prodotti deliverable funzionali e tecnici versionati in `docs/knowledge/analysis/`. Per le Story che erano ancora in `Da completare`:

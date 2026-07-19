@@ -208,6 +208,8 @@ Uniformare le card delle serie tra Home e Serie usando la versione Home più com
 
 Retest desktop `WVERSE-193` superato: posizione e verso dello chevron verificati; issue chiusa.
 
+Retest mobile `WVERSE-194` superato: schede Cast consultabili e leggibili senza tagli o sovrapposizioni; issue chiusa.
+
 ### Evidenza collaudo desktop — WVERSE-192 (19 luglio 2026)
 
 Retest KO: nella scheda dettaglio la sezione “Programmazione Italia” è ancora visivamente attaccata alla sezione precedente. Il ticket torna in corso per correggere il distacco verticale.
