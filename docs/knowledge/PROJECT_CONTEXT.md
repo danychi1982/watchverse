@@ -46,6 +46,8 @@ Il suggerimento di introdurre lazy loading dei moduli con Vite e registrato nel 
 
 Sono presenti proxy Supabase per TMDB e fonti pubbliche. I segreti restano nelle Edge Functions e non nel browser. Sono presenti integrazioni per trailer, streaming e alcuni dati cinema; la copertura dei titoli incompleti e ancora da verificare.
 
+Per i metadati catalogo, TMDB è la fonte primaria controllata per i film; TVmaze resta la fonte primaria per serie, episodi e cast. TMDB viene usata come fallback per serie non trovate o con poster/cast mancanti. Wikipedia/Wikidata/Commons restano fallback localizzati e di identificazione. Ogni risoluzione persiste provider, ID, query, punteggio, titolo risolto e campi mancanti per la diagnostica.
+
 ## Decisioni di prodotto e UX
 
 - Approccio **mobile first**; riferimento manuale principale: Samsung Galaxy S26+.

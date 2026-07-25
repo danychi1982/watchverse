@@ -30,6 +30,8 @@ Formato leggero ispirato agli Architecture Decision Records: una decisione, il c
 | ADR-023 | 2026-07-18 | Handoff e collaudo documentati sulla issue principale | Il passaggio in Review e l'esito del test manuale vengono registrati con due commenti distinti sulla Story, Task o Bug principale. I subtask contengono il dettaglio tecnico, ma non sostituiscono il riepilogo di sviluppo, istruzioni di test ed esito finale. | Attiva |
 | ADR-024 | 2026-07-18 | Review funzionale solo sulla issue principale | I subtask sono elementi tecnici intermedi: quando il lavoro specifico e concluso passano direttamente a Done. La Story, Task o Bug principale passa in Review solo quando tutti i subtask necessari sono conclusi e il comportamento complessivo e pronto per il test manuale. | Attiva |
 
+| ADR-025 | 2026-07-25 | Routing metadati TMDB/TVmaze con telemetria di risoluzione | TMDB è la fonte primaria controllata per i film; TVmaze resta primaria per serie, episodi e cast, con fallback TMDB selettivo. Ogni tentativo persiste input, query, provider, ID, match score, fonti campo-per-campo e parti mancanti, così retry e titoli anomali possono essere verificati senza sovrascritture ambigue. | Attiva |
+
 ## Regole per nuove decisioni
 
 Una nuova voce deve:

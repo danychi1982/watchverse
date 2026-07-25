@@ -1,5 +1,15 @@
 # Watchverse — passaggio consegne
 
+## Aggiornamento operativo — 25 luglio 2026
+
+Lo Sprint 2 è attivo. Le issue `WVERSE-205`, `WVERSE-206`, `WVERSE-207`, `WVERSE-208`, `WVERSE-209`, `WVERSE-210` e `WVERSE-211` sono state implementate e portate in **Revisione** su Jira, in attesa dei test manuali.
+
+Implementazioni incluse: aggiornamento realtime della modale fonti, stato esplicito **In attesa di retry**, diagnostica aggregata, telemetria persistente di risoluzione, TMDB primaria controllata per i film e TVmaze primaria per serie/episodi/cast con fallback TMDB selettivo.
+
+`npm test`, `npm run build` e `git diff --check` superati. Gli E2E browser restano esclusi per il noto errore locale `spawn EPERM`.
+
+Commit pubblicato su `main`: `f2c31c8 Complete Sprint 2 metadata pipeline`.
+
 ## Stato della sessione
 
 La sessione di test e lavorazione del 19 luglio 2026 è sospesa in attesa del completamento del ciclo di aggiornamento fonti dopo un reimport dello ZIP pulito.

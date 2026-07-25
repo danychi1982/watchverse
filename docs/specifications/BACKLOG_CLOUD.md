@@ -794,3 +794,9 @@ Regole operative:
 - lasciare vuoto l'assegnatario finché il lavoro non viene preso in carico.
 
 La descrizione originale non va sovrascritta integralmente: deve rimanere disponibile per ricostruire il contesto della richiesta.
+
+## Stato corrente Sprint 2 — 25 luglio 2026
+
+Le issue operative `WVERSE-205`–`WVERSE-211` sono implementate e in **Revisione** su Jira. Restano da eseguire i collaudi manuali sul ciclo reale di aggiornamento metadati e sui titoli importati.
+
+Il codice aggiorna la modale fonti in tempo reale, espone l’attesa del retry, aggrega gli errori e persiste la telemetria di risoluzione. TMDB è la fonte primaria controllata per i film; TVmaze resta primaria per serie, episodi e cast, con fallback TMDB per dati mancanti. Test automatici e build sono verdi; gli E2E browser restano sospesi per `spawn EPERM`.
