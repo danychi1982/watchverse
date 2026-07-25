@@ -91,3 +91,14 @@ Test eseguiti prima della pubblicazione delle fix: `npm test`, `npm run build` e
 ## Aggiornamento lavorazione Sprint 2 — 25 luglio 2026
 
 Il retest ha confermato KO su `WVERSE-206`, `WVERSE-208`, `WVERSE-209` e `WVERSE-211`; le issue sono state riportate in `Da completare` secondo il workflow di collaudo. Le fix locali stabilizzano il passaggio al retry, persistono il retry manuale, rendono visibile la risoluzione per titolo, scartano persone nei fallback film e impediscono di usare il backdrop come locandina. Suite automatica e build risultano verdi; serve ora il retest manuale prima del passaggio in `Revisione`.
+
+## Collaudo Sprint 2 — aggiornamento 25 luglio 2026
+
+- `WVERSE-206`: retest superato; stato retry stabile e prossimo tentativo futuro coerente. Completata.
+- `WVERSE-207`: retest KO sul layout della diagnostica; implementata navigazione cliccabile dai titoli alle card e riportata in Revisione per nuovo test.
+- `WVERSE-208`: retest KO; tentativi e timestamp visibili, ma diagnostica insufficiente nei casi senza corrispondenza. Da completare.
+- `WVERSE-209`: retest KO; matching TMDB e aggiornamento della locandina non utilizzabili, con modale vuota e poster persistente errato. Da completare.
+- `WVERSE-210`: retest superato su Ted Lasso; TVmaze, progressi e 10/10 episodi della stagione verificati. Completata.
+- `WVERSE-211`: retest KO; il retry di The Good Father non incrementa tentativi né aggiorna gli orari. Da completare.
+
+La regola resta: un KO osservato su una issue in Revisione deve essere registrato e riportare la issue in Da completare; la correzione passa da In corso e torna in Revisione solo dopo verifica tecnica.
