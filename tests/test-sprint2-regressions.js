@@ -45,6 +45,9 @@ assert(metadata.includes('looksLikePersonDescription(page.extract || \'\')'), 'I
 assert(app.includes('item.poster !== item.backdrop'), 'Il fallback non deve promuovere il backdrop a locandina');
 assert(app.includes('backdrop: metadata.backdrop || item.backdrop || null'), 'Poster e backdrop devono restare campi distinti');
 assert(app.includes('row.resolution?.resolvedTitle'), 'La diagnostica non espone la corrispondenza risolta');
+assert(app.includes('data-metadata-jump'), 'I titoli della diagnostica non sono navigabili verso la card');
+assert(app.includes('scrollIntoView({ behavior: \'smooth\', block: \'center\' })'), 'Il salto alla card diagnostica non è fluido');
+assert(css.includes('.metadata-analysis-link'), 'Manca lo stile accessibile dei titoli navigabili della diagnostica');
 
 // WVERSE-171: i risultati asincroni non sostituiscono l'input; il router
 // conserva anche campo attivo e selezione quando aggiorna la vista.

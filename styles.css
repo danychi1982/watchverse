@@ -3086,6 +3086,9 @@ html[data-theme="buffy"] .settings-card { border-color:color-mix(in srgb,var(--l
 .metadata-analysis-list { display:grid; gap:7px; margin:10px 0 0; padding-left:20px; }
 .metadata-analysis-list li { display:grid; grid-template-columns:minmax(0,1fr); gap:3px; min-width:0; color:var(--text); }
 .metadata-analysis-list li span { min-width:0; overflow-wrap:anywhere; word-break:break-word; }
+.metadata-analysis-link { display:block; max-width:100%; padding:0; border:0; background:none; color:var(--text); font:inherit; text-align:left; text-decoration:underline; text-decoration-color:var(--accent); text-underline-offset:3px; cursor:pointer; overflow-wrap:anywhere; word-break:break-word; }
+.metadata-analysis-link:hover { color:var(--accent); }
+.metadata-analysis-link:focus-visible { outline:2px solid var(--accent); outline-offset:3px; border-radius:4px; }
 .metadata-analysis-list strong { min-width:0; color:var(--muted); font-size:12px; text-align:left; overflow-wrap:anywhere; word-break:break-word; }
 .metadata-analysis-empty { font-size:12px; }
 .metadata-issue-filters { display:flex; flex-wrap:wrap; gap:8px; padding:5px; width:max-content; max-width:100%; border:1px solid var(--line); border-radius:14px; background:var(--surface-2); }
