@@ -102,3 +102,11 @@ Il retest ha confermato KO su `WVERSE-206`, `WVERSE-208`, `WVERSE-209` e `WVERSE
 - `WVERSE-211`: retest KO; il retry di The Good Father non incrementa tentativi né aggiorna gli orari. Da completare.
 
 La regola resta: un KO osservato su una issue in Revisione deve essere registrato e riportare la issue in Da completare; la correzione passa da In corso e torna in Revisione solo dopo verifica tecnica.
+
+## Analisi blocco E2E locale — WVERSE-164 — 25 luglio 2026
+
+La causa è stata riprodotta direttamente: `chromium.launch()` fallisce con `browserType.launch: spawn EPERM` prima dell'apertura della pagina. Il fallimento si verifica sia con il Chromium headless gestito da Playwright sia con Chrome installato in `C:\Program Files\Google\Chrome\Application\chrome.exe`; quindi non è un semplice browser mancante o un problema dell'applicazione.
+
+Il blocco riguarda l'avvio di un processo browser figlio da Node/Playwright, verosimilmente impedito dalla policy Windows dell'ambiente. Il percorso CDP è già supportato da `tests/e2e-browser.js`, ma la suite locale richiede anche `WATCHVERSE_RUN_E2E=1`; il workflow GitHub attuale imposta invece `WATCHVERSE_RUN_E2E=0`, quindi non esegue davvero gli E2E.
+
+Soluzioni candidate, in ordine: (1) collegarsi via CDP a Chrome già avviato dall'utente con una porta locale e un profilo dedicato, senza installazioni o privilegi amministrativi; (2) eseguire gli E2E in GitHub Actions con Chromium Playwright installato nel runner e `WATCHVERSE_RUN_E2E=1`; (3) mantenere il fallback di skip locale solo quando non è disponibile né un browser avviato via CDP né un runner CI. La prima soluzione è il percorso locale immediato; la seconda è il controllo ripetibile di qualità da rendere obbligatorio in CI.
