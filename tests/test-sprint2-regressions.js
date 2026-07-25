@@ -24,6 +24,23 @@ assert(app.includes(".filter(row=>(row.kind==='tv'||row.kind==='movie') && searc
 assert(app.includes('const seenPublic=new Set([...localKeys,...sharedKeys])'));
 assert(metadata.includes('relevantCatalogResult'));
 
+// WVERSE-207/208/209/210/211: diagnostica attribuibile, telemetria di
+// risoluzione e routing TMDB/TVmaze con fallback controllato.
+for (const marker of [
+  'metadataErrorAnalysis',
+  'resolution:',
+  'inputTitle:',
+  'providerSearchUrl:',
+  'matchScore:',
+  'findTmdbMovie',
+  'tmdbMovieMetadata',
+  'findTmdbSeries',
+  'tmdbSeriesFallback',
+  'fallbackProvider'
+]) assert(app.includes(marker) || metadata.includes(marker), `Pipeline metadati non completata: ${marker}`);
+assert(metadata.includes("provider: 'tmdb'"), 'TMDB non è configurato come fonte primaria controllata');
+assert(metadata.includes("provider: 'tvmaze'"), 'TVmaze non è mantenuta come fonte primaria serie');
+
 // WVERSE-171: i risultati asincroni non sostituiscono l'input; il router
 // conserva anche campo attivo e selezione quando aggiorna la vista.
 assert(app.includes('function captureActiveField()'));

@@ -1,6 +1,7 @@
 /* Watchverse public metadata providers
  * - TVmaze: series, episodes, cast and images (CC BY-SA)
- * - Wikipedia/Wikidata/Wikimedia Commons: localized titles, summaries, movie images and cast
+ * - TMDB: primary movie metadata and controlled series fallback
+ * - Wikipedia/Wikidata/Wikimedia Commons: localized fallback data
  * No API key is required. Results are persisted by Watchverse after enrichment.
  */
 (function (root, factory) {
@@ -12,6 +13,9 @@
 
   const memoryCache = new Map();
   const TVMAZE = 'https://api.tvmaze.com';
+  const TMDB_BASE = 'https://api.themoviedb.org/3';
+  const TMDB_IMAGE = 'https://image.tmdb.org/t/p/w500';
+  const TMDB_BACKDROP = 'https://image.tmdb.org/t/p/original';
   const WIKIDATA = 'https://www.wikidata.org/w/api.php';
   const COMMONS_FILE = 'https://commons.wikimedia.org/wiki/Special:FilePath/';
   const WIKIDATA_SPARQL = 'https://query.wikidata.org/sparql';
@@ -107,6 +111,133 @@
     } finally {
       clearTimeout(timeout);
     }
+  }
+
+  async function tmdbJson(path, params = {}) {
+    const config = root.WATCHVERSE_CONFIG || {};
+    const url = new URL(`${TMDB_BASE}${path}`);
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, value);
+    });
+    let response;
+    if (config.tmdbProxyUrl) {
+      const session = root.WatchverseAuth?.restoreSession ? await root.WatchverseAuth.restoreSession() : null;
+      response = await fetch(config.tmdbProxyUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}) },
+        body: JSON.stringify({ path, params })
+      });
+    } else {
+      const token = root.WatchverseState?.settings?.tmdbToken || '';
+      if (!token) throw new Error('TMDB non configurato');
+      response = await fetch(url, { headers: { Authorization: `Bearer ${token}`, accept: 'application/json' } });
+    }
+    if (!response.ok) throw new Error(`Fonte TMDB non disponibile (${response.status})`);
+    return response.json();
+  }
+
+  function tmdbImage(path, base = TMDB_IMAGE) { return path ? `${base}${path}` : null; }
+
+  function tmdbCandidateScore(candidate, input, kind) {
+    const title = kind === 'movie' ? candidate.title : candidate.name;
+    const candidateYear = yearOf(kind === 'movie' ? candidate.release_date : candidate.first_air_date);
+    return Math.max(...unique([input.title, input.originalTitle, ...(input.aliases || [])]).map(wanted => titleScore(title, wanted, candidateYear, input.year)));
+  }
+
+  function validTmdbCandidate(candidate, input, kind) {
+    if (!candidate) return { accepted: false, score: 0, reasons: ['nessun risultato'] };
+    const score = tmdbCandidateScore(candidate, input, kind);
+    const candidateYear = yearOf(kind === 'movie' ? candidate.release_date : candidate.first_air_date);
+    const reasons = [];
+    if (score < 58) reasons.push('titolo poco pertinente');
+    if (input.year && candidateYear && Math.abs(Number(input.year) - candidateYear) > 3) reasons.push('anno incompatibile');
+    return { accepted: reasons.length === 0, score, reasons };
+  }
+
+  async function findTmdbMovie(input = {}) {
+    const attempts = [];
+    if (input.imdbId) {
+      try {
+        const found = await tmdbJson('/find/' + encodeURIComponent(input.imdbId), { external_source: 'imdb_id', language: 'it-IT' });
+        const candidate = found?.movie_results?.[0];
+        if (candidate) attempts.push({ candidate, via: 'imdb', url: `${TMDB_BASE}/find/${input.imdbId}` });
+      } catch { /* title search remains available */ }
+    }
+    if (!attempts.length) {
+      const data = await tmdbJson('/search/movie', { query: input.title, year: input.year || undefined, language: 'it-IT', region: 'IT', include_adult: 'false' });
+      attempts.push(...(data?.results || []).slice(0, 8).map(candidate => ({ candidate, via: 'title', url: `${TMDB_BASE}/search/movie` })));
+    }
+    const ranked = attempts.map(row => ({ ...row, validation: validTmdbCandidate(row.candidate, input, 'movie') }))
+      .sort((a, b) => b.validation.score - a.validation.score);
+    const best = ranked[0];
+    return best?.validation.accepted ? { ...best, rejected: ranked.filter(row => !row.validation.accepted).map(row => row.validation.reasons).flat() } : null;
+  }
+
+  async function tmdbMovieMetadata(input, match, includeCast) {
+    const id = match.candidate.id;
+    const [detail, credits] = await Promise.all([
+      tmdbJson(`/movie/${id}`, { language: 'it-IT' }),
+      includeCast ? tmdbJson(`/movie/${id}/credits`, { language: 'it-IT' }) : Promise.resolve(null)
+    ]);
+    const cast = (credits?.cast || []).slice(0, 18).map(person => ({
+      name: person.name, role: person.character || 'Cast', tmdbId: person.id,
+      photo: tmdbImage(person.profile_path, TMDB_IMAGE), sourceUrl: `https://www.themoviedb.org/person/${person.id}`
+    }));
+    const title = detail.title || match.candidate.title || input.title;
+    const originalTitle = detail.original_title || input.originalTitle || title;
+    return {
+      provider: 'tmdb', providerLabel: 'TMDB', providerId: id,
+      providerSearchUrl: match.url, tmdbId: id, imdbId: detail.imdb_id || input.imdbId || null,
+      title, originalTitle, year: yearOf(detail.release_date), overview: detail.overview || '',
+      poster: tmdbImage(detail.poster_path), backdrop: tmdbImage(detail.backdrop_path, TMDB_BACKDROP),
+      genres: (detail.genres || []).map(genre => genre.name), runtime: detail.runtime || null,
+      sourceUrl: `https://www.themoviedb.org/movie/${id}`, cast,
+      language: 'it', matchScore: match.validation.score, rejectionReasons: match.validation.reasons,
+      resolvedType: 'movie', coreComplete: Boolean(detail.poster_path && detail.overview),
+      castComplete: !includeCast || cast.length > 0,
+      posterSource: detail.poster_path ? 'tmdb' : null, overviewSource: detail.overview ? 'tmdb' : null,
+      castSource: cast.length ? 'tmdb' : null
+    };
+  }
+
+  async function findTmdbSeries(input = {}) {
+    const data = await tmdbJson('/search/tv', { query: input.title, first_air_date_year: input.year || undefined, language: 'it-IT', include_adult: 'false' });
+    const ranked = (data?.results || []).slice(0, 8).map(candidate => ({
+      candidate, validation: validTmdbCandidate(candidate, input, 'tv'), url: `${TMDB_BASE}/search/tv`
+    })).sort((a, b) => b.validation.score - a.validation.score);
+    const best = ranked[0];
+    return best?.validation.accepted ? best : null;
+  }
+
+  async function tmdbSeriesFallback(input, match, includeCast) {
+    const id = match.candidate.id;
+    const [detail, credits] = await Promise.all([
+      tmdbJson(`/tv/${id}`, { language: 'it-IT' }),
+      includeCast ? tmdbJson(`/tv/${id}/credits`, { language: 'it-IT' }) : Promise.resolve(null)
+    ]);
+    const cast = (credits?.cast || []).slice(0, 24).map(person => ({
+      name: person.name, role: person.character || 'Cast', tmdbId: person.id,
+      photo: tmdbImage(person.profile_path, TMDB_IMAGE), sourceUrl: `https://www.themoviedb.org/person/${person.id}`
+    }));
+    const seasons = (detail.seasons || []).map(season => ({
+      number: Number(season.season_number), name: season.name || `Stagione ${season.season_number}`,
+      overview: season.overview || '', airDate: season.air_date || null, episodes: []
+    }));
+    return {
+      provider: 'tmdb', providerLabel: 'TMDB', providerId: id,
+      providerSearchUrl: match.url, tmdbId: id, imdbId: detail.external_ids?.imdb_id || null,
+      tvdbId: detail.external_ids?.tvdb_id || null, title: detail.name || input.title,
+      originalTitle: detail.original_name || input.originalTitle || detail.name || input.title,
+      year: yearOf(detail.first_air_date), overview: detail.overview || '',
+      poster: tmdbImage(detail.poster_path), backdrop: tmdbImage(detail.backdrop_path, TMDB_BACKDROP),
+      genres: (detail.genres || []).map(genre => genre.name), runtime: detail.episode_run_time?.[0] || null,
+      statusText: detail.status || null, sourceUrl: `https://www.themoviedb.org/tv/${id}`,
+      cast, seasons, language: 'it', matchScore: match.validation.score,
+      resolvedType: 'tv', coreComplete: Boolean(detail.poster_path && detail.overview),
+      castComplete: !includeCast || cast.length > 0,
+      posterSource: detail.poster_path ? 'tmdb' : null, overviewSource: detail.overview ? 'tmdb' : null,
+      castSource: cast.length ? 'tmdb' : null
+    };
   }
 
   function cached(key, loader) {
@@ -306,6 +437,7 @@
     }));
     return {
       provider: 'tvmaze', providerLabel: 'TVmaze', providerId: show.id,
+      providerSearchUrl: `https://api.tvmaze.com/shows/${show.id}`,
       title: show.name, originalTitle: show.name,
       year: yearOf(show.premiered), overview: stripHtml(show.summary || ''),
       genres: show.genres || [], runtime: show.averageRuntime || show.runtime || null,
@@ -317,7 +449,9 @@
       sourceUrl: show.url || null,
       imdbId: show.externals?.imdb || null,
       tvdbId: show.externals?.thetvdb || null,
-      cast, seasons: [...seasons.values()].sort((a, b) => a.number - b.number)
+      cast, seasons: [...seasons.values()].sort((a, b) => a.number - b.number),
+      matchScore: 100, resolvedType: 'tv', posterSource: show.image ? 'tvmaze' : null,
+      overviewSource: show.summary ? 'tvmaze' : null, castSource: cast.length ? 'tvmaze' : null
     };
   }
 
@@ -349,11 +483,25 @@
   async function lookupSeries(input = {}, options = {}) {
     const key = `series:${input.tvdbId || normalize(input.originalTitle || input.title)}:${input.year || ''}:${options.includeCast === true}`;
     return cached(key, async () => {
-      const basic = await findTvmazeShow(input);
+      let basic = null;
+      try { basic = await findTvmazeShow(input); } catch { /* TMDB fallback below */ }
+      if (!basic) {
+        try {
+          const tmdbMatch = await findTmdbSeries(input);
+          if (tmdbMatch) return await tmdbSeriesFallback(input, tmdbMatch, options.includeCast === true);
+        } catch { /* localized fallback below */ }
+      }
       if (!basic) throw new Error(`Nessuna corrispondenza pubblica trovata per “${input.title}”.`);
       const embed = options.includeCast === true ? 'embed[]=episodes&embed[]=cast' : 'embed=episodes';
       const show = await fetchJson(`${TVMAZE}/shows/${basic.id}?${embed}`);
       const mapped = mapTvmazeSeries(show);
+      let tmdbFallback = null;
+      if (!mapped.poster || (options.includeCast === true && !mapped.cast.length)) {
+        try {
+          const tmdbMatch = await findTmdbSeries(input);
+          if (tmdbMatch) tmdbFallback = await tmdbSeriesFallback(input, tmdbMatch, options.includeCast === true);
+        } catch { /* TVmaze remains the primary source */ }
+      }
       let itWiki = null, enWiki = null;
       try {
         itWiki = await wikipediaSearchLanguage({
@@ -378,15 +526,22 @@
         title: localTitle,
         originalTitle,
         overview: itWiki?.overview || mapped.overview || enWiki?.overview || '',
-        poster: mapped.poster || itWiki?.poster || enWiki?.poster || null,
-        backdrop: mapped.backdrop || mapped.poster || itWiki?.poster || enWiki?.poster || null,
+        poster: mapped.poster || tmdbFallback?.poster || itWiki?.poster || enWiki?.poster || null,
+        backdrop: mapped.backdrop || tmdbFallback?.backdrop || mapped.poster || itWiki?.poster || enWiki?.poster || null,
         language: itWiki?.overview ? 'it' : 'en',
         aliases: unique([localTitle, originalTitle, input.title, input.originalTitle, ...(input.aliases || []), itWiki?.title, enWiki?.title]),
         italianSourceUrl: itWiki?.sourceUrl || null,
         italianSourceLabel: itWiki?.sourceLabel || null,
         englishSourceUrl: enWiki?.sourceUrl || null,
-        coreComplete: true,
-        castComplete: options.includeCast === true,
+        cast: mapped.cast.length ? mapped.cast : (tmdbFallback?.cast || []),
+        coreComplete: Boolean(mapped.poster || tmdbFallback?.poster || itWiki?.poster || enWiki?.poster) && Boolean(mapped.overview || tmdbFallback?.overview || itWiki?.overview || enWiki?.overview),
+        castComplete: options.includeCast !== true || mapped.cast.length > 0 || Boolean(tmdbFallback?.cast?.length),
+        posterSource: mapped.poster ? 'tvmaze' : (tmdbFallback?.poster ? 'tmdb' : (itWiki?.poster ? 'wikipedia' : null)),
+        overviewSource: mapped.overview ? 'tvmaze' : (tmdbFallback?.overview ? 'tmdb' : (itWiki?.overview ? 'wikipedia' : null)),
+        castSource: mapped.cast.length ? 'tvmaze' : (tmdbFallback?.cast?.length ? 'tmdb' : null),
+        matchScore: mapped.matchScore || tmdbFallback?.matchScore || null,
+        providerSearchUrl: mapped.providerSearchUrl || tmdbFallback?.providerSearchUrl || null,
+        resolvedType: 'tv', fallbackProvider: tmdbFallback?.provider || null,
         episodesComplete: true
       };
     });
@@ -395,6 +550,10 @@
   async function lookupMovie(input = {}, options = {}) {
     const key = `movie:${input.imdbId || normalize(input.originalTitle || input.title)}:${input.year || ''}:${options.includeCast !== false}`;
     return cached(key, async () => {
+      try {
+        const tmdbMatch = await findTmdbMovie(input);
+        if (tmdbMatch) return await tmdbMovieMetadata(input, tmdbMatch, options.includeCast !== false);
+      } catch { /* Wikipedia/Wikidata remains the controlled fallback */ }
       const alt = unique([input.originalTitle, ...(input.aliases || [])]);
       let itWiki = null, enWiki = null;
       try { itWiki = await wikipediaSearchLanguage({ title: input.title, alternativeTitles: alt, year: input.year, kind: 'movie', language: 'it' }); }

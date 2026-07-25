@@ -1552,8 +1552,9 @@
       attempts: Number(item.publicMetadata?.attempts || 0),
       nextRetryAt: item.publicMetadata?.nextRetryAt || null,
       errorCategory: item.publicMetadata?.errorCategory || null,
-      provider: item.publicMetadata?.provider || null,
+      provider: item.publicMetadata?.provider || item.publicMetadata?.resolution?.provider || null,
       providerId: item.publicMetadata?.providerId || null,
+      resolution: item.publicMetadata?.resolution || null,
       essentialComplete: essentialMissing.length === 0,
       extendedComplete: missing.length === 0 && !error
     };
@@ -1576,7 +1577,7 @@
     const group = (key, label) => {
       const groups = new Map();
       for (const row of errors) {
-        const value = row[key] || label;
+        const value = row[key] || row.resolution?.[key] || label;
         const current = groups.get(value) || { label:value, errors:0, attempts:0, titles:[] };
         current.errors += row.error || row.failedAt ? 1 : 0;
         current.attempts += row.attempts;
@@ -1589,14 +1590,21 @@
       errors,
       byProvider: group('provider', 'Fonte non identificata'),
       byCategory: group('errorCategory', 'Errore non classificato'),
-      topTitles: errors.slice().sort((a, b) => b.attempts - a.attempts || Number(!!b.error) - Number(!!a.error) || String(a.item.title).localeCompare(String(b.item.title), 'it')).slice(0, 10)
+      topTitles: errors.slice().sort((a, b) => b.attempts - a.attempts || Number(!!b.error) - Number(!!a.error) || String(a.item.title).localeCompare(String(b.item.title), 'it')).slice(0, 10),
+      resolution: {
+        attributed: diagnostics.filter(row => row.resolution?.provider).length,
+        unresolved: diagnostics.filter(row => !row.resolution?.provider).length,
+        ambiguous: diagnostics.filter(row => (row.resolution?.rejectionReasons || []).length > 0).length,
+        byProvider: [...new Set(diagnostics.map(row => row.resolution?.provider).filter(Boolean))]
+      }
     };
   }
 
   function metadataErrorAnalysisHtml(analysis) {
     const list = (rows, empty) => rows.length ? `<ol class="metadata-analysis-list">${rows.map(row => `<li><span>${esc(row.label)}</span><strong>${row.errors} errori · ${row.attempts} tentativi</strong></li>`).join('')}</ol>` : `<p class="metadata-analysis-empty">${empty}</p>`;
     const topTitles = analysis.topTitles.length ? `<ol class="metadata-analysis-list">${analysis.topTitles.map(row => `<li><span>${esc(row.item.title || 'Titolo senza nome')}</span><strong>${row.attempts} tentativi${row.error ? ` · ${esc(row.errorCategory || 'errore')}` : ''}</strong></li>`).join('')}</ol>` : '<p class="metadata-analysis-empty">Nessun tentativo fallito registrato.</p>';
-    return `<section class="metadata-analysis"><div><h3>Diagnostica aggregata</h3><p>Raggruppamento degli errori persistiti per fonte, categoria e titolo. I dati si aggiornano insieme al dettaglio.</p></div><div class="metadata-analysis-grid"><article><h4>Errori per fonte</h4>${list(analysis.byProvider, 'Nessun errore associato a una fonte.')}</article><article><h4>Errori per categoria</h4>${list(analysis.byCategory, 'Nessuna categoria di errore registrata.')}</article><article><h4>Titoli con più tentativi</h4>${topTitles}</article></div></section>`;
+    const resolution = analysis.resolution || { attributed:0, unresolved:0, ambiguous:0, byProvider:[] };
+    return `<section class="metadata-analysis"><div><h3>Diagnostica aggregata</h3><p>Raggruppamento degli errori persistiti per fonte, categoria e titolo. I dati si aggiornano insieme al dettaglio.</p></div><div class="metadata-analysis-grid"><article><h4>Errori per fonte</h4>${list(analysis.byProvider, 'Nessun errore associato a una fonte.')}</article><article><h4>Errori per categoria</h4>${list(analysis.byCategory, 'Nessuna categoria di errore registrata.')}</article><article><h4>Titoli con più tentativi</h4>${topTitles}</article><article><h4>Risoluzione prima/dopo</h4><p class="metadata-analysis-empty">${resolution.attributed} titoli attribuiti a una fonte · ${resolution.unresolved} senza attribuzione · ${resolution.ambiguous} da verificare.</p><p class="metadata-analysis-empty">Fonti: ${esc(resolution.byProvider.join(' · ') || 'nessuna')}</p></article></div></section>`;
   }
 
   function metadataGlobalStatus() {
@@ -3224,6 +3232,27 @@
     const resolvedOverview = metadata.overview || item.overview;
     const resolvedPoster = metadata.poster || item.poster;
     const resolvedCast = includeCast ? (metadata.cast || []) : (item.cast || []);
+    const resolution = {
+      inputTitle: originalStoredTitle,
+      inputOriginalTitle: item.originalTitle || null,
+      inputYear: item.year || null,
+      queryTitles: mergeAliases(originalStoredTitle, item.originalTitle, item.aliases || []),
+      provider: metadata.provider || null,
+      providerId: metadata.providerId || metadata.tmdbId || metadata.tvmazeId || null,
+      providerSearchUrl: metadata.providerSearchUrl || null,
+      resolvedTitle: metadata.title || null,
+      resolvedOriginalTitle: metadata.originalTitle || null,
+      resolvedYear: metadata.year || null,
+      resolvedType: metadata.resolvedType || (kind === 'series' ? 'tv' : 'movie'),
+      matchScore: Number.isFinite(Number(metadata.matchScore)) ? Number(metadata.matchScore) : null,
+      rejectionReasons: metadata.rejectionReasons || [],
+      fallbackProvider: metadata.fallbackProvider || null,
+      posterSource: metadata.posterSource || null,
+      overviewSource: metadata.overviewSource || null,
+      castSource: metadata.castSource || null,
+      missingParts: [!resolvedPoster ? 'poster' : null, isImportedPlaceholder(resolvedOverview) ? 'overview' : null, includeCast && !resolvedCast.length ? 'cast' : null].filter(Boolean),
+      resolvedAt: now
+    };
     const coreComplete = Boolean(resolvedPoster) && !isImportedPlaceholder(resolvedOverview) && metadata.coreComplete !== false;
     const castComplete = !includeCast || resolvedCast.length > 0;
     const parts = {
@@ -3252,7 +3281,7 @@
         officialSite: metadata.officialSite || item.officialSite || null,
         providerStatus: metadata.statusText || item.providerStatus || null,
         seasons: mergeSeriesSeasons(item.seasons || [], metadata.seasons || [], item.id),
-        publicMetadata: { ...previousMeta, provider: metadata.provider, providerLabel: metadata.providerLabel, providerId: metadata.providerId, sourceUrl: metadata.sourceUrl, italianSourceUrl: metadata.italianSourceUrl, englishSourceUrl: metadata.englishSourceUrl, language: metadata.language, parts, failedAt: null, error: null, errorCode: null, errorCategory: null, attempts: 0, nextRetryAt: coreComplete && castComplete ? null : new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(), updatedAt: now }
+        publicMetadata: { ...previousMeta, provider: metadata.provider, providerLabel: metadata.providerLabel, providerId: metadata.providerId, sourceUrl: metadata.sourceUrl, italianSourceUrl: metadata.italianSourceUrl, englishSourceUrl: metadata.englishSourceUrl, language: metadata.language, resolution, parts, failedAt: null, error: null, errorCode: null, errorCategory: null, attempts: 0, nextRetryAt: coreComplete && castComplete ? null : new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(), updatedAt: now }
       }, userFields);
       await dbPut('series', item);
       await saveSharedCatalog('series', item, 'public-metadata');
@@ -3271,7 +3300,7 @@
         cast: resolvedCast,
         wikidataId: metadata.wikidataId || item.wikidataId || null,
         imdbId: item.imdbId || metadata.imdbId || null,
-        publicMetadata: { ...previousMeta, provider: metadata.provider, providerLabel: metadata.providerLabel, sourceUrl: metadata.sourceUrl, italianSourceUrl: metadata.italianSourceUrl, englishSourceUrl: metadata.englishSourceUrl, language: metadata.language, parts, failedAt: null, error: null, errorCode: null, errorCategory: null, attempts: 0, nextRetryAt: coreComplete && castComplete ? null : new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(), updatedAt: now }
+        publicMetadata: { ...previousMeta, provider: metadata.provider, providerLabel: metadata.providerLabel, providerId: metadata.providerId || metadata.tmdbId || null, sourceUrl: metadata.sourceUrl, italianSourceUrl: metadata.italianSourceUrl, englishSourceUrl: metadata.englishSourceUrl, language: metadata.language, resolution, parts, failedAt: null, error: null, errorCode: null, errorCategory: null, attempts: 0, nextRetryAt: coreComplete && castComplete ? null : new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(), updatedAt: now }
       });
       await dbPut('movies', item);
       await saveSharedCatalog('movie', item, 'public-metadata');
