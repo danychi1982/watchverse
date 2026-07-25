@@ -87,3 +87,7 @@ Commit precedenti rilevanti:
 - `e507e36`: fix Sprint 1 per revisione.
 
 Test eseguiti prima della pubblicazione delle fix: `npm test`, `npm run build` e `git diff --check` superati. Gli E2E Chrome restano soggetti al noto errore locale `spawn EPERM`.
+
+## Aggiornamento lavorazione Sprint 2 — 25 luglio 2026
+
+Il retest ha confermato KO su `WVERSE-206`, `WVERSE-208`, `WVERSE-209` e `WVERSE-211`; le issue sono state riportate in `Da completare` secondo il workflow di collaudo. Le fix locali stabilizzano il passaggio al retry, persistono il retry manuale, rendono visibile la risoluzione per titolo, scartano persone nei fallback film e impediscono di usare il backdrop come locandina. Suite automatica e build risultano verdi; serve ora il retest manuale prima del passaggio in `Revisione`.

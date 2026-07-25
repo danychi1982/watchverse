@@ -40,6 +40,11 @@ for (const marker of [
 ]) assert(app.includes(marker) || metadata.includes(marker), `Pipeline metadati non completata: ${marker}`);
 assert(metadata.includes("provider: 'tmdb'"), 'TMDB non è configurato come fonte primaria controllata');
 assert(metadata.includes("provider: 'tvmaze'"), 'TVmaze non è mantenuta come fonte primaria serie');
+assert(metadata.includes('isPersonEntity'), 'Il fallback Wikidata non esclude le persone dal catalogo film');
+assert(metadata.includes('looksLikePersonDescription(page.extract || \'\')'), 'Il fallback Wikipedia non esclude le biografie dal catalogo film');
+assert(app.includes('item.poster !== item.backdrop'), 'Il fallback non deve promuovere il backdrop a locandina');
+assert(app.includes('backdrop: metadata.backdrop || item.backdrop || null'), 'Poster e backdrop devono restare campi distinti');
+assert(app.includes('row.resolution?.resolvedTitle'), 'La diagnostica non espone la corrispondenza risolta');
 
 // WVERSE-171: i risultati asincroni non sostituiscono l'input; il router
 // conserva anche campo attivo e selezione quando aggiorna la vista.

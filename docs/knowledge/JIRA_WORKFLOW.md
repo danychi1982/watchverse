@@ -141,7 +141,13 @@ Prima di creare una nuova issue o aggiungere un’attività a uno sprint, verifi
 
 Quando una issue in **Revisione** viene testata e risulta **KO**, registrare l’esito e riportarla in **Da completare**. Quando riparte il lavoro di correzione, portarla in **In corso**. Dopo l’implementazione della fix, portarla nuovamente in **Revisione** per il retest. Un esito parziale va mantenuto in Revisione solo se non impedisce il criterio funzionale principale; altrimenti segue il percorso KO.
 
-Una Story/Task/Bug viene portata in `Review` quando l’implementazione o la verifica tecnica è completata, la suite automatica è verde e il commento Jira contiene la sintesi delle modifiche, l’evidenza dei controlli e i passi di test funzionale manuale per Daniela.
+Una Story/Task/Bug viene portata in `Review` quando l'implementazione o la verifica tecnica è completata, la suite automatica è verde e il commento Jira contiene la sintesi delle modifiche, l'evidenza dei controlli e i passi di test funzionale manuale per Daniela.
+
+### Stato Sprint 2 dopo il retest del 25 luglio 2026
+
+Le issue `WVERSE-206`, `WVERSE-208`, `WVERSE-209` e `WVERSE-211` hanno avuto esito KO e sono state riportate in `Da completare`. Le issue restano in `Da completare` mentre le correzioni sono in lavorazione; al termine della fix passano a `In corso`, quindi a `Revisione` solo dopo suite automatica verde e nuovo test manuale.
+
+Regola applicata: non considerare una issue in `Revisione` come conclusa quando il test mostra ancora un comportamento errato, anche se una parte del flusso funziona.
 
 I subtask tecnici restano intermedi: quando il loro output è completato vengono portati direttamente in `Done`; il collaudo funzionale non viene duplicato sui subtask e resta sulla Story principale.
 

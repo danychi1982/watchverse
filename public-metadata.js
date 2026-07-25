@@ -267,6 +267,9 @@
       const data = await fetchJson(`${wikiApi(language)}?${params}`);
       const pages = Object.values(data?.query?.pages || {}).filter(page => !page.pageprops?.disambiguation);
       for (const page of pages) {
+        // A person biography can match a film title lexically. Never accept it
+        // as a movie fallback, even when Wikidata later supplies an image.
+        if (looksLikePersonDescription(page.extract || '')) continue;
         const candidateYear = yearOf(page.title + ' ' + (page.extract || ''));
         const score = Math.max(...wantedTitles.map(t => titleScore(cleanWikiTitle(page.title), t, candidateYear, year)));
         if (!best || score > best.score) {
@@ -298,6 +301,7 @@
     const data = await fetchJson(`${wikiApi(language)}?${params}`);
     const page = Object.values(data?.query?.pages || {})[0];
     if (!page || page.missing !== undefined || page.pageprops?.disambiguation) return null;
+    if (looksLikePersonDescription(page.extract || '')) return null;
     return {
       title: cleanWikiTitle(page.title), pageTitle: page.title,
       overview: stripHtml(page.extract || ''),
@@ -323,6 +327,10 @@
   function claimYear(entity) {
     const time = entity?.claims?.P577?.[0]?.mainsnak?.datavalue?.value?.time;
     return yearOf(time);
+  }
+
+  function isPersonEntity(entity) {
+    return claimIds(entity, 'P31').some(id => id === 'Q5' || id === 'Q215627');
   }
 
   function entityLabel(entity, language = 'it') {
@@ -370,7 +378,7 @@
     const uniqueIds = [...new Set(ids)].slice(0, 25);
     const entities = await wikidataEntities(uniqueIds);
     const wanted = unique([title, originalTitle]);
-    const candidates = uniqueIds.map(id => entities[id]).filter(Boolean).map(entity => {
+    const candidates = uniqueIds.map(id => entities[id]).filter(Boolean).filter(entity => !isPersonEntity(entity)).map(entity => {
       const names = unique([entityLabel(entity, 'it'), entityLabel(entity, 'en'), ...entityAliases(entity, 'it'), ...entityAliases(entity, 'en')]);
       const score = Math.max(0, ...names.flatMap(name => wanted.map(w => titleScore(name, w, claimYear(entity), year))));
       const imdb = entity?.claims?.P345?.[0]?.mainsnak?.datavalue?.value;

@@ -1816,6 +1816,10 @@
     const diagnostics = [
       row.errorCategory ? `Categoria: ${row.errorCategory}` : '',
       row.provider ? `Fonte: ${row.provider}${row.providerId ? ` · ${row.providerId}` : ''}` : '',
+      row.resolution?.resolvedTitle ? `Corrispondenza: ${row.resolution.resolvedTitle}${row.resolution.resolvedYear ? ` (${row.resolution.resolvedYear})` : ''}` : '',
+      row.resolution?.resolvedType ? `Tipo: ${row.resolution.resolvedType}` : '',
+      Number.isFinite(Number(row.resolution?.matchScore)) ? `Punteggio: ${row.resolution.matchScore}` : '',
+      row.resolution?.posterSource ? `Locandina: ${row.resolution.posterSource}` : '',
       row.attempts ? `Tentativi: ${row.attempts}` : '',
       row.failedAt ? `Ultimo tentativo: ${fmtDateTime(row.failedAt)}` : '',
       row.nextRetryAt ? `Prossimo retry: ${fmtDateTime(row.nextRetryAt)}` : ''
@@ -3230,7 +3234,9 @@
     const originalTitle = metadata.originalTitle || item.originalTitle || (normalizeSearch(localizedTitle) !== normalizeSearch(originalStoredTitle) ? originalStoredTitle : null);
     const aliases = mergeAliases(item.aliases || [], originalStoredTitle, item.originalTitle, localizedTitle, originalTitle, metadata.aliases || []);
     const resolvedOverview = metadata.overview || item.overview;
-    const resolvedPoster = metadata.poster || item.poster;
+    // A backdrop is landscape artwork and must never become a poster fallback.
+    // This also repairs legacy records where both fields contain the same image.
+    const resolvedPoster = metadata.poster || (item.poster && item.poster !== item.backdrop ? item.poster : null);
     const resolvedCast = includeCast ? (metadata.cast || []) : (item.cast || []);
     const resolution = {
       inputTitle: originalStoredTitle,
@@ -3273,7 +3279,7 @@
         genres: metadata.genres?.length ? metadata.genres : (item.genres || []),
         runtime: metadata.runtime || item.runtime || null,
         poster: resolvedPoster || null,
-        backdrop: metadata.backdrop || item.backdrop || metadata.poster || null,
+        backdrop: metadata.backdrop || item.backdrop || null,
         cast: resolvedCast,
         tvdbId: item.tvdbId || metadata.tvdbId || null,
         imdbId: item.imdbId || metadata.imdbId || null,
@@ -3296,7 +3302,7 @@
         genres: metadata.genres?.length ? metadata.genres : (item.genres || []),
         runtime: metadata.runtime || item.runtime || null,
         poster: resolvedPoster || null,
-        backdrop: metadata.backdrop || item.backdrop || metadata.poster || null,
+        backdrop: metadata.backdrop || item.backdrop || null,
         cast: resolvedCast,
         wikidataId: metadata.wikidataId || item.wikidataId || null,
         imdbId: item.imdbId || metadata.imdbId || null,
@@ -3346,7 +3352,8 @@
     state.metadataRecoveryDone = false;
     state.metadataBackgroundStarted = true;
     for (const { kind, item } of due) {
-      item.publicMetadata = { ...(item.publicMetadata || {}), failedAt:null, error:null, errorCode:null, errorCategory:null, nextRetryAt:null };
+      // Keep the failure marker until the queued attempt succeeds or fails
+      // again, so the status panel remains deterministic during hand-off.
       queuePublicMetadata(kind, [item], { force:true, unlimited:true, includeCast:true, silent:true });
     }
     state.metadataRecoveryScheduled = false;
@@ -3434,11 +3441,8 @@
   function scheduleBackgroundMetadataSync(force = false) {
     if ((!force && state.metadataBackgroundStarted) || !navigator.onLine || !state.settings.publicMetadataEnabled || libraryIsEmpty()) return;
     if (!force && [...state.series, ...state.movies].some(item => item.publicMetadata?.failedAt || item.publicMetadata?.error)) scheduleMetadataRecoveryPass();
-    if (force) {
-      for (const item of [...state.series, ...state.movies]) {
-        if (item.publicMetadata?.failedAt || item.publicMetadata?.error) item.publicMetadata = { ...item.publicMetadata, failedAt: null, error: null, nextRetryAt: null };
-      }
-    }
+    // Forced work bypasses the retry gate in queuePublicMetadata. Persisted
+    // failures are cleared only by the worker after a successful attempt.
     const hasRemainingMetadata = [...state.series, ...state.movies].some(item => {
       const kind = state.series.includes(item) ? 'series' : 'movie';
       return needsPublicMetadata(item, kind, true);
@@ -3469,7 +3473,8 @@
   async function manualPublicMetadata(kind, item) {
     if (!navigator.onLine) { showToast('Connessione assente', 'I metadati pubblici richiedono internet.', '!', 5000, { kind: 'error' }); return; }
     showToast('Aggiornamento avviato', item.title, '↻', 2500);
-    item.publicMetadata = { ...(item.publicMetadata || {}), failedAt: null, nextRetryAt: null };
+    item.publicMetadata = { ...(item.publicMetadata || {}), nextRetryAt: null };
+    await dbPut(kind === 'series' ? 'series' : 'movies', item);
     queuePublicMetadata(kind, [item], { force: true, includeCast: true, silent: false });
   }
 
