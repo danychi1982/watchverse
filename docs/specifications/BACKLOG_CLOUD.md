@@ -800,3 +800,17 @@ La descrizione originale non va sovrascritta integralmente: deve rimanere dispon
 Le issue operative `WVERSE-205`–`WVERSE-211` sono implementate e in **Revisione** su Jira. Restano da eseguire i collaudi manuali sul ciclo reale di aggiornamento metadati e sui titoli importati.
 
 Il codice aggiorna la modale fonti in tempo reale, espone l’attesa del retry, aggrega gli errori e persiste la telemetria di risoluzione. TMDB è la fonte primaria controllata per i film; TVmaze resta primaria per serie, episodi e cast, con fallback TMDB per dati mancanti. Test automatici e build sono verdi; gli E2E browser restano sospesi per `spawn EPERM`.
+
+### Esiti collaudo manuale — 25 luglio 2026
+
+- `WVERSE-205`: superato; i numeri della modale si aggiornano in tempo reale senza riapertura.
+- `WVERSE-206`: **KO**; lo stato alterna ancora tra `Aggiornamento in corso` e `In attesa di retry` anche senza nuove azioni dell’utente.
+- `WVERSE-207`: parziale; aggregazioni coerenti, ma layout della sezione Risoluzione prima/dopo da migliorare.
+- `WVERSE-208`: **KO**; la telemetria di risoluzione non espone ancora informazioni sufficienti per un titolo senza corrispondenza.
+- `WVERSE-209`: **KO**; il proxy TMDB risponde, ma il recupero/matching del film fallisce con errore generico.
+- `WVERSE-210`: **KO**; il recupero/matching della serie fallisce con errore generico.
+- `WVERSE-211`: parziale; il retry ha ridotto gli errori tecnici da 21 a 4 e non ha sovrascritto match dubbi nei due titoli verificati, ma il campione va esteso.
+
+Regola operativa: il collaudo manuale viene eseguito solo sulle issue implementate e in **Revisione**. Le issue Sprint 3 anticipate in Sprint 2 (`WVERSE-212`, `WVERSE-213`, `WVERSE-215`, `WVERSE-216`) restano in **Da completare** e non sono ancora testabili.
+
+`WVERSE-217` è stata aggiunta a Sprint 3 come **Bug** ad alta priorità per verificare la presenza di titoli in lingue non previste, distinguendo titolo localizzato, titolo originale, alias e possibile importazione/match errato.

@@ -6,6 +6,10 @@ Lo Sprint 2 è attivo. Le issue `WVERSE-205`, `WVERSE-206`, `WVERSE-207`, `WVERS
 
 Implementazioni incluse: aggiornamento realtime della modale fonti, stato esplicito **In attesa di retry**, diagnostica aggregata, telemetria persistente di risoluzione, TMDB primaria controllata per i film e TVmaze primaria per serie/episodi/cast con fallback TMDB selettivo.
 
+Collaudo manuale del 25 luglio: `WVERSE-205` superato; `WVERSE-206` ancora KO per alternanza dello stato di retry; `WVERSE-207` parziale per il layout della diagnostica; `WVERSE-208`, `WVERSE-209` e `WVERSE-210` KO per assenza di corrispondenza pubblica; `WVERSE-211` parziale, con errori tecnici ridotti da 21 a 4 e nessuna sovrascrittura di match dubbi nei due casi verificati. Il campione di `WVERSE-211` deve essere esteso.
+
+Per il collaudo si considerano solo issue implementate in **Revisione**. Le attività anticipate da Sprint 3 (`WVERSE-212`, `WVERSE-213`, `WVERSE-215`, `WVERSE-216`) sono in Sprint 2 ma restano **Da completare**, quindi non sono ancora oggetto di test.
+
 `npm test`, `npm run build` e `git diff --check` superati. Gli E2E browser restano esclusi per il noto errore locale `spawn EPERM`.
 
 Commit pubblicato su `main`: `f2c31c8 Complete Sprint 2 metadata pipeline`.

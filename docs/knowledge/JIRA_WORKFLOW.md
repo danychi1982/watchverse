@@ -133,6 +133,14 @@ Per i subtask di Analisi e Progettazione il deliverable non è una frase riepilo
 
 ## Sprint 2 — presa in carico e passaggio in Review
 
+### Regola anti-duplicati
+
+Prima di creare una nuova issue o aggiungere un’attività a uno sprint, verificare sempre se esiste già un elemento equivalente in qualunque sprint o nel backlog. La verifica deve usare almeno: chiavi/issue correlate, parole chiave del summary, componente funzionale, sintomo, tipo di issue e descrizione. Se viene trovato un possibile duplicato, aggiungere i nuovi dettagli all’issue esistente oppure chiedere conferma prima di crearne una nuova. Dopo ogni creazione o spostamento, registrare lo sprint e la relazione con eventuali issue correlate nella KB.
+
+### Regola di avanzamento durante il collaudo
+
+Quando una issue in **Revisione** viene testata e risulta **KO**, registrare l’esito e riportarla in **Da completare**. Quando riparte il lavoro di correzione, portarla in **In corso**. Dopo l’implementazione della fix, portarla nuovamente in **Revisione** per il retest. Un esito parziale va mantenuto in Revisione solo se non impedisce il criterio funzionale principale; altrimenti segue il percorso KO.
+
 Una Story/Task/Bug viene portata in `Review` quando l’implementazione o la verifica tecnica è completata, la suite automatica è verde e il commento Jira contiene la sintesi delle modifiche, l’evidenza dei controlli e i passi di test funzionale manuale per Daniela.
 
 I subtask tecnici restano intermedi: quando il loro output è completato vengono portati direttamente in `Done`; il collaudo funzionale non viene duplicato sui subtask e resta sulla Story principale.
