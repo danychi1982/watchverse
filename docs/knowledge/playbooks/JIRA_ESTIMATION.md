@@ -44,6 +44,15 @@ indicatori complementari: non vanno convertiti matematicamente tra loro.
 4. Se l’issue contiene risultati indipendenti, scomporla prima di stimare.
 5. Verificare che entrambi i campi siano presenti in Jira dopo il salvataggio.
 
+### Verifica tecnica del salvataggio
+
+Non considerare sufficiente una risposta di successo dell'integrazione: riaprire
+l'issue e controllare i valori nella sezione **Dettagli**. Se `Story Points` o
+`Original Estimate` non sono esposti dalla schermata di modifica/API Jira,
+registrare il blocco e non dichiarare completato il censimento delle stime.
+L'abilitazione dei campi sulla schermata deve essere corretta prima di un nuovo
+tentativo di aggiornamento massivo.
+
 ## Gate operativo
 
 Prima di assegnare sprint, passare a In Progress o Review, controllare:
