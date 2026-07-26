@@ -19,6 +19,8 @@ Progetto Jira corrente: Watchverse, progetto company-managed con chiave `WVERSE`
 
 ## Tipi e titoli
 
+La guida operativa per scegliere il tipo, scomporre richieste composite e trattare le segnalazioni del modulo pubblico è [JIRA_ISSUE_CLASSIFICATION.md](playbooks/JIRA_ISSUE_CLASSIFICATION.md). Per il controllo duplicati e il triage usare anche [JIRA_INTAKE_TRIAGE.md](playbooks/JIRA_INTAKE_TRIAGE.md).
+
 - `Bug`: comportamento errato o regressione rispetto a un comportamento atteso.
 - `Task`: attivita tecnica, di configurazione, refactoring, hardening o analisi.
 - `Story`: capacita o risultato funzionale; puo contenere piu elementi di sviluppo front-end/back-end nella stessa issue.

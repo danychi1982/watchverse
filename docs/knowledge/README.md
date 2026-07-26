@@ -8,6 +8,7 @@ Questa cartella conserva il contesto necessario per riprendere il progetto in un
 2. [Registro delle decisioni](DECISION_LOG.md): decisioni importanti, motivazioni, conseguenze e stato.
 3. [Backlog corrente](../specifications/BACKLOG_CLOUD.md): unica fonte per priorita, stato, owner, effort e residui.
 4. [Gestione Jira](JIRA_WORKFLOW.md): regole di censimento, tipizzazione, sprint, review e configurazione dell'integrazione.
+5. [Playbook operativi](playbooks/README.md): classificazione, triage, scomposizione e collaudo delle issue.
 
 ## Principi di manutenzione
 
