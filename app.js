@@ -3520,7 +3520,11 @@
     return retryRows.length;
   }
   function scheduleBackgroundMetadataSync(force = false) {
-    if ((!force && (state.metadataBackgroundStarted || state.metadataCycleCompletedAt)) || !navigator.onLine || !state.settings.publicMetadataEnabled || libraryIsEmpty()) return;
+    const hasLegacyRetry = [...state.series, ...state.movies].some(item => {
+      const meta = item.publicMetadata || {};
+      return !meta.manualRetryRequired && Boolean(meta.failedAt || meta.error) && dateMs(meta.nextRetryAt) > Date.now();
+    });
+    if ((!force && (state.metadataBackgroundStarted || (state.metadataCycleCompletedAt && !hasLegacyRetry))) || !navigator.onLine || !state.settings.publicMetadataEnabled || libraryIsEmpty()) return;
     // Forced work bypasses the retry gate in queuePublicMetadata. Persisted
     // failures are cleared only by the worker after a successful attempt.
     const hasRemainingMetadata = [...state.series, ...state.movies].some(item => {
