@@ -4410,3 +4410,12 @@ html[data-theme="buffy"] .brand-mark {
   .cast-strip.cast-grid .cast-copy strong,
   .cast-strip.cast-grid .cast-copy small { font-size:11px; line-height:1.2; }
 }
+.availability-trailer-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+.availability-panel{min-width:0;border:1px solid var(--line,#30343d);border-radius:16px;padding:16px;background:rgba(255,255,255,.02)}
+.availability-panel h4{margin:0 0 12px}
+.availability-panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.availability-panel-head h4{margin:0}
+.compact-trailer-link{display:flex;min-height:0}
+.compact-trailer-link .trailer-thumb{width:150px;min-height:90px;aspect-ratio:16/9}
+.compact-trailer-link .trailer-copy{padding:10px 12px}
+@media (max-width:720px){.availability-trailer-grid{grid-template-columns:1fr}.compact-trailer-link .trailer-thumb{width:125px}}

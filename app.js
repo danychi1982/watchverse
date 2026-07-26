@@ -2082,9 +2082,18 @@
   }
   function cinemaProgrammingHtml(item) {
     const cinemas=preferredCinemas();
-    const rawRows=(item.cinemaShowtimes||[]).filter(show=>show&&(show.time||show.startsAt)).sort((a,b)=>dateMs(a.startsAt)-dateMs(b.startsAt)||String(a.time||'').localeCompare(String(b.time||'')));
+    const today = todayIso();
+    const horizon = daysFromNow(7);
+    const wantedTitle = normalizeSearch(item.title || '');
+    const rawRows=(item.cinemaShowtimes||[]).filter(show=>{
+      if(!show || !show.startsAt) return false;
+      const date = dateKeyInTimeZone(show.startsAt,'Europe/Rome');
+      if(!date || date < today || date > horizon) return false;
+      const sourceTitle = normalizeSearch(show.title || show.movieTitle || '');
+      return !sourceTitle || sourceTitle === wantedTitle;
+    }).sort((a,b)=>dateMs(a.startsAt)-dateMs(b.startsAt)||String(a.time||'').localeCompare(String(b.time||'')));
     if(item.cinemaStatus==='loading'&&!rawRows.length)return `<section class="content-card section cinema-programming"><div class="section-head"><div><h3>Programmazione cinema</h3></div></div>${inlineCinemaLoaderHtml('Controllo i siti ufficiali', 'Cerco il film nelle sale preferite.')}</section>`;
-    if(!rawRows.length)return `<section class="content-card section cinema-programming"><div class="section-head"><div><h3>Programmazione cinema</h3></div></div><p class="information-unavailable">Informazione non disponibile</p></section>`;
+    if(!rawRows.length)return '';
     const grouped=new Map();
     for(const show of rawRows){
       const cinema=cinemas.find(x=>x.id===show.cinemaId||normalizeSearch(x.name)===normalizeSearch(show.cinemaName))||{id:show.cinemaId,name:show.cinemaName,officialUrl:show.bookingUrl};
@@ -3039,8 +3048,7 @@
     setPage(s.title,'Dettaglio serie','series'); const prog=seriesProgress(s); const ep=nextEpisode(s); const latest=latestReleasedUnwatched(s);
     const info = `<div class="two-column"><div>
       <section class="content-card section"><div class="content-card-heading"><h3>Trama</h3>${publicMetadataSourceHtml(s)}</div><p>${esc(s.overview||'Descrizione non disponibile.')}</p></section>
-      <section class="content-card section"><h3>Dove guardarla in streaming/TV</h3><div class="provider-groups">${providersHtml(s)}</div></section>
-      ${trailerSectionHtml(s,'series')}
+      ${availabilityAndTrailerHtml(s,'series')}
       ${castPanelHtml(s,'series')}
        ${similarSectionPlaceholderHtml(s,'series')}
     </div><aside><section class="content-card"><h3>Il tuo stato</h3><div class="info-list"><div class="info-row"><span>Avanzamento</span><strong>${prog.watched}/${prog.total}</strong></div><div class="info-row"><span>Completamento</span><strong>${prog.percent}%</strong></div><div class="info-row"><span>Ultima visione</span><strong>${fmtDate(latestWatchedAt(s.id))}</strong></div>${latest?`<div class="info-row"><span>Ultimo episodio non visto</span><strong>S${pad2(latest.season)} E${pad2(latest.episode)} · ${fmtDate(latest.airDate)}</strong></div>`:''}</div><div style="margin-top:18px"><label style="font-weight:800">Il tuo voto</label>${starRating(s.rating,s.id)}</div><div style="margin-top:18px"><label for="seriesStatus" style="font-weight:800">Stato</label><select id="seriesStatus" style="width:100%;margin-top:7px"><option value="watching" ${s.status==='watching'?'selected':''}>In corso</option><option value="plan" ${['plan','watchlist'].includes(s.status)?'selected':''}>Da iniziare</option><option value="completed" ${s.status==='completed'?'selected':''}>Completata</option><option value="paused" ${s.status==='paused'?'selected':''}>In pausa</option><option value="dropped" ${s.status==='dropped'?'selected':''}>Abbandonata</option></select></div><button class="secondary" id="enrichSeriesPublic" style="width:100%;margin-top:14px">↻ Aggiorna locandina, episodi e cast</button>${(state.settings.tmdbToken||(window.WATCHVERSE_CONFIG||{}).tmdbProxyUrl)?'<button class="ghost" id="enrichSeriesTmdb" style="width:100%;margin-top:10px">Aggiorna dati TMDB/JustWatch</button>':''}</section><section class="content-card italy-schedule-card"><h3>Programmazione Italia</h3><p>${esc(italyReleaseRuleSummary(s))}</p><button class="ghost" id="editItalySchedule" style="width:100%">Modifica disponibilità italiana</button></section></aside></div>`;
@@ -3048,6 +3056,7 @@
       ${ep?`<article class="content-card" style="margin-bottom:18px"><span class="kicker">Continua il monitoraggio</span><h3>S${pad2(ep.season)} E${pad2(ep.episode)} · ${esc(ep.title)}</h3><p>${esc(ep.overview||'')}</p>${ep.airDate?`<p class="season-meta">Uscita: ${fmtDate(ep.airDate)}</p>`:''}<button class="primary" id="continueEpisode">✓ Segna visto</button></article>`:''}
       ${(s.seasons||[]).slice().sort((a,b)=>a.number-b.number).map(season=>{const eps=(season.episodes||[]).slice().sort((a,b)=>a.episode-b.episode);const watched=eps.filter(e=>isEpisodeWatched(s.id,e.season,e.episode)).length;return `<section class="season"><button class="season-head" data-season-toggle="${season.number}" aria-expanded="true" aria-controls="season-body-${season.number}"><span><strong>${esc(season.name||`Stagione ${season.number}`)}</strong><br><span class="season-meta">${watched}/${eps.length} episodi visti</span></span><span class="season-chevron" aria-hidden="true">⌄</span></button><div class="episode-list" id="season-body-${season.number}" data-season-body="${season.number}">${eps.map(e=>`<article class="episode-row"><div class="episode-thumb">${e.image?`<img src="${esc(e.image)}" alt="" loading="lazy" decoding="async">`:`S${pad2(e.season)}E${pad2(e.episode)}`}</div><div><h4>${esc(e.title||`Episodio ${e.episode}`)}</h4><p>${e.airDate?fmtDate(e.airDate)+' · ':''}${e.runtime||50} min</p>${e.overview?`<small>${esc(e.overview.slice(0,180))}</small>`:''}</div><button class="watch-check ${isEpisodeWatched(s.id,e.season,e.episode)?'watched':''}" data-ep="${e.episode}" data-season="${e.season}" data-title="${esc(e.title||'')}" aria-label="${isEpisodeWatched(s.id,e.season,e.episode)?'Segna come non visto':'Segna come visto'}: S${pad2(e.season)} E${pad2(e.episode)} ${esc(e.title||'')}">✓</button></article>`).join('')}</div></section>`;}).join('')||'<div class="empty-state"><h3>Nessun episodio disponibile</h3><p>L’aggiornamento pubblico verrà tentato automaticamente quando sei online.</p></div>'}</section>`;
     setMain(`${detailHero(s,'series')}<div class="tabbar"><button class="tab-button ${state.detailTab==='info'?'active':''}" data-detail-tab="info">Info</button><button class="tab-button ${state.detailTab==='episodes'?'active':''}" data-detail-tab="episodes">Episodi</button></div>${state.detailTab==='info'?info:episodes}`);
+    if(state.detailTab==='info') normalizeDetailRefreshControls('series');
     if(state.detailTab==='info'){bindProgrammingActions(s,'series');bindHorizontalRails($('#main'));addDetailRemovalAction('series',s);}
     $$('[data-detail-tab]').forEach(b=>b.addEventListener('click',()=>{state.detailTab=b.dataset.detailTab;renderSeriesDetail(id);}));
     $('#detailFavorite').addEventListener('click', event => runButtonAction(event.currentTarget, () => toggleFavorite('series',id), 'Salvataggio preferito in corso'));
@@ -3058,8 +3067,7 @@
     if($('#continueEpisode')&&ep)$('#continueEpisode').addEventListener('click',()=>toggleEpisode(s.id,ep.season,ep.episode,ep.title));
     $$('.watch-check').forEach(b=>b.addEventListener('click',()=>toggleEpisode(s.id,Number(b.dataset.season),Number(b.dataset.ep),b.dataset.title)));
     $$('[data-season-toggle]').forEach(b=>b.addEventListener('click',()=>{const body=$(`[data-season-body="${b.dataset.seasonToggle}"]`);body.classList.toggle('hidden');b.setAttribute('aria-expanded',String(!body.classList.contains('hidden')));}));
-    $('#enrichSeriesPublic')?.addEventListener('click',()=>manualPublicMetadata('series',s));
-    $('#enrichSeriesTmdb')?.addEventListener('click',()=>enrichSeriesFlow(s));
+    $('#refreshSeriesMetadata')?.addEventListener('click',()=>refreshDetailMetadata('series',s));
     $('#editItalySchedule')?.addEventListener('click',()=>showItalyScheduleEditor(s));
      queuePublicMetadata('series',[s],{silent:true,includeCast:true});
      idle(()=>maybeLoadProviders('series',s));
@@ -3074,11 +3082,11 @@
     setMain(`${detailHero(m,'movie')}<div class="two-column"><div>
       <section class="content-card section"><div class="content-card-heading"><h3>Trama</h3>${publicMetadataSourceHtml(m)}</div><p>${esc(m.overview||'Descrizione non disponibile.')}</p></section>
       ${cinemaProgrammingHtml(m)}
-      <section class="content-card section"><h3>Dove guardarlo in streaming/TV</h3><div class="provider-groups">${providersHtml(m)}</div></section>
-      ${trailerSectionHtml(m,'movie')}
+      ${availabilityAndTrailerHtml(m,'movie')}
       ${castPanelHtml(m,'movie')}
        ${similarSectionPlaceholderHtml(m,'movie')}
     </div><aside><section class="content-card"><h3>La tua visione</h3><div class="form-field"><label>Voto personale</label>${starRating(m.rating,m.id)}</div><div class="form-field" style="margin-top:16px"><label for="watchedDate">Data visione</label><input id="watchedDate" type="date" value="${m.watchedAt?isoDate(m.watchedAt):''}"></div><div class="form-field" style="margin-top:16px"><label for="movieNotes">Note</label><textarea id="movieNotes" placeholder="Cosa ne pensi?">${esc(m.notes||'')}</textarea></div><button class="primary" id="saveMovieMeta" style="width:100%;margin-top:14px">Salva</button><button class="secondary" id="enrichMoviePublic" style="width:100%;margin-top:10px">↻ Aggiorna locandina, trama e cast</button>${(state.settings.tmdbToken||(window.WATCHVERSE_CONFIG||{}).tmdbProxyUrl)?'<button class="ghost" id="enrichMovieTmdb" style="width:100%;margin-top:10px">Aggiorna dati TMDB/JustWatch</button>':''}</section></aside></div>`);
+    normalizeDetailRefreshControls('movie');
     bindProgrammingActions(m,'movie');
     bindHorizontalRails($('#main'));
     addDetailRemovalAction('movies',m);
@@ -3087,8 +3095,7 @@
     $('#detailEdit').addEventListener('click',()=>openEditModal(m,'movie'));
     $$('.star-rating button').forEach(b=>b.addEventListener('click',async()=>{m.rating=Number(b.dataset.value);await dbPut('movies',m);renderMovieDetail(id);}));
     $('#saveMovieMeta').addEventListener('click',async()=>{m.notes=$('#movieNotes').value.trim();const d=$('#watchedDate').value;if(d){m.watched=true;m.state='watched';m.watchedAt=new Date(`${d}T12:00:00`).toISOString();}await dbPut('movies',m);showToast('Film aggiornato',m.title);route();});
-    $('#enrichMoviePublic')?.addEventListener('click',()=>manualPublicMetadata('movie',m));
-    $('#enrichMovieTmdb')?.addEventListener('click',()=>enrichMovieFlow(m));
+    $('#refreshMovieMetadata')?.addEventListener('click',()=>refreshDetailMetadata('movie',m));
      queuePublicMetadata('movie',[m],{silent:true,includeCast:true});
      idle(()=>maybeLoadProviders('movie',m));
      idle(()=>maybeLoadTrailer('movie',m));
@@ -3485,6 +3492,26 @@
     queuePublicMetadata(kind, [item], { force: true, includeCast: true, silent: false });
   }
 
+  async function refreshDetailMetadata(kind, item) {
+    if (!navigator.onLine) { showToast('Connessione assente', 'L’aggiornamento richiede internet.', '!', 5000, { kind: 'error' }); return; }
+    showToast('Aggiornamento avviato', item.title, '↻', 2500);
+    await manualPublicMetadata(kind, item);
+    const tasks = [maybeLoadProviders(kind, item), maybeLoadTrailer(kind, item)];
+    if (kind === 'movie') tasks.push(maybeLoadCinemaShowtimes(item));
+    await Promise.allSettled(tasks);
+    scheduleMetadataRerender(item.id);
+  }
+
+  function normalizeDetailRefreshControls(kind) {
+    const old = document.getElementById(kind === 'series' ? 'enrichSeriesPublic' : 'enrichMoviePublic');
+    const legacy = document.getElementById(kind === 'series' ? 'enrichSeriesTmdb' : 'enrichMovieTmdb');
+    if (legacy) legacy.remove();
+    if (!old) return;
+    old.id = kind === 'series' ? 'refreshSeriesMetadata' : 'refreshMovieMetadata';
+    old.textContent = '↻ Aggiorna';
+    old.removeAttribute('data-legacy-action');
+  }
+
   async function tmdbFetch(path, params = {}) {
     const cfg = window.WATCHVERSE_CONFIG || {};
     let res;
@@ -3701,6 +3728,20 @@
     const title=trailer?.name||'Guarda il trailer';
     const trailerLabel=trailer?.official?'Trailer ufficiale':'Trailer trovato';
     return `<section class="content-card section trailer-card"><div class="section-head"><div><h3>Guarda il trailer</h3></div><span class="source-state state-ready">${trailerLabel}</span></div><a class="trailer-link" href="${esc(href)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(title)}${youtubeKey?' su YouTube':''}"><div class="trailer-thumb" style="background:${item.backdropGradient||gradient(item.title+' trailer')}">${visual?`<img src="${esc(visual)}" alt="Anteprima trailer di ${esc(item.title)}" loading="lazy" decoding="async">`:''}<span class="trailer-play" aria-hidden="true">▶</span></div><div class="trailer-copy"><strong>${esc(title)}</strong><span>${youtubeKey?'YouTube':'Apri trailer'} ↗</span></div></a></section>`;
+  }
+
+  function availabilityAndTrailerHtml(item, kind) {
+    const availabilityTitle = kind === 'series' ? 'Dove guardarla in streaming/TV' : 'Dove guardarlo in streaming/TV';
+    const trailer=officialTrailerForItem(item);
+    const youtubeKey=trailer?.site==='YouTube'&&trailer?.key?trailer.key:null;
+    const href=trailer?.url||(youtubeKey?`https://www.youtube.com/watch?v=${encodeURIComponent(youtubeKey)}`:'');
+    const visual=youtubeKey?`https://i.ytimg.com/vi/${encodeURIComponent(youtubeKey)}/hqdefault.jpg`:(item.backdrop||item.poster||'');
+    const trailerBody=href
+      ? `<a class="trailer-link compact-trailer-link" href="${esc(href)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(trailer?.name||'Guarda il trailer')}${youtubeKey?' su YouTube':''}"><div class="trailer-thumb" style="background:${item.backdropGradient||gradient(item.title+' trailer')}">${visual?`<img src="${esc(visual)}" alt="Anteprima trailer di ${esc(item.title)}" loading="lazy" decoding="async">`:''}<span class="trailer-play" aria-hidden="true">▶</span></div><div class="trailer-copy"><strong>${esc(trailer?.name||'Guarda il trailer')}</strong><span>${youtubeKey?'YouTube':'Apri trailer'} ↗</span></div></a>`
+      : item.trailerLookupStatus==='loading' ? inlineCinemaLoaderHtml('Ricerca trailer ufficiale','Controllo TMDB e i risultati pubblici ufficiali.') : '<p class="information-unavailable">Informazione non disponibile</p>';
+    const providers=providersHtml(item);
+    const providersBody=providers||'<p class="information-unavailable">Nessuna disponibilità trovata.</p>';
+    return `<section class="content-card section availability-trailer-card"><div class="section-head"><div><h3>Dove guardarlo e trailer</h3><p>Disponibilità e trailer verificati per questo titolo.</p></div></div><div class="availability-trailer-grid"><div class="availability-panel"><h4>${availabilityTitle}</h4>${providersBody}</div><div class="availability-panel"><div class="availability-panel-head"><h4>Guarda il trailer</h4>${href?`<span class="source-state state-ready">${trailer?.official?'Trailer ufficiale':'Trailer trovato'}</span>`:''}</div>${trailerBody}</div></div></section>`;
   }
 
   function publicSourcesBaseUrl() {
