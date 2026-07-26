@@ -963,6 +963,8 @@ main:focus { outline: none; }
 .metadata-recap-grid > div { padding:13px; border:1px solid var(--line); border-radius:13px; background:var(--surface-2); }
 .metadata-recap-grid strong { display:block; font-size:22px; }
 .metadata-recap-grid span { display:block; margin-top:3px; color:var(--muted); font-size:12px; }
+.metadata-top-actions { position:sticky; top:-20px; z-index:2; display:flex; flex-wrap:wrap; gap:8px; padding:10px 0; background:var(--surface); border-bottom:1px solid var(--line); }
+.metadata-top-actions button { min-width:150px; }
 .metadata-live-line { display:flex; align-items:center; gap:10px; margin:0; color:#d9d9dd; }
 
 .home-summary-grid {

@@ -99,6 +99,8 @@ async function putFixtures(page) {
     assert(await page.locator('#metadataStatusButton').isVisible(),'Il controllo metadati mobile non deve essere nascosto dal layout responsive.');
     await page.locator('#metadataStatusButton').click();
     await page.waitForSelector('#metadataStatusModalContent');
+    assert(await page.locator('.metadata-top-actions').isVisible(),'Le azioni principali dei metadati devono essere raggiungibili in alto nella modale.');
+    assert(await page.locator('.metadata-top-actions button').count()===4,'La barra azioni metadati non deve duplicare né perdere comandi.');
     await page.locator('#resumeMetadata').click();
     assert(await page.locator('#metadataStatusModalContent').isVisible(),'Aggiorna ora non deve chiudere la modale dello stato fonti.');
     await page.keyboard.press('Escape');

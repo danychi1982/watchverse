@@ -1803,12 +1803,12 @@
       : s.waitingForRetry
         ? `<p class="metadata-live-line metadata-retry-line"><strong>In attesa di retry.</strong> ${s.failed} errori tecnici registrati${s.nextRetryAt ? ` · prossimo tentativo ${fmtDateTime(s.nextRetryAt)}` : ' · prossimo tentativo pianificato'}.</p>`
         : durationCopy;
-    return `<div class="metadata-status-detail"><div class="metadata-status-big"><strong>${s.coveragePercent}%</strong><div><span>Copertura effettiva dei metadati</span><small class="metadata-cycle-state">${cycleLabel}</small></div></div><div class="progress-track metadata-progress large"><div class="progress-fill" style="width:${s.coveragePercent}%"></div></div><div class="metadata-recap-grid"><div><strong>${s.totalTitles.toLocaleString('it-IT')}</strong><span>Titoli del profilo</span></div><div><strong>${s.essentialIncomplete.toLocaleString('it-IT')}</strong><span>Titoli da verificare</span></div><div><strong>${s.failed.toLocaleString('it-IT')}</strong><span>Errori tecnici</span></div></div><div class="sync-source-groups">${groups.map(syncGroupHtml).join('')}</div>${liveCopy}</div>`;
+    return `<div class="metadata-status-detail"><div class="metadata-status-big"><strong>${s.coveragePercent}%</strong><div><span>Copertura effettiva dei metadati</span><small class="metadata-cycle-state">${cycleLabel}</small></div></div><div class="progress-track metadata-progress large"><div class="progress-fill" style="width:${s.coveragePercent}%"></div></div><div class="metadata-recap-grid"><div><strong>${s.totalTitles.toLocaleString('it-IT')}</strong><span>Titoli del profilo</span></div><div><strong>${s.essentialIncomplete.toLocaleString('it-IT')}</strong><span>Titoli da verificare</span></div><div><strong>${s.failed.toLocaleString('it-IT')}</strong><span>Errori tecnici</span></div></div><div class="metadata-top-actions" role="group" aria-label="Azioni metadati"><button class="primary" id="resumeMetadata" type="button">Aggiorna ora</button><button class="ghost" id="openMetadataIssues" type="button">Dettaglio titoli</button><button class="ghost" id="openSourceDetails" type="button">Vedi fonti</button><button class="secondary" id="retryMetadata" type="button">Riprova non riusciti</button></div><div class="sync-source-groups">${groups.map(syncGroupHtml).join('')}</div>${liveCopy}</div>`;
   }
 
   function updateMetadataStatusModal() {
     const content = $('#metadataStatusModalContent');
-    if (content) content.innerHTML = metadataStatusModalHtml(metadataGlobalStatus());
+    if (content) { content.innerHTML = metadataStatusModalHtml(metadataGlobalStatus()); bindMetadataStatusActions(); }
   }
 
   function metadataIssueRowHtml(row) {
@@ -1882,15 +1882,18 @@
   }
 
   // Override del pannello fonti: il contenuto resta sincronizzato anche quando la modale rimane aperta.
-  function showMetadataStatus() {
-    const s = metadataGlobalStatus();
-    openModal('Stato aggiornamento fonti', `<div id="metadataStatusModalContent">${metadataStatusModalHtml(s)}</div>`, `<button class="ghost" id="openSourceDetails">Vedi fonti</button><button class="ghost" id="openMetadataIssues">Dettaglio titoli</button><button class="secondary" id="retryMetadata">Riprova non riusciti</button><button class="primary" id="resumeMetadata">Aggiorna ora</button>`);
-    clearInterval(state.metadataStatusModalTimer);
-    state.metadataStatusModalTimer = setInterval(updateMetadataStatusModal, 1000);
+  function bindMetadataStatusActions() {
     $('#openSourceDetails')?.addEventListener('click',()=>{closeModal();state.profileSettingsTab='data';location.hash='#/settings';route();});
     $('#openMetadataIssues')?.addEventListener('click',()=>showMetadataIssues('all'));
-    $('#retryMetadata')?.addEventListener('click',()=>{for(const item of [...state.series,...state.movies])if(item.publicMetadata?.failedAt||item.publicMetadata?.error)item.publicMetadata={...(item.publicMetadata||{}),failedAt:null,error:null,nextRetryAt:null,parts:{...(item.publicMetadata?.parts||{}),coreComplete:false}};state.metadataBackgroundStarted=false;state.metadataRecoveryScheduled=false;state.metadataRecoveryDone=false;state.metadataAutoBudget+=50;scheduleBackgroundMetadataSync(true);syncDefaultPublicSources(true);closeModal();showToast('Nuovo tentativo avviato','Le fonti non riuscite verranno ricontrollate.','â†»');});
-    $('#resumeMetadata')?.addEventListener('click', () => { state.metadataBackgroundStarted = false; state.metadataAutoBudget += 50; scheduleBackgroundMetadataSync(true); syncDefaultPublicSources(true); updateMetadataStatusModal(); showToast('Aggiornamento in background', 'Catalogo, streaming, TV e cinema verranno controllati secondo le fonti configurate.', 'â†»', 4200); });
+    $('#retryMetadata')?.addEventListener('click',()=>{for(const item of [...state.series,...state.movies])if(item.publicMetadata?.failedAt||item.publicMetadata?.error)item.publicMetadata={...(item.publicMetadata||{}),failedAt:null,error:null,nextRetryAt:null,parts:{...(item.publicMetadata?.parts||{}),coreComplete:false}};state.metadataBackgroundStarted=false;state.metadataRecoveryScheduled=false;state.metadataRecoveryDone=false;state.metadataAutoBudget+=50;scheduleBackgroundMetadataSync(true);syncDefaultPublicSources(true);closeModal();showToast('Nuovo tentativo avviato','Le fonti non riuscite verranno ricontrollate.','↻');});
+    $('#resumeMetadata')?.addEventListener('click', () => { state.metadataBackgroundStarted = false; state.metadataAutoBudget += 50; scheduleBackgroundMetadataSync(true); syncDefaultPublicSources(true); updateMetadataStatusModal(); showToast('Aggiornamento in background', 'Catalogo, streaming, TV e cinema verranno controllati secondo le fonti configurate.', '↻', 4200); });
+  }
+  function showMetadataStatus() {
+    const s = metadataGlobalStatus();
+    openModal('Stato aggiornamento fonti', `<div id="metadataStatusModalContent">${metadataStatusModalHtml(s)}</div>`);
+    clearInterval(state.metadataStatusModalTimer);
+    state.metadataStatusModalTimer = setInterval(updateMetadataStatusModal, 1000);
+    bindMetadataStatusActions();
   }
 
   function showMetadataIssues(filter = 'all') {
