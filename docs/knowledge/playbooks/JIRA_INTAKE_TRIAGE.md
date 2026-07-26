@@ -12,6 +12,7 @@ Trasformare una richiesta informale, uno screenshot, un esito di test o una segn
 4. **Decidere il consolidamento**: commento/aggiornamento su issue esistente, nuova issue singola o scomposizione in più issue.
 5. **Collegare le fonti**: una richiesta `form` resta rintracciabile e viene collegata alle issue canoniche.
 6. **Registrare la decisione**: tipo scelto, motivazione, issue correlate, sprint e stato iniziale.
+7. **Stimare l’issue**: valorizzare Story Points e Original Estimate secondo [JIRA_ESTIMATION.md](JIRA_ESTIMATION.md) prima di considerare concluso il censimento.
 
 ## Regola anti-duplicati
 

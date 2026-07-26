@@ -12,6 +12,7 @@ Questa cartella raccoglie procedure operative riutilizzabili per trasformare ric
 
 - [Classificazione e scomposizione delle issue](JIRA_ISSUE_CLASSIFICATION.md): scelta tra Epic, Story, Task, Bug e Sub-task; gestione di richieste composite e richieste dal modulo pubblico.
 - [Intake, duplicati e triage](JIRA_INTAKE_TRIAGE.md): controllo preliminare del backlog, consolidamento delle segnalazioni e criterio per creare una o più issue canoniche.
+- [Stima e censimento completo](JIRA_ESTIMATION.md): scelta della complessità, mappatura Story Points/Original Estimate e controllo obbligatorio prima della pianificazione o della Review.
 - [Collaudo e passaggio di stato](JIRA_REVIEW_AND_E2E.md): preparazione della Review, test manuale/E2E, gestione del KO e aggiornamento Jira.
 
 ## Regola generale

@@ -6,6 +6,7 @@ Definire quando un’issue è pronta per il test, come eseguire il collaudo e co
 
 ## Prima della Review
 
+- stima completa e coerente con il tipo di issue: Story Points e Original Estimate per Story/Task/Bug;
 - implementazione completata;
 - suite automatica e build verdi;
 - criteri di accettazione verificabili;

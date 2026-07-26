@@ -132,6 +132,7 @@ Per i subtask di Analisi e Progettazione il deliverable non è una frase riepilo
 - Story Points e ore sono indicatori complementari e non devono essere convertiti automaticamente l'uno nell'altro.
 - Le Epic sono contenitori di capability e non vengono stimate direttamente: la stima è distribuita sulle Story, Task, Bug e sui subtask figli.
 - Il campo Story Points utilizzato dalla schermata delle Story è `customfield_10038`; `customfield_10016` è il distinto campo Jira `Story point estimate` e non deve essere usato per questa convenzione. Se il valore è presente in `customfield_10038` ma la schermata mostra `Nessuno`, va verificata la configurazione del layout/schermata del campo.
+- Il censimento di una issue è completo solo quando la stima applicabile è valorizzata e verificata: nessuna Story, Task o Bug va pianificata o portata in Review con Story Points oppure Original Estimate mancanti. La procedura operativa è [JIRA_ESTIMATION.md](playbooks/JIRA_ESTIMATION.md).
 
 ## Sprint 2 — presa in carico e passaggio in Review
 
