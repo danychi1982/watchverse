@@ -3440,7 +3440,11 @@
   }
 
   function scheduleNextMetadataBatch() {
-    if (state.metadataContinuationTimer || !state.metadataBackgroundStarted || !navigator.onLine || !state.settings.publicMetadataEnabled || libraryIsEmpty()) return;
+    if (state.metadataContinuationTimer || !navigator.onLine || !state.settings.publicMetadataEnabled || libraryIsEmpty()) return;
+    // Il riallineamento cloud può azzerare il flag mentre il lotto appena
+    // concluso lascia ancora titoli da elaborare. In quel caso la coda deve
+    // riattivarsi invece di restare ferma nello stato di attesa.
+    state.metadataBackgroundStarted = true;
     const remaining = [...state.series, ...state.movies].some(item => {
       const kind = state.series.includes(item) ? 'series' : 'movie';
       return needsPublicMetadata(item, kind, true);
