@@ -4349,7 +4349,7 @@
       state.gdprPreview=null;await reloadData();state.metadataBackgroundStarted=false;idle(scheduleBackgroundMetadataSync);setOperationProgress(100,'Importazione completata.','La libreria è pronta.');clearGdprResume(plan);await new Promise(resolve=>setTimeout(resolve,250));
       if(cloudWritesSuspended){window.WatchverseCloudSync.resumeWrites?.();cloudWritesSuspended=false;await syncCloudProfile(currentProfile());}
       queuePublicMetadata('series',sortSeriesItems(state.series,'latestEpisode').slice(0,8),{silent:true});queuePublicMetadata('movie',sortMovieItems(state.movies.filter(m=>m.watched),'recent').slice(0,8),{silent:true});
-      showImportReport(report);showToast('Importazione completata',`${series.length.toLocaleString('it-IT')} serie, ${movies.length.toLocaleString('it-IT')} film e ${progress.length.toLocaleString('it-IT')} episodi salvati.`,'✓',0,{kind:'success'});
+      showImportReport(report);showToast('Importazione completata',`${series.length.toLocaleString('it-IT')} serie, ${movies.length.toLocaleString('it-IT')} film e ${progress.length.toLocaleString('it-IT')} episodi salvati.`,'✓',7000,{kind:'success'});
     }catch(e){if(cloudWritesSuspended){window.WatchverseCloudSync.resumeWrites?.();cloudWritesSuspended=false;}showImportFailure(e,'Importazione');}
   }
 
