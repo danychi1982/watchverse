@@ -4247,7 +4247,7 @@ html[data-theme="last-of-us"] .mini-reel {
   }
   .topbar-wordmark { display:block; width:min(42vw,154px); max-width:100%; height:auto; }
   .top-actions { grid-column:3; min-width:0; gap:6px; }
-  #metadataStatusButton, #installButton { display:none !important; }
+  #installButton { display:none !important; }
   #notificationButton, #quickAddButton { width:40px; min-width:40px; height:40px; min-height:40px; padding:0; }
   #quickAddButton span { display:none; }
   #quickAddButton .control-icon { width:19px; height:19px; }

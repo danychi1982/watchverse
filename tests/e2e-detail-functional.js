@@ -92,6 +92,18 @@ async function putFixtures(page) {
     await seedAccount(page);
     await putFixtures(page);
 
+    await page.setViewportSize({width:480,height:1040});
+    await page.goto(`${url}#/home`,{waitUntil:'domcontentloaded'});
+    await waitForAppIdle(page);
+    assert(await page.locator('#metadataStatusButton').count()===1,'Il controllo metadati deve restare disponibile in viewport mobile.');
+    assert(await page.locator('#metadataStatusButton').isVisible(),'Il controllo metadati mobile non deve essere nascosto dal layout responsive.');
+    await page.locator('#metadataStatusButton').click();
+    await page.waitForSelector('#metadataStatusModalContent');
+    await page.locator('#resumeMetadata').click();
+    assert(await page.locator('#metadataStatusModalContent').isVisible(),'Aggiorna ora non deve chiudere la modale dello stato fonti.');
+    await page.keyboard.press('Escape');
+    await page.setViewportSize({width:1280,height:900});
+
     await page.goto(`${url}#/movie/profile-daniela%7Cmovie-functional`,{waitUntil:'domcontentloaded'});
     await page.waitForSelector('.detail-hero');
     await waitForAppIdle(page);
@@ -99,6 +111,10 @@ async function putFixtures(page) {
     assert(await page.locator('#enrichMovieTmdb, #enrichMoviePublic').count()===0,'I pulsanti tecnici separati non devono essere visibili.');
     assert(await page.locator('.availability-trailer-card').count()===1,'Trailer e streaming devono stare nello stesso box.');
     assert(await page.locator('.trailer-card').count()===0,'Il box trailer separato non deve essere renderizzato.');
+    assert(await page.locator('#detailFavorite').getAttribute('aria-pressed')==='false','Un film non preferito deve esporre aria-pressed=false.');
+    assert((await page.locator('#detailFavorite').textContent()).includes('♡'),'Un film non preferito deve usare il cuore vuoto.');
+    await page.locator('#detailMainAction').click();
+    assert(await page.locator('#toastRegion .toast').filter({hasText:'Film segnato come visto'}).count()===1,'Il click su Visto deve dare feedback immediato.');
     const cinemaText=await page.locator('.cinema-programming').textContent();
     assert(cinemaText.includes('21:30')&&!cinemaText.includes('20:00')&&!cinemaText.includes('21:00'),'Devono essere mostrati solo gli spettacoli validi per data e titolo.');
     await page.locator('#refreshMovieMetadata').click();
@@ -110,6 +126,15 @@ async function putFixtures(page) {
     if (await page.locator('[data-detail-tab="info"]').count()) await page.locator('[data-detail-tab="info"]').click();
     assert(await page.locator('#refreshSeriesMetadata').count()===1,'Il dettaglio serie deve avere un solo pulsante Aggiorna.');
     assert(await page.locator('.availability-trailer-card').count()===1,'Anche la serie deve usare il box unificato.');
+    await page.locator('[data-detail-tab="episodes"]').click();
+    await page.locator('[data-season-toggle="1"]').click();
+    assert(await page.locator('[data-season-toggle="1"]').getAttribute('aria-expanded')==='false','La stagione deve potersi chiudere.');
+    await page.goto(`${url}#/home`,{waitUntil:'domcontentloaded'});
+    await waitForAppIdle(page);
+    await page.goto(`${url}#/series/profile-daniela%7Cseries-functional`,{waitUntil:'domcontentloaded'});
+    await page.waitForSelector('[data-detail-tab="episodes"]');
+    await page.locator('[data-detail-tab="episodes"]').click();
+    assert(await page.locator('[data-season-toggle="1"]').getAttribute('aria-expanded')==='false','La stagione chiusa non deve riaprirsi dopo un rerender del dettaglio.');
     await browser.close();
     console.log('✓ E2E dettaglio: cinema validato, aggiornamento unificato e box streaming/trailer verificati');
   } finally { server.close(); }

@@ -229,7 +229,7 @@
     homeTab: 'watch', seriesFilter: 'unwatched', movieFilter: 'watched', statsView: 'overview', statsPeriod: 'all',
     seriesSort: 'latestEpisode', movieSort: 'recent',
     seriesSearch: '', movieSearch: '', seriesVisible: 60, movieVisible: 60,
-    detailTab: 'info', tvScheduleFilter: 'today', importPreview: null, gdprPreview: null, deferredInstall: null,
+    detailTab: 'info', tvScheduleFilter: 'today', importPreview: null, gdprPreview: null, deferredInstall: null, seasonAccordionState: new Map(),
     notifications: [], tmdbResults: [], publicResults: [], catalogResults: [], recommendationResults: [], searchQuery: '', isLoading: false, pendingAvatarProfileId: null, personFilmographyFilter: 'all', profileSettingsTab: 'identity',
     catalogEntries: [], catalogIndex: new Map(), catalogHydratedThisSession: 0, catalogNetworkAvoidedThisSession: 0,
     metadataQueue: [], metadataRunning: 0, metadataQueuedIds: new Set(), metadataAutoBudget: 72, metadataConcurrency: 4, metadataRenderPending: false, metadataRerenderTimer: null, metadataBackgroundStarted: false, metadataContinuationTimer: null, metadataHeaderTimer: null, metadataCompletedThisSession: 0, metadataFailedThisSession: 0, metadataRecoveryScheduled: false, metadataRecoveryDone: false, metadataCycleStartedAt: null, metadataCycleCompletedAt: null, metadataCycleDurationMs: null, wcagStatusFilter: 'all', wcagLevelFilter: 'all', accessibilityTab: 'declaration', searchRecommendationFilter: 'all', navigationLoaderToken: 0, navigationRequestId: 0, initialCloudHydrationPending: false, initialCloudHydrationError: null,
@@ -255,11 +255,13 @@
       button.setAttribute('aria-busy', 'true');
       button.classList.add('view-action-busy');
       button.title = busyLabel;
+      button.textContent = busyLabel;
     } else {
       button.disabled = false;
       button.removeAttribute('aria-busy');
       button.classList.remove('view-action-busy');
       if (Object.prototype.hasOwnProperty.call(button.dataset, 'idleTitle')) button.title = button.dataset.idleTitle;
+      if (Object.prototype.hasOwnProperty.call(button.dataset, 'idleLabel')) button.textContent = button.dataset.idleLabel;
     }
   }
   function runButtonAction(button, action, busyLabel = 'Operazione in corso') {
@@ -1888,7 +1890,7 @@
     $('#openSourceDetails')?.addEventListener('click',()=>{closeModal();state.profileSettingsTab='data';location.hash='#/settings';route();});
     $('#openMetadataIssues')?.addEventListener('click',()=>showMetadataIssues('all'));
     $('#retryMetadata')?.addEventListener('click',()=>{for(const item of [...state.series,...state.movies])if(item.publicMetadata?.failedAt||item.publicMetadata?.error)item.publicMetadata={...(item.publicMetadata||{}),failedAt:null,error:null,nextRetryAt:null,parts:{...(item.publicMetadata?.parts||{}),coreComplete:false}};state.metadataBackgroundStarted=false;state.metadataRecoveryScheduled=false;state.metadataRecoveryDone=false;state.metadataAutoBudget+=50;scheduleBackgroundMetadataSync(true);syncDefaultPublicSources(true);closeModal();showToast('Nuovo tentativo avviato','Le fonti non riuscite verranno ricontrollate.','â†»');});
-    $('#resumeMetadata')?.addEventListener('click', () => { state.metadataBackgroundStarted = false; state.metadataAutoBudget += 50; scheduleBackgroundMetadataSync(true); syncDefaultPublicSources(true); closeModal(); showToast('Aggiornamento in background', 'Catalogo, streaming, TV e cinema verranno controllati secondo le fonti configurate.', 'â†»', 4200); });
+    $('#resumeMetadata')?.addEventListener('click', () => { state.metadataBackgroundStarted = false; state.metadataAutoBudget += 50; scheduleBackgroundMetadataSync(true); syncDefaultPublicSources(true); updateMetadataStatusModal(); showToast('Aggiornamento in background', 'Catalogo, streaming, TV e cinema verranno controllati secondo le fonti configurate.', 'â†»', 4200); });
   }
 
   function showMetadataIssues(filter = 'all') {
@@ -1974,7 +1976,7 @@
       <a href="${href}" class="poster" style="background:${item.posterGradient || gradient(item.title)}">
         ${posterInner(item)}
       </a>
-      <button class="favorite-button ${item.favorite ? 'active' : ''}" data-action="favorite" aria-label="${item.favorite ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'}">♥</button>
+      <button class="favorite-button ${item.favorite ? 'active' : ''}" data-action="favorite" aria-label="${item.favorite ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'}" aria-pressed="${String(Boolean(item.favorite))}">${item.favorite ? '♥' : '♡'}</button>
       <div class="card-body">
         <p class="card-title">${esc(item.title)}</p>
         <div class="card-meta"><span>${esc(meta)}</span>${item.rating ? `<span>★ ${item.rating}</span>` : ''}</div>
@@ -1996,7 +1998,7 @@
         <div class="row-meta"><span>${item.year || '—'}</span><span>${isSeries ? `${prog.remaining} episodi residui` : item.watched ? `Visto ${fmtDate(item.watchedAt)}` : 'Da vedere'}</span>${item.rating ? `<span>★ ${item.rating}</span>` : ''}${item.favorite ? '<span>♥ Preferito</span>' : ''}</div>
         ${isSeries ? `<div class="progress-track"><div class="progress-fill" style="width:${prog.percent}%"></div></div>` : ''}
       </div>
-      <div class="row-actions"><button class="favorite-button ${item.favorite ? 'active' : ''}" data-action="favorite" style="position:static" aria-label="Preferito">♥</button>
+      <div class="row-actions"><button class="favorite-button ${item.favorite ? 'active' : ''}" data-action="favorite" style="position:static" aria-label="${item.favorite ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'}" aria-pressed="${String(Boolean(item.favorite))}">${item.favorite ? '♥' : '♡'}</button>
         ${isSeries ? `<a class="secondary" href="${href}">Apri</a>` : `<button class="secondary" data-action="watched">${item.watched ? 'Segna non visto' : 'Segna visto'}</button>`}</div>
     </article>`;
   }
@@ -2167,12 +2169,14 @@
       if (!card || card.dataset.kind !== kind || card.dataset.id !== id) return;
       button.classList.toggle('active', active);
       button.setAttribute('aria-label', active ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti');
+      button.setAttribute('aria-pressed', String(active));
       button.textContent = active ? '♥' : '♡';
     });
     const detailButton = $('#detailFavorite');
     if (detailButton) {
       detailButton.disabled = pending;
       detailButton.setAttribute('aria-busy', String(pending));
+      detailButton.setAttribute('aria-pressed', String(active));
     }
     if (detailButton) detailButton.textContent = active ? '♥ Preferito' : '♡ Preferito';
   }
@@ -2210,8 +2214,8 @@
     item.watched = !item.watched;
     item.state = item.watched ? 'watched' : 'watchlist';
     item.watchedAt = item.watched ? new Date().toISOString() : null;
-    await dbPut('movies', item);
     showToast(item.watched ? 'Film segnato come visto' : 'Film rimesso da vedere', item.title, '');
+    await dbPut('movies', item);
     void route({ loader:false, preserveScroll:true });
   }
   async function legacyToggleMovieWatched(id) {
@@ -3040,7 +3044,7 @@
     return `<section class="detail-hero ${banner?'has-detail-banner':'no-detail-banner'}">${banner}<div class="detail-content">
       <div class="detail-poster media-frame media-frame-poster" style="--poster-fallback:${item.posterGradient || gradient(item.title)}">${item.poster?`<img class="poster-img" src="${esc(item.poster)}" alt="Locandina di ${esc(item.title)}" width="500" height="750" loading="eager" decoding="async">`:`<span class="detail-poster-fallback">${esc(item.title)}</span>`}</div>
       <div class="detail-info"><div class="chip-row">${chips.map(c=>`<span class="chip">${esc(c)}</span>`).join('')}</div><h2>${esc(item.title)}</h2>${item.originalTitle && normalizeSearch(item.originalTitle)!==normalizeSearch(item.title)?`<p class="original-title">Titolo originale: <strong>${esc(item.originalTitle)}</strong></p>`:''}<p>${esc(item.overview || 'Descrizione non ancora disponibile.')}</p>
-      <div class="detail-actions"><button class="primary" id="detailMainAction">${kind==='series'?(nextEpisode(item)?'✓ Segna prossimo episodio':'Completata'):(item.watched?'✓ Visto':'Segna visto')}</button><button class="secondary" id="detailFavorite">${item.favorite?'♥ Preferito':'♡ Preferito'}</button><button class="ghost" id="detailEdit">Modifica</button></div></div>
+      <div class="detail-actions"><button class="primary" id="detailMainAction">${kind==='series'?(nextEpisode(item)?'✓ Segna prossimo episodio':'Completata'):(item.watched?'✓ Visto':'Segna visto')}</button><button class="secondary" id="detailFavorite" aria-pressed="${String(Boolean(item.favorite))}">${item.favorite?'♥ Preferito':'♡ Preferito'}</button><button class="ghost" id="detailEdit">Modifica</button></div></div>
     </div></section>`;
   }
 
@@ -3058,6 +3062,15 @@
       ${ep?`<article class="content-card" style="margin-bottom:18px"><span class="kicker">Continua il monitoraggio</span><h3>S${pad2(ep.season)} E${pad2(ep.episode)} · ${esc(ep.title)}</h3><p>${esc(ep.overview||'')}</p>${ep.airDate?`<p class="season-meta">Uscita: ${fmtDate(ep.airDate)}</p>`:''}<button class="primary" id="continueEpisode">✓ Segna visto</button></article>`:''}
       ${(s.seasons||[]).slice().sort((a,b)=>a.number-b.number).map(season=>{const eps=(season.episodes||[]).slice().sort((a,b)=>a.episode-b.episode);const watched=eps.filter(e=>isEpisodeWatched(s.id,e.season,e.episode)).length;return `<section class="season"><button class="season-head" data-season-toggle="${season.number}" aria-expanded="true" aria-controls="season-body-${season.number}"><span><strong>${esc(season.name||`Stagione ${season.number}`)}</strong><br><span class="season-meta">${watched}/${eps.length} episodi visti</span></span><span class="season-chevron" aria-hidden="true">⌄</span></button><div class="episode-list" id="season-body-${season.number}" data-season-body="${season.number}">${eps.map(e=>`<article class="episode-row"><div class="episode-thumb">${e.image?`<img src="${esc(e.image)}" alt="" loading="lazy" decoding="async">`:`S${pad2(e.season)}E${pad2(e.episode)}`}</div><div><h4>${esc(e.title||`Episodio ${e.episode}`)}</h4><p>${e.airDate?fmtDate(e.airDate)+' · ':''}${e.runtime||50} min</p>${e.overview?`<small>${esc(e.overview.slice(0,180))}</small>`:''}</div><button class="watch-check ${isEpisodeWatched(s.id,e.season,e.episode)?'watched':''}" data-ep="${e.episode}" data-season="${e.season}" data-title="${esc(e.title||'')}" aria-label="${isEpisodeWatched(s.id,e.season,e.episode)?'Segna come non visto':'Segna come visto'}: S${pad2(e.season)} E${pad2(e.episode)} ${esc(e.title||'')}">✓</button></article>`).join('')}</div></section>`;}).join('')||'<div class="empty-state"><h3>Nessun episodio disponibile</h3><p>L’aggiornamento pubblico verrà tentato automaticamente quando sei online.</p></div>'}</section>`;
     setMain(`${detailHero(s,'series')}<div class="tabbar"><button class="tab-button ${state.detailTab==='info'?'active':''}" data-detail-tab="info">Info</button><button class="tab-button ${state.detailTab==='episodes'?'active':''}" data-detail-tab="episodes">Episodi</button></div>${state.detailTab==='info'?info:episodes}`);
+    $$('[data-season-toggle]').forEach(button => {
+      const key = `${s.id}:${button.dataset.seasonToggle}`;
+      const open = state.seasonAccordionState.get(key);
+      if (open === undefined) return;
+      const body = $(`[data-season-body="${button.dataset.seasonToggle}"]`);
+      if (!body) return;
+      body.classList.toggle('hidden', !open);
+      button.setAttribute('aria-expanded', String(open));
+    });
     if(state.detailTab==='info') normalizeDetailRefreshControls('series');
     if(state.detailTab==='info'){bindProgrammingActions(s,'series');bindHorizontalRails($('#main'));addDetailRemovalAction('series',s);}
     $$('[data-detail-tab]').forEach(b=>b.addEventListener('click',()=>{state.detailTab=b.dataset.detailTab;renderSeriesDetail(id);}));
@@ -3068,7 +3081,7 @@
     $$('.star-rating button').forEach(b=>b.addEventListener('click',async()=>{s.rating=Number(b.dataset.value);await dbPut('series',s);renderSeriesDetail(id);}));
     if($('#continueEpisode')&&ep)$('#continueEpisode').addEventListener('click',()=>toggleEpisode(s.id,ep.season,ep.episode,ep.title));
     $$('.watch-check').forEach(b=>b.addEventListener('click',()=>toggleEpisode(s.id,Number(b.dataset.season),Number(b.dataset.ep),b.dataset.title)));
-    $$('[data-season-toggle]').forEach(b=>b.addEventListener('click',()=>{const body=$(`[data-season-body="${b.dataset.seasonToggle}"]`);body.classList.toggle('hidden');b.setAttribute('aria-expanded',String(!body.classList.contains('hidden')));}));
+    $$('[data-season-toggle]').forEach(b=>b.addEventListener('click',()=>{const body=$(`[data-season-body="${b.dataset.seasonToggle}"]`);body.classList.toggle('hidden');const open=!body.classList.contains('hidden');b.setAttribute('aria-expanded',String(open));state.seasonAccordionState.set(`${s.id}:${b.dataset.seasonToggle}`,open);}));
     $('#refreshSeriesMetadata')?.addEventListener('click',()=>refreshDetailMetadata('series',s));
     $('#editItalySchedule')?.addEventListener('click',()=>showItalyScheduleEditor(s));
      queuePublicMetadata('series',[s],{silent:true,includeCast:true});
@@ -3882,7 +3895,7 @@
     return item;
   }
 
-  async function enrichMovieFlow(m){if(!state.settings.tmdbToken&&!(window.WATCHVERSE_CONFIG||{}).tmdbProxyUrl){showToast('TMDB non configurato','I metadati pubblici restano comunque disponibili.','!');return;}openModal('Collega il film a TMDB','<p>Sto cercando il titolo nei metadati italiani…</p>');try{const d=await tmdbFetch('/search/movie',{query:m.title,language:'it-IT',region:'IT',year:m.year||''});const res=(d.results||[]).slice(0,5);$('#modalRoot .modal-body').innerHTML=`<p>Scegli la corrispondenza corretta.</p><div class="search-results">${res.map(x=>`<article class="search-result"><div class="thumb">${x.poster_path?`<img class="poster-img" src="${tmdbPoster(x.poster_path)}" alt="">`:''}</div><div><h3>${esc(x.title)}</h3><p>${esc((x.release_date||'').slice(0,4))} · ${esc(x.overview||'')}</p></div><button class="primary" data-match="${x.id}">Scegli</button></article>`).join('')}</div>`;$$('[data-match]').forEach(b=>b.addEventListener('click',async()=>{const added=await addFromTMDB('movie',Number(b.dataset.match));const old=m;Object.assign(old,added,{id:m.id,profileId:state.profileId,watched:m.watched,favorite:m.favorite,rating:m.rating,watchedAt:m.watchedAt,notes:m.notes,state:m.state});await dbPut('movies',old);await dbDelete('movies',added.id);closeModal();await reloadData();renderMovieDetail(m.id);}));}catch(e){$('#modalRoot .modal-body').innerHTML=`<p class="notice danger">${esc(e.message)}</p>`;}}
+  async function enrichMovieFlow(m){if(!state.settings.tmdbToken&&!(window.WATCHVERSE_CONFIG||{}).tmdbProxyUrl){showToast('TMDB non configurato','I metadati pubblici restano comunque disponibili.','!');return;}openModal('Collega il film a TMDB','<p>Sto cercando il titolo nei metadati italiani…</p>');try{const d=await tmdbFetch('/search/movie',{query:m.title,language:'it-IT',region:'IT',year:m.year||''});const res=(d.results||[]).slice(0,5);const applyMatch=async matchId=>{const added=await addFromTMDB('movie',Number(matchId));const old=m;Object.assign(old,added,{id:m.id,profileId:state.profileId,watched:m.watched,favorite:m.favorite,rating:m.rating,watchedAt:m.watchedAt,notes:m.notes,state:m.state});await dbPut('movies',old);await dbDelete('movies',added.id);closeModal();await reloadData();renderMovieDetail(m.id);};if(res.length===1){await applyMatch(res[0].id);return;}$('#modalRoot .modal-body').innerHTML=`<p>Scegli la corrispondenza corretta.</p><div class="search-results">${res.map(x=>`<article class="search-result"><div class="thumb">${x.poster_path?`<img class="poster-img" src="${tmdbPoster(x.poster_path)}" alt="">`:''}</div><div><h3>${esc(x.title)}</h3><p>${esc((x.release_date||'').slice(0,4))} · ${esc(x.overview||'')}</p></div><button class="primary" data-match="${x.id}">Scegli</button></article>`).join('')}</div>`;$$('[data-match]').forEach(b=>b.addEventListener('click',()=>applyMatch(b.dataset.match)));}catch(e){$('#modalRoot .modal-body').innerHTML=`<p class="notice danger">${esc(e.message)}</p>`;}}
   async function enrichSeriesFlow(s){if(!state.settings.tmdbToken&&!(window.WATCHVERSE_CONFIG||{}).tmdbProxyUrl){showToast('TMDB non configurato','I metadati pubblici restano comunque disponibili.','!');return;}openModal('Collega la serie a TMDB','<p>Sto cercando la serie nei metadati italiani…</p>');try{const d=await tmdbFetch('/search/tv',{query:s.title,language:'it-IT',first_air_date_year:s.year||''});const res=(d.results||[]).slice(0,5);$('#modalRoot .modal-body').innerHTML=`<p>Scegli la corrispondenza corretta. Gli episodi già visti non verranno persi.</p><div class="search-results">${res.map(x=>`<article class="search-result"><div class="thumb">${x.poster_path?`<img class="poster-img" src="${tmdbPoster(x.poster_path)}" alt="">`:''}</div><div><h3>${esc(x.name)}</h3><p>${esc((x.first_air_date||'').slice(0,4))} · ${esc(x.overview||'')}</p></div><button class="primary" data-match="${x.id}">Scegli</button></article>`).join('')}</div>`;$$('[data-match]').forEach(b=>b.addEventListener('click',async()=>{const added=await addFromTMDB('tv',Number(b.dataset.match));const old=s;const importedSeasons=s.seasons||[];Object.assign(old,added,{id:s.id,profileId:state.profileId,status:s.status,favorite:s.favorite,rating:s.rating,seasons:mergeSeriesSeasons(importedSeasons,added.seasons,s.id)});await dbPut('series',old);await dbDelete('series',added.id);closeModal();await reloadData();renderSeriesDetail(s.id);}));}catch(e){$('#modalRoot .modal-body').innerHTML=`<p class="notice danger">${esc(e.message)}</p>`;}}
 
   function statsPeriodStart(period) {
