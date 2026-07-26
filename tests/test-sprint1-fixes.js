@@ -37,8 +37,8 @@ assert(app.includes('metadataConcurrency: 4'), 'Il ciclo fonti non usa il parall
 assert(app.includes('metadataStatusModalHtml'), 'La modale fonti non ha un renderer aggiornabile');
 assert(app.includes('setInterval(updateMetadataStatusModal, 1000)'), 'La modale fonti non aggiorna il contenuto mentre resta aperta');
 assert(app.includes('metadata-retry-line'), 'La modale fonti non mostra gli errori da riprovare');
-assert(app.includes('Ultimo tentativo automatico'), 'Il recupero finale non comunica la ripresa dei titoli falliti');
-assert(app.includes('finalRecovery:true'), 'Il recupero finale non viene distinto dai normali aggiornamenti');
+assert(app.includes('Retry automatici esauriti'), 'Il recupero automatico non comunica la ripresa dei titoli falliti');
+assert(app.includes('metadataRecoveryPasses'), 'Il recupero automatico non conta i passaggi sui titoli falliti');
 assert(app.includes('Aggiornamento manuale richiesto'), 'Gli errori persistenti non richiedono un aggiornamento manuale');
 assert(app.includes('const pendingRetry ='), 'Il ciclo metadati puo chiudersi mentre restano retry pendenti');
 assert(app.includes('function metadataErrorAnalysis('), 'Manca l aggregazione degli errori metadati');

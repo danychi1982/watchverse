@@ -7,9 +7,10 @@ assert(app.includes('Copertura effettiva dei metadati'), 'La copertura non è pr
 assert(app.includes('Titoli da verificare'), 'Gli elementi non risolti non sono indicati separatamente');
 assert(app.includes('Errori tecnici'), 'Gli errori tecnici non sono distinti dai titoli incompleti');
 assert(app.includes('function scheduleMetadataRecoveryPass()'), 'Manca il recupero automatico dei metadati falliti');
-assert(app.includes('Ultimo tentativo automatico'), 'Manca il recupero finale degli elementi falliti');
-assert(app.includes('const MAX_METADATA_AUTO_RETRIES = 1'), 'Manca il limite ai retry automatici dei metadati');
-assert(app.includes('task.finalRecovery || attempts > MAX_METADATA_AUTO_RETRIES'), 'Gli errori finali non passano al retry manuale');
+assert(app.includes('function scheduleMetadataRecoveryPass()'), 'Manca il recupero automatico degli elementi falliti');
+assert(app.includes('const MAX_METADATA_AUTO_RETRIES = 4'), 'Manca il limite ai quattro retry automatici dei metadati');
+assert(app.includes('state.metadataRecoveryPasses'), 'Manca il contatore dei passaggi di retry automatico');
+assert(app.includes('attempts > MAX_METADATA_AUTO_RETRIES'), 'Gli errori finali non passano al retry manuale');
 assert(app.includes('state.metadataRecoveryDone = true'), 'Il recupero finale puÃ² ripartire indefinitamente');
 assert(app.includes('meta.nextRetryAt && !meta.failedAt && !meta.error'), 'I retry differiti legacy bloccano ancora gli errori da recuperare');
 assert(app.includes('const hasLegacyRetry = [...state.series, ...state.movies].some'), 'Un retry legacy non riapre il ciclo dopo il refresh');

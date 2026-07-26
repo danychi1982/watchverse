@@ -145,6 +145,7 @@
     state.metadataCycleStartedAt = new Date().toISOString();
     state.metadataCycleCompletedAt = null;
     state.metadataCycleDurationMs = null;
+    state.metadataRecoveryPasses = 0;
     saveMetadataCycle();
   }
   function metadataDurationLabel(durationMs) {
@@ -233,7 +234,7 @@
     detailTab: 'info', tvScheduleFilter: 'today', importPreview: null, gdprPreview: null, deferredInstall: null, seasonAccordionState: new Map(),
     notifications: [], tmdbResults: [], publicResults: [], catalogResults: [], recommendationResults: [], searchQuery: '', isLoading: false, pendingAvatarProfileId: null, personFilmographyFilter: 'all', profileSettingsTab: 'identity',
     catalogEntries: [], catalogIndex: new Map(), catalogHydratedThisSession: 0, catalogNetworkAvoidedThisSession: 0,
-    metadataQueue: [], metadataRunning: 0, metadataQueuedIds: new Set(), metadataAutoBudget: 72, metadataConcurrency: 4, metadataRenderPending: false, metadataRerenderTimer: null, metadataBackgroundStarted: false, metadataContinuationTimer: null, metadataHeaderTimer: null, metadataCompletedThisSession: 0, metadataFailedThisSession: 0, metadataRecoveryScheduled: false, metadataRecoveryDone: false, metadataCycleStartedAt: null, metadataCycleCompletedAt: null, metadataCycleDurationMs: null, wcagStatusFilter: 'all', wcagLevelFilter: 'all', accessibilityTab: 'declaration', searchRecommendationFilter: 'all', navigationLoaderToken: 0, navigationRequestId: 0, initialCloudHydrationPending: false, initialCloudHydrationError: null,
+    metadataQueue: [], metadataRunning: 0, metadataQueuedIds: new Set(), metadataAutoBudget: 72, metadataConcurrency: 4, metadataRenderPending: false, metadataRerenderTimer: null, metadataBackgroundStarted: false, metadataContinuationTimer: null, metadataHeaderTimer: null, metadataCompletedThisSession: 0, metadataFailedThisSession: 0, metadataRecoveryScheduled: false, metadataRecoveryDone: false, metadataRecoveryPasses: 0, metadataCycleStartedAt: null, metadataCycleCompletedAt: null, metadataCycleDurationMs: null, wcagStatusFilter: 'all', wcagLevelFilter: 'all', accessibilityTab: 'declaration', searchRecommendationFilter: 'all', navigationLoaderToken: 0, navigationRequestId: 0, initialCloudHydrationPending: false, initialCloudHydrationError: null,
     sidebarCollapsed: localStorage.getItem('watchverse.sidebarCollapsed') === '1', cinemaSearchLocation: null, cinemaSearchQuery: '', cinemaLocationFeedback: null, aivengersInitialized: false, lastRenderedRoute: '', defaultSourceStatus: null, defaultSourceSyncRunning: false, viewActionBusy: false, pendingFavoriteKeys: new Set(), cloudRefreshRunning: false, cloudRefreshAt: 0, lastUserInteractionAt: 0, cloudRefreshTimer: null, routeProgressTimer: null, dataRevision: 0, viewCache: { revision: -1, searchRecommendations: null, programmingMarkup: null }
   };
 
@@ -3232,7 +3233,7 @@
   // Ogni ciclo prova prima tutti i titoli e fa poi un unico recupero finale
   // dei falliti. Dopo quel recupero l'eventuale errore richiede un'azione
   // esplicita: la navigazione non deve riavviare richieste alla fonte.
-  const MAX_METADATA_AUTO_RETRIES = 1;
+  const MAX_METADATA_AUTO_RETRIES = 4;
   function needsPublicMetadata(item, kind, includeCast = false) {
     if (!state.settings.publicMetadataEnabled || !publicMetadataApi()) return false;
     const meta = item.publicMetadata || {}; const parts = metadataParts(item);
@@ -3413,21 +3414,29 @@
     state.metadataRerenderTimer = setTimeout(refresh, delay);
   }
   function scheduleMetadataRecoveryPass() {
-    if (!navigator.onLine || !state.settings.publicMetadataEnabled || !publicMetadataApi() || !state.metadataBackgroundStarted || state.metadataRecoveryDone) return;
+    if (!navigator.onLine || !state.settings.publicMetadataEnabled || !publicMetadataApi() || !state.metadataBackgroundStarted || state.metadataRecoveryScheduled) return;
     const failedSeries = state.series.filter(item => item.publicMetadata?.failedAt && !item.publicMetadata?.manualRetryRequired);
     const failedMovies = state.movies.filter(item => item.publicMetadata?.failedAt && !item.publicMetadata?.manualRetryRequired);
     const failed = [...failedSeries.map(item => ({ kind:'series', item })), ...failedMovies.map(item => ({ kind:'movie', item }))];
     if (!failed.length) { state.metadataRecoveryDone = true; return; }
+    if (state.metadataRecoveryPasses >= MAX_METADATA_AUTO_RETRIES) {
+      for (const { kind, item } of failed) {
+        item.publicMetadata = { ...(item.publicMetadata || {}), manualRetryRequired:true, nextRetryAt:null };
+        void dbPut(kind === 'series' ? 'series' : 'movies', item).catch(() => {});
+      }
+      state.metadataRecoveryDone = true;
+      showToast('Retry automatici esauriti', `${failed.length} titoli richiedono un aggiornamento manuale.`, '!', 5200, { kind:'warning' });
+      return;
+    }
     clearTimeout(state.metadataRecoveryTimer);
     state.metadataRecoveryScheduled = true;
-    // Un solo pass finale: se fallisce anche qui, il worker marca il titolo
-    // come manuale e chiude il ciclo senza farlo ripartire sulla navigazione.
-    state.metadataRecoveryDone = true;
+    state.metadataRecoveryPasses += 1;
+    state.metadataRecoveryDone = false;
     for (const { kind, item } of failed) {
-      queuePublicMetadata(kind, [item], { force:true, unlimited:true, includeCast:true, silent:true, finalRecovery:true });
+      queuePublicMetadata(kind, [item], { force:true, unlimited:true, includeCast:true, silent:true });
     }
     state.metadataRecoveryScheduled = false;
-    showToast('Ultimo tentativo automatico', `${failed.length} titoli non riusciti vengono ricontrollati una sola volta.`, '↻', 4200, { kind:'warning' });
+    showToast('Retry automatico', `Tentativo ${state.metadataRecoveryPasses}/${MAX_METADATA_AUTO_RETRIES}: ${failed.length} titoli non riusciti.`, '↻', 4200, { kind:'warning' });
   }
 
   function scheduleNextMetadataBatch() {
@@ -3472,7 +3481,7 @@
           const previous = task.item.publicMetadata || {};
           const attempts = Number(previous.attempts || 0) + 1;
           const errorInfo = metadataErrorInfo(error);
-          const manualRetryRequired = task.finalRecovery || attempts > MAX_METADATA_AUTO_RETRIES;
+          const manualRetryRequired = attempts > MAX_METADATA_AUTO_RETRIES;
           const nextRetryAt = null;
           task.item.publicMetadata = { ...previous, failedAt: now.toISOString(), error: error.message, errorCode: errorInfo.code, errorCategory: errorInfo.label, attempts, nextRetryAt, manualRetryRequired };
           try { await dbPut(task.kind === 'series' ? 'series' : 'movies', task.item); } catch {}
