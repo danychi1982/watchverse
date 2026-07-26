@@ -3665,7 +3665,9 @@
           const item = await addFromSharedCatalogResult({ catalogEntryId: row.item.sharedCatalogId, id: row.item.sharedCatalogId, kind: row.kind === 'series' ? 'tv' : 'movie', title: row.item.title });
           showToast('Aggiunto alla libreria', item.title);
           await reloadData();
-          location.hash = row.kind === 'series' ? `#/series/${encodeURIComponent(item.id)}` : `#/movie/${encodeURIComponent(item.id)}`;
+          const targetHash = row.kind === 'series' ? `#/series/${encodeURIComponent(item.id)}` : `#/movie/${encodeURIComponent(item.id)}`;
+          history.replaceState(null, '', targetHash);
+          await route();
         } catch (error) {
           showToast('Impossibile aggiungere', error.message, '!', 6000, { kind: 'error' });
           button.disabled = false;
