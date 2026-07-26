@@ -4321,7 +4321,10 @@
   async function importGdprPlan(plan,replace=true){
     if(!plan)return;const profileId=state.profileId;const resume=readGdprResume(plan);const resuming=resume?.status==='running'&&resume.key===gdprResumeKey(plan);if(resuming)replace=false;
     openModal('Importazione TV Time',operationProgressHtml('Preparazione della libreria…')+`<div class="import-live-summary"><span>Profilo</span><strong>${esc(currentProfile()?.name||'')}</strong><span>Elementi previsti</span><strong>${Number(plan.counts?.importableTotal||0).toLocaleString('it-IT')}</strong></div>`,'',{dismissible:false,busy:true});
+    let cloudWritesSuspended=false;
     try{
+      const cloudSync=window.WatchverseCloudSync;
+      if(replace && cloudSync?.isEnabled()){await cloudSync.suspendWrites?.();cloudWritesSuspended=true;}
       setOperationProgress(2,'Preparazione della libreria…','Controllo dei dati e creazione degli identificativi.');await new Promise(resolve=>setTimeout(resolve,20));
       if(replace){setOperationProgress(5,'Pulizia dei dati precedenti…','Rimuovo i dati locali e cloud del solo profilo corrente.');if(window.WatchverseCloudSync?.isEnabled())await window.WatchverseCloudSync.clearProfileData(currentProfile());for(const store of ['series','movies','progress','imports'])await dbClearProfile(store);}
       writeGdprResume(plan,{phase:'prepare',resuming});
@@ -4344,9 +4347,10 @@
       state.settings.demoSeeded=false;state.settings.seriesFilter='unwatched';state.settings.movieFilter='watched';state.settings.seriesSort='latestEpisode';state.settings.movieSort='recent';saveSettings();
       state.seriesFilter='unwatched';state.movieFilter='watched';state.seriesSort='latestEpisode';state.movieSort='recent';state.metadataAutoBudget=36;
       state.gdprPreview=null;await reloadData();state.metadataBackgroundStarted=false;idle(scheduleBackgroundMetadataSync);setOperationProgress(100,'Importazione completata.','La libreria è pronta.');clearGdprResume(plan);await new Promise(resolve=>setTimeout(resolve,250));
+      if(cloudWritesSuspended){window.WatchverseCloudSync.resumeWrites?.();cloudWritesSuspended=false;await syncCloudProfile(currentProfile());}
       queuePublicMetadata('series',sortSeriesItems(state.series,'latestEpisode').slice(0,8),{silent:true});queuePublicMetadata('movie',sortMovieItems(state.movies.filter(m=>m.watched),'recent').slice(0,8),{silent:true});
       showImportReport(report);showToast('Importazione completata',`${series.length.toLocaleString('it-IT')} serie, ${movies.length.toLocaleString('it-IT')} film e ${progress.length.toLocaleString('it-IT')} episodi salvati.`,'✓',0,{kind:'success'});
-    }catch(e){showImportFailure(e,'Importazione');}
+    }catch(e){if(cloudWritesSuspended){window.WatchverseCloudSync.resumeWrites?.();cloudWritesSuspended=false;}showImportFailure(e,'Importazione');}
   }
 
   function showImportReport(r){

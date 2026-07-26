@@ -3,6 +3,9 @@
   'use strict';
 
   const config = root.WATCHVERSE_CONFIG || {};
+  let writesSuspended = false;
+  let activeWrites = 0;
+  let writeIdleResolvers = [];
   const auth = () => root.WatchverseAuth;
   const configured = () => !!(config.supabaseUrl && config.supabaseAnonKey && auth()?.getSession()?.access_token);
   const base = () => `${String(config.supabaseUrl || '').replace(/\/$/, '')}/rest/v1`;
@@ -45,6 +48,23 @@
   function accountId() { return auth()?.getSession()?.user?.id || null; }
   function isEnabled() { return configured() && !!accountId(); }
   function profileId(profile) { return profile?.cloudId || null; }
+  function beginWrite() {
+    if (writesSuspended) return null;
+    activeWrites += 1;
+    return () => {
+      activeWrites = Math.max(0, activeWrites - 1);
+      if (!activeWrites) {
+        const resolvers = writeIdleResolvers;
+        writeIdleResolvers = [];
+        resolvers.forEach(resolve => resolve());
+      }
+    };
+  }
+  async function suspendWrites() {
+    writesSuspended = true;
+    if (activeWrites) await new Promise(resolve => writeIdleResolvers.push(resolve));
+  }
+  function resumeWrites() { writesSuspended = false; }
 
   async function bootstrapProfiles(localProfiles = []) {
     if (!isEnabled()) return localProfiles;
@@ -129,6 +149,9 @@
 
   async function pushRecords(profile, store, values = []) {
     if (!isEnabled() || !profileId(profile)) return;
+    const releaseWrite = beginWrite();
+    if (!releaseWrite) return { uploaded: 0, skipped: values.length, suspended: true };
+    try {
     const rows = rowsForStore(profile, store, values);
     if (!rows.length) return;
     const path = store === 'progress' ? '/episode_progress?on_conflict=profile_id,series_local_id,season,episode' : '/library_records?on_conflict=profile_id,kind,local_id';
@@ -163,6 +186,7 @@
       await request(path, { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(upload.slice(i, i + chunkSize)) });
     }
     return { uploaded: upload.length, skipped: rows.length - upload.length };
+    } finally { releaseWrite(); }
   }
 
   async function recordConflict(profile, store, localValue, cloudValue, resolution) {
@@ -185,6 +209,9 @@
 
   async function deleteRecord(profile, store, value) {
     if (!isEnabled() || !profileId(profile) || !value) return;
+    const releaseWrite = beginWrite();
+    if (!releaseWrite) return { skipped: true, suspended: true };
+    try {
     const deletedAt = new Date().toISOString();
     if (store === 'series' || store === 'movies') {
       const kind = store === 'series' ? 'series' : 'movie';
@@ -200,6 +227,7 @@
       await request('/episode_progress?on_conflict=profile_id,series_local_id,season,episode', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ profile_id: profile.cloudId, local_id: value.id, series_local_id: seriesId, season: Number(value.season || 0), episode: Number(value.episode || 0), watched: false, payload: libraryPayload(value), deleted_at: deletedAt, revision, updated_at: deletedAt }) });
     }
     return { skipped: false };
+    } finally { releaseWrite(); }
   }
 
   async function clearProfileData(profile) {
@@ -287,5 +315,5 @@
     return { skipped: false };
   }
 
-  root.WatchverseCloudSync = { isEnabled, bootstrapProfiles, saveProfiles, pushRecord, pushRecords, deleteRecord, clearProfileData, pullProfile, saveSettings, recordConflict };
+  root.WatchverseCloudSync = { isEnabled, bootstrapProfiles, saveProfiles, pushRecord, pushRecords, deleteRecord, clearProfileData, pullProfile, saveSettings, recordConflict, suspendWrites, resumeWrites };
 })(window);
