@@ -3210,7 +3210,7 @@
     return { code:'unknown', label:'Errore tecnico' };
   }
   function metadataRetryDelay(attempts = 1) {
-    return Math.min(1000 * 60 * 60 * 24 * 7, 1000 * 60 * 60 * Math.pow(2, Math.max(0, Math.min(6, attempts - 1))));
+    return 1000 * 60 * 10;
   }
   function needsPublicMetadata(item, kind, includeCast = false) {
     if (!state.settings.publicMetadataEnabled || !publicMetadataApi()) return false;
