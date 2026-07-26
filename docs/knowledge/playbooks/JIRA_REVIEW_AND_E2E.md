@@ -21,6 +21,8 @@ Prima di confermare una fix con comportamento browser, Codex deve chiedere l’a
 
 Gli E2E non sostituiscono il test funzionale specifico quando il criterio richiede un’osservazione manuale, ma costituiscono un gate tecnico obbligatorio prima del passaggio da `In corso` a `Review`. Un E2E parziale o non deterministico non è sufficiente: l’issue resta `In corso` finché il runner non verifica il flusso previsto e i risultati attesi.
 
+Eccezione documentata: se un criterio richiede necessariamente un’azione manuale, un dispositivo fisico, credenziali personali o un ambiente non automatizzabile, l’issue può passare a `Review` anche senza quell’E2E specifico. In tal caso Codex deve indicare chiaramente in chat e nel commento Jira quale test non è stato eseguito, perché non è automatizzabile e quali verifiche automatiche sono state comunque superate.
+
 ## Stati concordati
 
 | Evento | Stato |
