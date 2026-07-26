@@ -32,6 +32,8 @@ Formato leggero ispirato agli Architecture Decision Records: una decisione, il c
 
 | ADR-025 | 2026-07-25 | Routing metadati TMDB/TVmaze con telemetria di risoluzione | TMDB è la fonte primaria controllata per i film; TVmaze resta primaria per serie, episodi e cast, con fallback TMDB selettivo. Ogni tentativo persiste input, query, provider, ID, match score, fonti campo-per-campo e parti mancanti, così retry e titoli anomali possono essere verificati senza sovrascritture ambigue. | Attiva |
 
+| ADR-026 | 2026-07-26 | E2E browser funzionale obbligatorio prima della Review | Ogni Bug, Task o Story lavorata da Codex deve avere implementazione, controlli automatici ed E2E browser reale sugli step di accettazione e sui risultati attesi prima del passaggio da In corso a Review. Un test che apre soltanto la pagina o un E2E non deterministico non è sufficiente; il passaggio a Done resta al collaudo manuale di Daniela. | Attiva |
+
 ## Regole per nuove decisioni
 
 Una nuova voce deve:

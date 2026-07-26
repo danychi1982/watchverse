@@ -9,6 +9,8 @@ Definire quando un’issue è pronta per il test, come eseguire il collaudo e co
 - implementazione completata;
 - suite automatica e build verdi;
 - criteri di accettazione verificabili;
+- E2E browser reale eseguito sugli step funzionali previsti dai criteri di accettazione, non limitato alla sola apertura della pagina;
+- ogni esito funzionale atteso deve avere un’asserzione E2E quando è riproducibile nel browser;
 - commento Jira con modifica, controlli eseguiti e passi manuali;
 - per i test browser, browser E2E CDP disponibile tramite `avvia-chrome-e2e.bat`;
 - nessuna issue dipendente ancora necessaria per il comportamento principale.
@@ -17,7 +19,7 @@ Definire quando un’issue è pronta per il test, come eseguire il collaudo e co
 
 Prima di confermare una fix con comportamento browser, Codex deve chiedere l’avvio di `C:\-- Personale\watchverse\avvia-chrome-e2e.bat`. Daniela lascia il browser dedicato aperto; Codex esegue gli E2E e registra l’esito. Dopo riavvio, nuova sessione o chiusura del browser, il file va rilanciato.
 
-Gli E2E non sostituiscono il test funzionale specifico quando il criterio richiede un’osservazione manuale, ma costituiscono un gate tecnico prima di dichiarare conclusa una fix browser.
+Gli E2E non sostituiscono il test funzionale specifico quando il criterio richiede un’osservazione manuale, ma costituiscono un gate tecnico obbligatorio prima del passaggio da `In corso` a `Review`. Un E2E parziale o non deterministico non è sufficiente: l’issue resta `In corso` finché il runner non verifica il flusso previsto e i risultati attesi.
 
 ## Stati concordati
 
