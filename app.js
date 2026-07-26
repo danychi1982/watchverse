@@ -1912,11 +1912,13 @@
       if (!row) return;
       row.item.publicMetadata = { ...(row.item.publicMetadata || {}), failedAt:null, error:null, nextRetryAt:null, parts:{ ...(row.item.publicMetadata?.parts || {}), coreComplete:false } };
       await dbPut(row.kind === 'series' ? 'series' : 'movies', row.item);
-      state.metadataBackgroundStarted = false; state.metadataAutoBudget += 1; scheduleBackgroundMetadataSync(true); showToast('Retry avviato', row.item.title, '↻'); showMetadataIssues(filter);
+      await retryMetadataItems([row], { silent:false });
+      showMetadataIssues(filter);
     }));
     $('#retryAllMetadataIssues')?.addEventListener('click', async () => {
       for (const row of rows) { row.item.publicMetadata = { ...(row.item.publicMetadata || {}), failedAt:null, error:null, nextRetryAt:null, parts:{ ...(row.item.publicMetadata?.parts || {}), coreComplete:false } }; await dbPut(row.kind === 'series' ? 'series' : 'movies', row.item); }
-      state.metadataBackgroundStarted = false; state.metadataAutoBudget += rows.length; scheduleBackgroundMetadataSync(true); showToast('Retry avviato', `${rows.length} titoli rimessi in coda.`, '↻'); closeModal();
+      await retryMetadataItems(rows, { silent:true });
+      closeModal();
     });
     $('#closeMetadataIssues')?.addEventListener('click', closeModal);
   }
@@ -3451,6 +3453,22 @@
     }
     scheduleMetadataHeaderUpdate();
     idle(pumpMetadataQueue);
+  }
+  async function retryMetadataItems(rows = [], { silent = true } = {}) {
+    const retryRows = rows.filter(row => row?.item && row?.kind);
+    if (!retryRows.length) return 0;
+    for (const row of retryRows) {
+      row.item.publicMetadata = { ...(row.item.publicMetadata || {}), failedAt:null, error:null, errorCode:null, errorCategory:null, nextRetryAt:null, parts:{ ...(row.item.publicMetadata?.parts || {}), coreComplete:false } };
+      await dbPut(row.kind === 'series' ? 'series' : 'movies', row.item);
+    }
+    clearTimeout(state.metadataRecoveryTimer);
+    state.metadataRecoveryScheduled = false;
+    state.metadataRecoveryDone = false;
+    state.metadataBackgroundStarted = true;
+    if (state.metadataCycleCompletedAt || !state.metadataCycleStartedAt) startMetadataCycle();
+    for (const row of retryRows) queuePublicMetadata(row.kind, [row.item], { force:true, unlimited:true, includeCast:true, silent });
+    showToast('Retry avviato', `${retryRows.length} ${retryRows.length === 1 ? 'titolo è stato rimesso' : 'titoli sono stati rimessi'} in coda.`, '↻', 4200);
+    return retryRows.length;
   }
   function scheduleBackgroundMetadataSync(force = false) {
     if ((!force && state.metadataBackgroundStarted) || !navigator.onLine || !state.settings.publicMetadataEnabled || libraryIsEmpty()) return;
