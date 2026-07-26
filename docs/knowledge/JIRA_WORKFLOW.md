@@ -141,6 +141,12 @@ Prima di creare una nuova issue o aggiungere un’attività a uno sprint, verifi
 
 Quando una issue in **Revisione** viene testata e risulta **KO**, registrare l’esito e riportarla in **Da completare**. Quando riparte il lavoro di correzione, portarla in **In corso**. Dopo l’implementazione della fix, portarla nuovamente in **Revisione** per il retest. Un esito parziale va mantenuto in Revisione solo se non impedisce il criterio funzionale principale; altrimenti segue il percorso KO.
 
+### Collaudo E2E obbligatorio prima della conferma
+
+Prima di iniziare a lavorare su issue che richiedono verifica browser, Codex deve chiedere a Daniela di avviare il browser E2E tramite `avvia-chrome-e2e.bat` nella root del progetto `C:\-- Personale\watchverse`. Il file avvia Chrome/Edge con il profilo separato `Watchverse\e2e-chrome-profile` e la porta CDP `9222`; non richiede installazioni o privilegi amministrativi.
+
+Daniela deve lasciare aperto il browser dedicato durante la lavorazione e i test. Dopo un riavvio del PC, una nuova sessione Codex o la chiusura del browser dedicato, Codex deve ricordare di rilanciare il file `.bat` prima di procedere. Una volta confermata la disponibilità del browser, Codex esegue gli E2E prima di confermare la risoluzione dell’issue Jira. L’esito E2E va registrato sulla issue insieme all’eventuale evidenza manuale; in caso di KO si applica il flusso di rientro in `Da completare` descritto sopra.
+
 Una Story/Task/Bug viene portata in `Review` quando l'implementazione o la verifica tecnica è completata, la suite automatica è verde e il commento Jira contiene la sintesi delle modifiche, l'evidenza dei controlli e i passi di test funzionale manuale per Daniela.
 
 ### Stato Sprint 2 dopo il retest del 25 luglio 2026

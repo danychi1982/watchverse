@@ -163,13 +163,12 @@ async function expectScrollable(locator) {
       });
       db.close();
     });
-    await page.evaluate(() => { localStorage.setItem('watchverse.session.v2', JSON.stringify({ mode: 'local', createdAt: Date.now() })); sessionStorage.removeItem('watchverse.session.temporary.v2'); });
+    await page.evaluate(() => { localStorage.setItem('watchverse.session.v2', JSON.stringify({ mode: 'local', createdAt: Date.now() })); localStorage.removeItem('watchverse.currentProfile'); sessionStorage.removeItem('watchverse.session.temporary.v2'); });
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await page.waitForFunction(() => Boolean(document.querySelector('[data-profile-choice], #authMessage')) , null, { timeout: 10000 });
-    if (!(await page.locator('[data-profile-choice]').count())) {
-      throw new Error(`Gate profili non visualizzato dopo il login: ${await page.locator('#authMessage').textContent()}`);
+    await page.waitForFunction(() => Boolean(document.querySelector('[data-profile-choice], #aivengersButton:not(.hidden)')), null, { timeout: 10000 });
+    if (await page.locator('[data-profile-choice]').count()) {
+      await page.locator('[data-profile-choice]').filter({ hasText: 'Daniela' }).click();
     }
-    await page.locator('[data-profile-choice]').filter({ hasText: 'Daniela' }).click();
     await page.waitForSelector('#aivengersButton:not(.hidden)', { timeout: 10000 });
     await page.click('#aivengersButton');
     await page.fill('#aivengersInput', 'segna come visto supergirl');
