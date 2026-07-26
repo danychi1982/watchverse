@@ -9,7 +9,7 @@ for (const source of [schema, migration]) {
     if (!source.includes(token)) throw new Error(`Schema sync incompleto: ${token}`);
   }
 }
-for (const token of ['remotePath', 'localWins', 'recordConflict', 'cloud_won', 'on_conflict=profile_id,kind,local_id', 'clearProfileData', 'rpc/clear_profile_data', 'Impossibile svuotare i dati cloud']) {
+for (const token of ['remotePath', 'localWins', 'recordConflict', 'cloud_won', 'on_conflict=profile_id,kind,local_id', 'clearProfileData', 'rpc/clear_profile_data', 'timeoutMs: 90000', 'Impossibile svuotare i dati cloud']) {
   if (!cloud.includes(token)) throw new Error(`Contratto sync incompleto: ${token}`);
 }
 if (!cleanupMigration.includes('clear_profile_data') || !cleanupMigration.includes('security definer')) {

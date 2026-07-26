@@ -16,10 +16,11 @@
 
   async function request(path, options = {}) {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
+    const { timeoutMs = 15000, ...fetchOptions } = options;
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
     let response;
     try {
-      response = await fetch(`${base()}${path}`, { ...options, signal: controller.signal, headers: headers(options.headers) });
+      response = await fetch(`${base()}${path}`, { ...fetchOptions, signal: controller.signal, headers: headers(fetchOptions.headers) });
     } catch (error) {
       if (error?.name === 'AbortError') throw new Error('Timeout durante la sincronizzazione cloud.');
       throw error;
@@ -234,7 +235,10 @@
     if (!isEnabled() || !profileId(profile)) return;
     await request('/rpc/clear_profile_data', {
       method: 'POST',
-      body: JSON.stringify({ target_profile: profile.cloudId })
+      body: JSON.stringify({ target_profile: profile.cloudId }),
+      // La sostituzione di una cronologia GDPR può eliminare decine di
+      // migliaia di episodi: è un'operazione unica e autorizziamo più tempo.
+      timeoutMs: 90000
     });
     const cloudId = encodeURIComponent(profile.cloudId);
     for (const table of ['library_records', 'episode_progress']) {

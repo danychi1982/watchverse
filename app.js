@@ -254,7 +254,7 @@
       button.toggleAttribute('aria-busy', busy);
       button.classList.toggle('view-action-busy', busy);
       button.title = busy ? busyLabel : 'Stato aggiornamento metadati';
-      return;
+      return false;
     }
     if (busy) {
       if (!button.dataset.idleLabel) button.dataset.idleLabel = button.textContent.trim();
@@ -610,7 +610,7 @@
 
     if (state.db?.memory) {
       memoryStores[store].delete(id);
-      return;
+      return false;
     }
     await new Promise((resolve, reject) => {
       const r = dbTx(store, 'readwrite').delete(id);
@@ -637,12 +637,12 @@
     const sync = window.WatchverseCloudSync;
     if (!sync) {
       showToast('Sincronizzazione non disponibile', 'Il modulo cloud non è stato caricato. Ricarica la pagina.', '!', 8000, { kind: 'error' });
-      return;
+      return false;
     }
     if (!sync.isEnabled()) {
       const session = window.WatchverseAuth?.getSession();
       showToast('Sincronizzazione cloud inattiva', session?.mode === 'cloud' ? 'La sessione Supabase non contiene un token valido.' : 'È attiva una sessione locale: esci e accedi di nuovo con daniela.', '!', 9000, { kind: 'error' });
-      return;
+      return false;
     }
     let activeProfile = profile;
     if (!activeProfile?.cloudId) {
@@ -657,15 +657,15 @@
     if (!activeProfile?.cloudId) {
       const userId = window.WatchverseAuth?.getSession()?.user?.id || 'non disponibile';
       showToast('Profilo cloud non collegato', `Daniela non è visibile per l’utente Supabase ${userId}. Confronta questo ID con account_id nella tabella profiles.`, '!', 12000, { kind: 'error' });
-      return;
+      return false;
     }
     let cloud;
     try { cloud = await sync.pullProfile(activeProfile, options); } catch (error) {
       console.warn('Watchverse cloud profile pull:', error);
       showToast('Libreria cloud non caricata', 'Controlla la connessione e riprova. I dati online non sono stati cancellati.', '!', 7000, { kind: 'error' });
-      return;
+      return false;
     }
-    if (!cloud) return;
+    if (!cloud) return false;
     if (cloud.warnings?.progress) {
       console.warn('Watchverse cloud episode progress pull:', cloud.warnings.progress);
       showToast('Catalogo cloud caricato', 'Il progresso degli episodi verrà riprovato al prossimo accesso.', '!', 7000, { kind: 'error' });
@@ -711,6 +711,7 @@
         localStorage.setItem(settingsKey, JSON.stringify(cloud.settings));
       }
     } else if (localSettings) await sync.saveSettings(activeProfile, localSettings);
+    return true;
   }
 
   function scheduleCloudRouteRefresh(page) {
@@ -4329,7 +4330,7 @@
       const cloudSync=window.WatchverseCloudSync;
       if(replace && cloudSync?.isEnabled()){await cloudSync.suspendWrites?.();cloudWritesSuspended=true;}
       setOperationProgress(2,'Preparazione della libreria…','Controllo dei dati e creazione degli identificativi.');await new Promise(resolve=>setTimeout(resolve,20));
-      if(replace){setOperationProgress(5,'Pulizia dei dati precedenti…','Rimuovo i dati locali e cloud del solo profilo corrente.');if(window.WatchverseCloudSync?.isEnabled())await window.WatchverseCloudSync.clearProfileData(currentProfile());for(const store of ['series','movies','progress','imports'])await dbClearProfile(store);}
+      if(replace){setOperationProgress(5,'Pulizia dei dati precedenti…','Rimuovo i dati locali e cloud del solo profilo corrente. Per librerie grandi questa fase può richiedere fino a un minuto.');if(window.WatchverseCloudSync?.isEnabled())await window.WatchverseCloudSync.clearProfileData(currentProfile());for(const store of ['series','movies','progress','imports'])await dbClearProfile(store);}
       writeGdprResume(plan,{phase:'prepare',resuming});
       const existingSeries=replace?[]:(await dbGetAll('series')).filter(item=>item.profileId===profileId),existingMovies=replace?[]:(await dbGetAll('movies')).filter(item=>item.profileId===profileId),existingProgress=replace?[]:(await dbGetAll('progress')).filter(item=>item.profileId===profileId);
       const existingSeriesIds=new Set(existingSeries.map(item=>item.id)),existingMovieIds=new Set(existingMovies.map(item=>item.id)),existingProgressKeys=new Set(existingProgress.map(item=>`${item.seriesId}|${item.season}|${item.episode}`));
@@ -4349,8 +4350,14 @@
       await dbPut('imports',{id:`${profileId}|gdpr-${Date.now()}`,profileId,sourceName:plan.sourceFileName||'TV Time GDPR ZIP',date:new Date().toISOString(),report,counts:plan.counts});
       state.settings.demoSeeded=false;state.settings.seriesFilter='unwatched';state.settings.movieFilter='watched';state.settings.seriesSort='latestEpisode';state.settings.movieSort='recent';saveSettings();
       state.seriesFilter='unwatched';state.movieFilter='watched';state.seriesSort='latestEpisode';state.movieSort='recent';state.metadataAutoBudget=36;
-      state.gdprPreview=null;await reloadData();state.metadataBackgroundStarted=false;state.metadataRecoveryDone=false;idle(()=>scheduleBackgroundMetadataSync(true));setOperationProgress(100,'Importazione completata.','La libreria è pronta.');clearGdprResume(plan);await new Promise(resolve=>setTimeout(resolve,250));
-      if(cloudWritesSuspended){window.WatchverseCloudSync.resumeWrites?.();cloudWritesSuspended=false;await syncCloudProfile(currentProfile());}
+      state.gdprPreview=null;await reloadData();state.metadataBackgroundStarted=false;state.metadataRecoveryDone=false;idle(()=>scheduleBackgroundMetadataSync(true));setOperationProgress(100,'Importazione locale completata.','La libreria è pronta. La sincronizzazione cloud continua in background.');clearGdprResume(plan);await new Promise(resolve=>setTimeout(resolve,250));
+      if(cloudWritesSuspended){
+        window.WatchverseCloudSync.resumeWrites?.();cloudWritesSuspended=false;
+        showToast('Sincronizzazione cloud avviata','La libreria locale è pronta; il salvataggio online continua in background.','↻',7000,{kind:'sync'});
+        void syncCloudProfile(currentProfile()).then(synced=>{
+          if (synced) showToast('Sincronizzazione cloud completata','La libreria è stata salvata anche online.','✓',5000,{kind:'success'});
+        });
+      }
       queuePublicMetadata('series',sortSeriesItems(state.series,'latestEpisode').slice(0,8),{silent:true});queuePublicMetadata('movie',sortMovieItems(state.movies.filter(m=>m.watched),'recent').slice(0,8),{silent:true});
       showImportReport(report);showToast('Importazione completata',`${series.length.toLocaleString('it-IT')} serie, ${movies.length.toLocaleString('it-IT')} film e ${progress.length.toLocaleString('it-IT')} episodi salvati.`,'✓',7000,{kind:'success'});
     }catch(e){if(cloudWritesSuspended){window.WatchverseCloudSync.resumeWrites?.();cloudWritesSuspended=false;}showImportFailure(e,'Importazione');}
