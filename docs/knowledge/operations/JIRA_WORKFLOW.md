@@ -119,7 +119,7 @@ Il censimento è una baseline operativa: eventuali sovrapposizioni storiche nel 
 
 I subtask non sono segnaposto generici per componente. Summary e descrizione devono essere contestualizzati alla Story principale e indicare l'implementazione concreta da realizzare, i contratti o gli stati coinvolti e il criterio tecnico di completamento. Una stessa disciplina può avere più subtask quando il lavoro contiene attività indipendenti, per esempio separando UI, integrazione dati, gestione asincrona, persistenza, sicurezza o test automatici. Prima di creare un nuovo subtask va verificato che non duplichi quelli esistenti; quando una Story è complessa si preferisce una scomposizione tecnica più precisa mantenendo la Story come unità di verifica funzionale.
 
-Per i subtask di Analisi e Progettazione il deliverable non è una frase riepilogativa nel commento Jira. L'analisi funzionale e tecnica viene documentata in un file Markdown versionato sotto `docs/knowledge/analysis/`, con sezioni su flussi, input, stati, errori, contratti, persistenza, sicurezza, dipendenze e criteri tecnici. Il commento Jira contiene il link al file e una sintesi; per i subtask futuri il documento viene prodotto prima del passaggio a `Done`.
+Per i subtask di Analisi e Progettazione il deliverable non è una frase riepilogativa nel commento Jira. L'analisi funzionale e tecnica viene documentata in un file Markdown versionato sotto `docs/analysis/jira/`, con sezioni su flussi, input, stati, errori, contratti, persistenza, sicurezza, dipendenze e criteri tecnici. Il commento Jira contiene il link al file e una sintesi; per i subtask futuri il documento viene prodotto prima del passaggio a `Done`.
 
 ## Stime Jira
 
@@ -159,7 +159,7 @@ Regola applicata: non considerare una issue in `Revisione` come conclusa quando 
 
 I subtask tecnici restano intermedi: quando il loro output è completato vengono portati direttamente in `Done`; il collaudo funzionale non viene duplicato sui subtask e resta sulla Story principale.
 
-Gli output di analisi e le decisioni tecniche riproducibili sono conservati in `docs/knowledge/analysis/` con nome `WVERSE-<numero>.md`. I test di regressione condivisi dello Sprint 2 sono raccolti in `tests/test-sprint2-regressions.js` e inclusi nella suite `npm test`.
+Gli output di analisi e le decisioni tecniche riproducibili sono conservati in `docs/analysis/jira/` con nome `WVERSE-<numero>.md`. I test di regressione condivisi dello Sprint 2 sono raccolti in `tests/test-sprint2-regressions.js` e inclusi nella suite `npm test`.
 
 ## Esiti dei test Sprint 1
 
@@ -244,7 +244,7 @@ Per il ciclo fonti è stato inoltre aumentato il parallelismo a 4 elaborazioni e
 
 Regressione post-pubblicazione su `WVERSE-201`: con cache svuotata `safeJson(null)` restituiva `null` e bloccava l’attivazione del profilo prima dell’apertura della Home. Corretto il fallback della lettura dello stato ciclo; aggiunta copertura automatica e richiesta verifica manuale di login + selezione Daniela.
 
-Nel ciclo di analisi sono stati prodotti deliverable funzionali e tecnici versionati in `docs/knowledge/analysis/`. Per le Story che erano ancora in `Da completare`:
+Nel ciclo di analisi sono stati prodotti deliverable funzionali e tecnici versionati in `docs/analysis/jira/`. Per le Story che erano ancora in `Da completare`:
 
 - `WVERSE-43`: preferenze e impostazioni personali;
 - `WVERSE-100`: raccomandazioni senza titoli già presenti;

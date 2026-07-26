@@ -4,9 +4,9 @@ Questa cartella raccoglie procedure operative riutilizzabili per trasformare ric
 
 ## Gerarchia della documentazione
 
-- `../JIRA_WORKFLOW.md` è la fonte normativa per workflow, stati, sprint, assegnatari, componenti, stime e regole già concordate.
+- `../operations/JIRA_WORKFLOW.md` è la fonte normativa per workflow, stati, sprint, assegnatari, componenti, stime e regole già concordate.
 - I documenti in questa cartella spiegano come applicare quelle regole durante una conversazione o una sessione di lavoro.
-- In caso di conflitto prevale `JIRA_WORKFLOW.md` e, in seconda battuta, la decisione più recente registrata in `../DECISION_LOG.md`.
+- In caso di conflitto prevale `../operations/JIRA_WORKFLOW.md` e, in seconda battuta, la decisione più recente registrata in `../decisions/DECISION_LOG.md`.
 
 ## Playbook disponibili
 

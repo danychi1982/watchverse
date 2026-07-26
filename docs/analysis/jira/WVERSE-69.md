@@ -6,4 +6,4 @@ La libreria deve consentire di visualizzare e organizzare i contenuti con filtri
 
 ## Analisi tecnica
 
-La logica di filtro e ordinamento risiede nello stato di `app.js`; il catalogo e i dati personali provengono dalla cache/cloud secondo il modello di `ARCHITETTURA_DATI.md`. I filtri non devono modificare i dati persistiti. QA deve verificare combinazioni, refresh, responsive e risultati vuoti.
+La logica di filtro e ordinamento risiede nello stato di `app.js`; il catalogo e i dati personali provengono dalla cache/cloud secondo il modello di [ARCHITETTURA_DATI.md](../../specifications/architecture/ARCHITETTURA_DATI.md). I filtri non devono modificare i dati persistiti. QA deve verificare combinazioni, refresh, responsive e risultati vuoti.

@@ -24,19 +24,20 @@ npm run build
 
 ## Documentazione
 
-La documentazione tecnica è organizzata in `docs/specifications/`.
+La documentazione è organizzata in `docs/` per contesto, procedure, analisi, specifiche e guide.
 
-- [Documentazione di progetto](docs/specifications/DOCUMENTAZIONE_PROGETTO.md)
-- [Design system](docs/specifications/DESIGN_SYSTEM.md)
-- [Architettura dati](docs/specifications/ARCHITETTURA_DATI.md)
-- [Backlog cloud](docs/specifications/BACKLOG_CLOUD.md)
+- [Indice documentazione](docs/README.md)
+- [Documentazione di progetto](docs/specifications/product/DOCUMENTAZIONE_PROGETTO.md)
+- [Design system](docs/specifications/design/DESIGN_SYSTEM.md)
+- [Architettura dati](docs/specifications/architecture/ARCHITETTURA_DATI.md)
+- [Snapshot backlog storico](docs/archive/backlog/BACKLOG_CLOUD_2026-07.md)
 - [Knowledge base di progetto](docs/knowledge/README.md)
-- [Dichiarazione di accessibilità](docs/specifications/DICHIARAZIONE_ACCESSIBILITA.md)
-- [Proposte logo](docs/specifications/LOGHI_PROPOSTE.md)
+- [Dichiarazione di accessibilità](docs/specifications/design/DICHIARAZIONE_ACCESSIBILITA.md)
+- [Proposte logo](docs/specifications/design/LOGHI_PROPOSTE.md)
 - [Preview visuale del design system](docs/design-system-preview.html)
 - [Manuale operativo](docs/guides/manuale_watchverse.html)
 - [Guida introduttiva](docs/guides/README_PRIMA_DI_INIZIARE.txt)
-- [Changelog](docs/CHANGELOG_WATCHVERSE_2.0.txt)
+- [Changelog](docs/CHANGELOG.md)
 - [Report WCAG completo](docs/reference/REPORT_WCAG_2.2.json)
 - [Attribuzioni e licenze](docs/legal/ATTRIBUZIONI.txt)
 

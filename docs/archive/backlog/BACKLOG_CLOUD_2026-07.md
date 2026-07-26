@@ -29,7 +29,7 @@ Le voci di questo documento sono state consolidate nel progetto Jira `WVERSE`. J
 | Task operativi | `WVERSE-164`–`WVERSE-170` |
 | Bug censiti | `WVERSE-171`–`WVERSE-178` |
 
-I dettagli di analisi funzionale e tecnica sono versionati in `docs/knowledge/analysis/` e referenziati dai subtask Jira di Analisi e Progettazione. Le nuove modifiche operative devono essere registrate prima in Jira; questo documento va aggiornato solo per decisioni, contesto tecnico o storico significativo.
+I dettagli di analisi funzionale e tecnica sono versionati in `docs/analysis/jira/` e referenziati dai subtask Jira di Analisi e Progettazione. Le nuove modifiche operative devono essere registrate prima in Jira; questo documento va aggiornato solo per decisioni, contesto tecnico o storico significativo.
 
 ## Registro completo degli interventi
 

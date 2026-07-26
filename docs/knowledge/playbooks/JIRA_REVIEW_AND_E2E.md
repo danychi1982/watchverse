@@ -37,4 +37,4 @@ I Sub-task documentano il lavoro tecnico e possono essere chiusi direttamente qu
 
 ## Riferimento normativo
 
-Per workflow, commenti, sprint e regole di collaudo vale [JIRA_WORKFLOW.md](../JIRA_WORKFLOW.md).
+Per workflow, commenti, sprint e regole di collaudo vale [JIRA_WORKFLOW.md](../operations/JIRA_WORKFLOW.md).

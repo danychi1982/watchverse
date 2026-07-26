@@ -37,6 +37,6 @@ Per Story/Task: obiettivo, valore, ambito incluso/escluso, dipendenze, criteri d
 
 ## Riferimenti interni
 
-- [JIRA_WORKFLOW.md](../JIRA_WORKFLOW.md)
+- [JIRA_WORKFLOW.md](../operations/JIRA_WORKFLOW.md)
 - [JIRA_ISSUE_CLASSIFICATION.md](JIRA_ISSUE_CLASSIFICATION.md)
-- [Backlog cloud](../../specifications/BACKLOG_CLOUD.md)
+- [Backlog storico](../../archive/backlog/BACKLOG_CLOUD_2026-07.md)

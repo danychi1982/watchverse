@@ -4,10 +4,10 @@ Questa cartella conserva il contesto necessario per riprendere il progetto in un
 
 ## Da leggere in ordine
 
-1. [Contesto di progetto](PROJECT_CONTEXT.md): obiettivo, architettura, ambiente, vincoli e regole operative.
-2. [Registro delle decisioni](DECISION_LOG.md): decisioni importanti, motivazioni, conseguenze e stato.
-3. [Backlog corrente](../specifications/BACKLOG_CLOUD.md): unica fonte per priorita, stato, owner, effort e residui.
-4. [Gestione Jira](JIRA_WORKFLOW.md): regole di censimento, tipizzazione, sprint, review e configurazione dell'integrazione.
+1. [Contesto di progetto](context/PROJECT_CONTEXT.md): obiettivo, architettura, ambiente, vincoli e regole operative.
+2. [Registro delle decisioni](decisions/DECISION_LOG.md): decisioni importanti, motivazioni, conseguenze e stato.
+3. [Jira/WVERSE](Jira/WVERSE): fonte operativa per priorita, stato, owner, sprint ed effort. Il [backlog storico](../archive/backlog/BACKLOG_CLOUD_2026-07.md) conserva razionale e contesto.
+4. [Gestione Jira](operations/JIRA_WORKFLOW.md): regole di censimento, tipizzazione, sprint, review e configurazione dell'integrazione.
 5. [Playbook operativi](playbooks/README.md): classificazione, triage, scomposizione e collaudo delle issue.
 
 ## Principi di manutenzione
@@ -22,8 +22,8 @@ Questa cartella conserva il contesto necessario per riprendere il progetto in un
 ## Prompt di ripresa
 
 ```text
-Leggi docs/knowledge/README.md, PROJECT_CONTEXT.md e DECISION_LOG.md.
-Usa docs/specifications/BACKLOG_CLOUD.md come fonte unica delle attivita.
+Leggi docs/knowledge/README.md, context/PROJECT_CONTEXT.md e decisions/DECISION_LOG.md.
+Usa Jira/WVERSE come fonte unica delle attivita; consulta `docs/archive/backlog/BACKLOG_CLOUD_2026-07.md` solo per razionale e storico.
 Rispetta i vincoli operativi indicati nel contesto: niente privilegi amministrativi,
 niente azioni distruttive non confermate, test locale prima del deploy e commit solo
 quando richiesto. Prima di modificare il codice riassumi il contesto rilevante e
