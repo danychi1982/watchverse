@@ -3463,7 +3463,7 @@
       state.metadataContinuationTimer = null;
       state.metadataAutoBudget = 72;
       state.metadataBackgroundStarted = false;
-      scheduleBackgroundMetadataSync();
+      scheduleBackgroundMetadataSync(true);
     }, 1500);
   }
 

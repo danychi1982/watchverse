@@ -20,6 +20,7 @@ assert(app.includes('function ensureMetadataStatusButtonMarkup(button)'), 'Manca
 assert(app.includes("button.id === 'metadataStatusButton'"), 'Lo stato busy può ancora sovrascrivere l\'icona metadati');
 assert(app.includes("$('#retryMetadata')"), "Manca l'azione esplicita di retry dei metadati");
 assert(app.includes('function scheduleNextMetadataBatch()'), 'Manca la continuazione automatica dei lotti metadati');
+assert(app.includes('scheduleBackgroundMetadataSync(true);'), 'La continuazione non forza la ripresa dei lotti dopo un ciclo persistito');
 assert(app.includes('state.metadataAutoBudget = 72'), 'Manca il reset del budget per il lotto successivo');
 assert(app.includes('safeJson(localStorage.getItem(metadataCycleStorageKey()), {}) || {}'), 'La lettura della durata non gestisce il profilo senza cache');
 console.log('✓ ciclo e copertura metadati separati e coerenti');
