@@ -55,7 +55,9 @@ async function seed(page) {
     await page.locator('#metadataStatusButton').click(); await page.waitForSelector('#metadataStatusModalContent');
     const statusCopy = await page.locator('#metadataStatusModalContent').textContent();
     assert(statusCopy.includes('In attesa di retry') || statusCopy.includes('Aggiornamento in corso') || statusCopy.includes('Ciclo parziale') || statusCopy.includes('Ciclo completato'), `La modale deve esporre lo stato operativo corrente: ${statusCopy}`);
-    assert(statusCopy.includes('prossimo') || statusCopy.includes('Retry automatico'), 'La modale deve esporre il prossimo tentativo quando disponibile.');
+    if (statusCopy.includes('In attesa di retry')) {
+      assert(statusCopy.includes('prossimo') || statusCopy.includes('Retry automatico'), 'In attesa di retry deve esporre il prossimo tentativo.');
+    } else assert(statusCopy.includes('Aggiornamento in corso') || statusCopy.includes('Ciclo parziale') || statusCopy.includes('Ciclo completato'), 'La modale deve esporre uno stato operativo valido fuori dal retry.');
     await page.locator('#openMetadataIssues').click();
     const diagnosticCopy = await page.locator('.metadata-issues').textContent();
     assert(diagnosticCopy.includes('Errori per fonte') && diagnosticCopy.includes('Errori per categoria') && diagnosticCopy.includes('Titoli con più tentativi'), 'Il dettaglio deve esporre la diagnostica aggregata.');

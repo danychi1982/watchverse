@@ -24,6 +24,14 @@ Gli E2E non sostituiscono il test funzionale specifico quando il criterio richie
 
 Eccezione documentata: se un criterio richiede necessariamente un’azione manuale, un dispositivo fisico, credenziali personali o un ambiente non automatizzabile, l’issue può passare a `Review` anche senza quell’E2E specifico. In tal caso Codex deve indicare chiaramente in chat e nel commento Jira quale test non è stato eseguito, perché non è automatizzabile e quali verifiche automatiche sono state comunque superate.
 
+## QualitÃ  del runner
+
+- il runner deve poter inizializzare account, login e selezione del profilo in una sessione pulita; non puÃ² dipendere da cookie, IndexedDB o tab preparate manualmente;
+- i test devono usare fixture deterministiche per dati esterni (TMDB, provider, cinema) e verificare sia lâ€™azione sia la persistenza finale: record corretto, assenza di duplicati, toast singolo e stato UI aggiornato;
+- un errore del bootstrap E2E Ã¨ un KO del runner, non un pass dellâ€™issue: va corretto prima di usare quel runner come gate;
+- dopo una modifica al runner, eseguire almeno il percorso che ha causato il difetto piÃ¹ un percorso di regressione correlato;
+- per criteri responsive, eseguire i viewport concordati e, se richiesto, riportare separatamente il controllo ancora necessario su dispositivo fisico.
+
 ## Stati concordati
 
 | Evento | Stato |

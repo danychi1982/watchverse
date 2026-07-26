@@ -1803,12 +1803,17 @@
       : s.waitingForRetry
         ? `<p class="metadata-live-line metadata-retry-line"><strong>In attesa di retry.</strong> ${s.failed} errori tecnici registrati${s.nextRetryAt ? ` · prossimo tentativo ${fmtDateTime(s.nextRetryAt)}` : ' · prossimo tentativo pianificato'}.</p>`
         : durationCopy;
-    return `<div class="metadata-status-detail"><div class="metadata-status-big"><strong>${s.coveragePercent}%</strong><div><span>Copertura effettiva dei metadati</span><small class="metadata-cycle-state">${cycleLabel}</small></div></div><div class="progress-track metadata-progress large"><div class="progress-fill" style="width:${s.coveragePercent}%"></div></div><div class="metadata-recap-grid"><div><strong>${s.totalTitles.toLocaleString('it-IT')}</strong><span>Titoli del profilo</span></div><div><strong>${s.essentialIncomplete.toLocaleString('it-IT')}</strong><span>Titoli da verificare</span></div><div><strong>${s.failed.toLocaleString('it-IT')}</strong><span>Errori tecnici</span></div></div><div class="metadata-top-actions" role="group" aria-label="Azioni metadati"><button class="primary" id="resumeMetadata" type="button">Aggiorna ora</button><button class="ghost" id="openMetadataIssues" type="button">Dettaglio titoli</button><button class="ghost" id="openSourceDetails" type="button">Vedi fonti</button><button class="secondary" id="retryMetadata" type="button">Riprova non riusciti</button></div><div class="sync-source-groups">${groups.map(syncGroupHtml).join('')}</div>${liveCopy}</div>`;
+    return `<div class="metadata-status-detail"><div class="metadata-status-overview"><div class="metadata-status-big"><strong>${s.coveragePercent}%</strong><div><span>Copertura effettiva dei metadati</span><small class="metadata-cycle-state">${cycleLabel}</small></div></div><div class="metadata-status-live">${liveCopy}</div><div class="progress-track metadata-progress large"><div class="progress-fill" style="width:${s.coveragePercent}%"></div></div><div class="metadata-recap-grid"><div><strong>${s.totalTitles.toLocaleString('it-IT')}</strong><span>Titoli del profilo</span></div><div><strong>${s.essentialIncomplete.toLocaleString('it-IT')}</strong><span>Titoli da verificare</span></div><div><strong>${s.failed.toLocaleString('it-IT')}</strong><span>Errori tecnici</span></div></div></div><div class="metadata-top-actions" role="group" aria-label="Azioni metadati"><button class="primary" id="resumeMetadata" type="button">Aggiorna ora</button><button class="ghost" id="openMetadataIssues" type="button">Dettaglio titoli</button><button class="ghost" id="openSourceDetails" type="button">Vedi fonti</button><button class="secondary" id="retryMetadata" type="button">Riprova non riusciti</button></div><div class="sync-source-groups">${groups.map(syncGroupHtml).join('')}</div></div>`;
   }
 
   function updateMetadataStatusModal() {
     const content = $('#metadataStatusModalContent');
-    if (content) { content.innerHTML = metadataStatusModalHtml(metadataGlobalStatus()); bindMetadataStatusActions(); }
+    if (content) {
+      const modal = content.closest('.modal'); const scrollTop = modal?.scrollTop || 0;
+      content.innerHTML = metadataStatusModalHtml(metadataGlobalStatus());
+      if (modal) modal.scrollTop = scrollTop;
+      bindMetadataStatusActions();
+    }
   }
 
   function metadataIssueRowHtml(row) {
@@ -1881,6 +1886,11 @@
     return el;
   }
 
+  function setMetadataModalBusy(busy) {
+    const button = $('#metadataStatusButton');
+    if (button) setButtonBusy(button, busy, 'Apertura stato fonti…');
+  }
+
   // Override del pannello fonti: il contenuto resta sincronizzato anche quando la modale rimane aperta.
   function bindMetadataStatusActions() {
     $('#openSourceDetails')?.addEventListener('click',()=>{closeModal();state.profileSettingsTab='data';location.hash='#/settings';route();});
@@ -1895,6 +1905,13 @@
     state.metadataStatusModalTimer = setInterval(updateMetadataStatusModal, 1000);
     bindMetadataStatusActions();
   }
+  async function openMetadataStatusWithFeedback() {
+    const button = $('#metadataStatusButton');
+    if (!button || button.disabled) return;
+    setMetadataModalBusy(true);
+    await nextPaint();
+    try { showMetadataStatus(); } finally { setMetadataModalBusy(false); }
+  }
 
   function showMetadataIssues(filter = 'all') {
     const all = metadataGlobalStatus().diagnostics.filter(row => !row.essentialComplete || row.error || row.failedAt || row.missing.length);
@@ -1902,8 +1919,9 @@
     const coreIssues = rows.filter(row => !row.essentialComplete).length;
     const technicalErrors = rows.filter(row => row.error || row.failedAt).length;
     const analysis = metadataErrorAnalysis(all);
-    openModal('Dettaglio metadati', `<div class="metadata-issues"><div class="metadata-issues-summary"><div><strong>${coreIssues}</strong><span>Titoli senza locandina o descrizione</span></div><div><strong>${technicalErrors}</strong><span>Errori tecnici registrati</span></div><div><strong>${rows.length}</strong><span>Elementi mostrati</span></div></div>${metadataErrorAnalysisHtml(analysis)}<div class="metadata-issue-filters" role="tablist" aria-label="Filtra elementi"><button type="button" role="tab" class="${filter==='all'?'active':''}" data-metadata-filter="all">Tutti</button><button type="button" role="tab" class="${filter==='movie'?'active':''}" data-metadata-filter="movie">Film</button><button type="button" role="tab" class="${filter==='series'?'active':''}" data-metadata-filter="series">Serie TV</button></div><p class="notice">La percentuale metadati usa lo stesso criterio in header, librerie e pannello fonti: un titolo è coperto quando dispone almeno di locandina e descrizione. Cast ed episodi incompleti sono indicati nel dettaglio, ma non alterano questa percentuale.</p><div class="metadata-issue-list">${rows.length?rows.map(metadataIssueRowHtml).join(''):'<div class="empty-state compact"><h3>Nessun elemento da verificare</h3><p>La copertura dei metadati essenziali è completa.</p></div>'}</div></div>`, `<button class="secondary" id="retryAllMetadataIssues" type="button">Riprova tutti gli elementi mostrati</button><button class="primary" id="closeMetadataIssues" type="button">Chiudi</button>`);
+    openModal('Dettaglio metadati', `<div class="metadata-issues"><button class="ghost compact metadata-back-button" id="backMetadataStatus" type="button">← Torna allo stato fonti</button><div class="metadata-issues-summary"><div><strong>${coreIssues}</strong><span>Titoli senza locandina o descrizione</span></div><div><strong>${technicalErrors}</strong><span>Errori tecnici registrati</span></div><div><strong>${rows.length}</strong><span>Elementi mostrati</span></div></div>${metadataErrorAnalysisHtml(analysis)}<div class="metadata-issue-filters" role="tablist" aria-label="Filtra elementi"><button type="button" role="tab" class="${filter==='all'?'active':''}" data-metadata-filter="all">Tutti</button><button type="button" role="tab" class="${filter==='movie'?'active':''}" data-metadata-filter="movie">Film</button><button type="button" role="tab" class="${filter==='series'?'active':''}" data-metadata-filter="series">Serie TV</button></div><p class="notice">La percentuale metadati usa lo stesso criterio in header, librerie e pannello fonti: un titolo è coperto quando dispone almeno di locandina e descrizione. Cast ed episodi incompleti sono indicati nel dettaglio, ma non alterano questa percentuale.</p><div class="metadata-issue-list">${rows.length?rows.map(metadataIssueRowHtml).join(''):'<div class="empty-state compact"><h3>Nessun elemento da verificare</h3><p>La copertura dei metadati essenziali è completa.</p></div>'}</div></div>`, `<button class="secondary" id="retryAllMetadataIssues" type="button">Riprova tutti gli elementi mostrati</button><button class="primary" id="closeMetadataIssues" type="button">Chiudi</button>`);
     $$('[data-metadata-filter]').forEach(button => button.addEventListener('click', () => showMetadataIssues(button.dataset.metadataFilter)));
+    $('#backMetadataStatus')?.addEventListener('click', showMetadataStatus);
     $$('[data-metadata-jump]').forEach(button => button.addEventListener('click', () => {
       const target = $(`.metadata-issue-row[data-kind="${CSS.escape(button.dataset.kind)}"][data-id="${CSS.escape(button.dataset.id)}"]`);
       if (!target) return;
@@ -2059,17 +2077,23 @@
   }
   function providersHtml(item) {
     const groups = item.providerGroups || {};
-    const blocks = [
-      ['streaming', 'Streaming'], ['rent', 'Noleggio'], ['buy', 'Acquisto'], ['free', 'Gratis con pubblicità']
-    ].filter(([key]) => Array.isArray(groups[key]) && groups[key].length).map(([key, label]) => `<div class="provider-group"><h4>${label}</h4><div class="provider-list">${sortProvidersByPreference(groups[key]).map(provider => {
-      const name=providerDisplayName(provider);
-      const quality=typeof provider==='object'&&provider.quality?`<small>${esc(provider.quality)}</small>`:'';
-      const url=typeof provider==='object'&&provider.url?provider.url:(groups.link||item.providerLink||'');
-      const body=`${providerLogoHtml(name)}<span class="provider-copy"><strong>${esc(name)}</strong>${quality}</span>`;
-      return url?`<a class="provider" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${body}<span aria-hidden="true">↗</span></a>`:`<span class="provider">${body}</span>`;
-    }).join('')}</div></div>`).join('');
+    const seen = new Set();
+    const providers = ['streaming', 'rent', 'buy', 'free'].flatMap(key => Array.isArray(groups[key]) ? groups[key] : [])
+      .filter(provider => {
+        const key = normalizeSearch(providerDisplayName(provider));
+        if (!key || seen.has(key)) return false;
+        seen.add(key); return true;
+      });
+    const blocks = providers.length ? `<div class="provider-logo-list">${sortProvidersByPreference(providers).map(provider => {
+      const name = providerDisplayName(provider);
+      const url = typeof provider === 'object' && provider.url ? provider.url : (groups.link || item.providerLink || '');
+      const body = `${providerLogoHtml(name)}`;
+      return url
+        ? `<a class="provider-logo-only" href="${esc(url)}" target="_blank" rel="noopener noreferrer" aria-label="Apri ${esc(name)}">${body}</a>`
+        : `<span class="provider-logo-only" role="img" aria-label="${esc(name)}">${body}</span>`;
+    }).join('')}</div>` : '';
     const tv=tvOptionsHtml(item);
-    if(blocks||tv)return `<div class="watch-options-stack">${blocks}${tv}${blocks?'<p class="provider-attribution">Disponibilità per l’Italia fornita da JustWatch tramite TMDB; verifica sempre sul servizio.</p>':''}</div>`;
+    if(blocks||tv)return `<div class="watch-options-stack">${blocks}${tv}</div>`;
     if(item.providerStatus==='loading')return inlineCinemaLoaderHtml('Verifica disponibilità', 'Controllo esclusivamente i servizi realmente associati al titolo.');
     return '<p class="information-unavailable">Informazione non disponibile</p>';
   }
@@ -2091,13 +2115,13 @@
     const cinemas=preferredCinemas();
     const today = todayIso();
     const horizon = daysFromNow(7);
-    const wantedTitle = normalizeSearch(item.title || '');
+    const wantedTitles = mergeAliases(item.title || '', item.originalTitle || '', item.aliases || []).map(normalizeSearch).filter(Boolean);
     const rawRows=(item.cinemaShowtimes||[]).filter(show=>{
       if(!show || !show.startsAt) return false;
       const date = dateKeyInTimeZone(show.startsAt,'Europe/Rome');
       if(!date || date < today || date > horizon) return false;
       const sourceTitle = normalizeSearch(show.title || show.movieTitle || '');
-      return !sourceTitle || sourceTitle === wantedTitle;
+      return !sourceTitle || wantedTitles.some(candidate => sourceTitle === candidate || (candidate.length >= 6 && (sourceTitle.includes(candidate) || candidate.includes(sourceTitle))));
     }).sort((a,b)=>dateMs(a.startsAt)-dateMs(b.startsAt)||String(a.time||'').localeCompare(String(b.time||'')));
     if(item.cinemaStatus==='loading'&&!rawRows.length)return `<section class="content-card section cinema-programming"><div class="section-head"><div><h3>Programmazione cinema</h3></div></div>${inlineCinemaLoaderHtml('Controllo i siti ufficiali', 'Cerco il film nelle sale preferite.')}</section>`;
     if(!rawRows.length)return '';
@@ -2264,7 +2288,8 @@
     const help = document.createElement('small');
     help.id = 'detail-remove-help';
     help.className = 'danger-help';
-    help.textContent = 'Azione definitiva: richiede conferma.';
+    help.textContent = 'La conferma viene richiesta nel passaggio successivo.';
+    help.hidden = true;
     panel.append(button, help);
     button.addEventListener('click', () => removeFromLibrary(kind, item.id));
   }
@@ -3518,9 +3543,9 @@
     const link = meta.sourceUrl ? ` href="${esc(meta.sourceUrl)}" target="_blank" rel="noopener noreferrer"` : '';
     return `<a class="metadata-source"${link}>Fonte: ${esc(meta.providerLabel)}${meta.language==='en'?' · testo inglese':''}</a>`;
   }
-  async function manualPublicMetadata(kind, item) {
+  async function manualPublicMetadata(kind, item, { announce = true } = {}) {
     if (!navigator.onLine) { showToast('Connessione assente', 'I metadati pubblici richiedono internet.', '!', 5000, { kind: 'error' }); return; }
-    showToast('Aggiornamento avviato', item.title, '↻', 2500);
+    if (announce) showToast('Aggiornamento avviato', item.title, '↻', 2500);
     item.publicMetadata = { ...(item.publicMetadata || {}), nextRetryAt: null };
     await dbPut(kind === 'series' ? 'series' : 'movies', item);
     queuePublicMetadata(kind, [item], { force: true, includeCast: true, silent: false });
@@ -3528,8 +3553,12 @@
 
   async function refreshDetailMetadata(kind, item) {
     if (!navigator.onLine) { showToast('Connessione assente', 'L’aggiornamento richiede internet.', '!', 5000, { kind: 'error' }); return; }
+    if (tmdbIsReady() && kind === 'movie') {
+      await enrichMovieFlow(item);
+      return;
+    }
     showToast('Aggiornamento avviato', item.title, '↻', 2500);
-    await manualPublicMetadata(kind, item);
+    await manualPublicMetadata(kind, item, { announce:false });
     const tasks = [maybeLoadProviders(kind, item), maybeLoadTrailer(kind, item)];
     if (kind === 'movie') tasks.push(maybeLoadCinemaShowtimes(item));
     await Promise.allSettled(tasks);
@@ -3900,7 +3929,49 @@
     return item;
   }
 
-  async function enrichMovieFlow(m){if(!state.settings.tmdbToken&&!(window.WATCHVERSE_CONFIG||{}).tmdbProxyUrl){showToast('TMDB non configurato','I metadati pubblici restano comunque disponibili.','!');return;}openModal('Collega il film a TMDB','<p>Sto cercando il titolo nei metadati italiani…</p>');try{const d=await tmdbFetch('/search/movie',{query:m.title,language:'it-IT',region:'IT',year:m.year||''});const res=(d.results||[]).slice(0,5);const applyMatch=async matchId=>{const added=await addFromTMDB('movie',Number(matchId));const old=m;Object.assign(old,added,{id:m.id,profileId:state.profileId,watched:m.watched,favorite:m.favorite,rating:m.rating,watchedAt:m.watchedAt,notes:m.notes,state:m.state});await dbPut('movies',old);await dbDelete('movies',added.id);closeModal();await reloadData();renderMovieDetail(m.id);};if(res.length===1){await applyMatch(res[0].id);return;}$('#modalRoot .modal-body').innerHTML=`<p>Scegli la corrispondenza corretta.</p><div class="search-results">${res.map(x=>`<article class="search-result"><div class="thumb">${x.poster_path?`<img class="poster-img" src="${tmdbPoster(x.poster_path)}" alt="">`:''}</div><div><h3>${esc(x.title)}</h3><p>${esc((x.release_date||'').slice(0,4))} · ${esc(x.overview||'')}</p></div><button class="primary" data-match="${x.id}">Scegli</button></article>`).join('')}</div>`;$$('[data-match]').forEach(b=>b.addEventListener('click',()=>applyMatch(b.dataset.match)));}catch(e){$('#modalRoot .modal-body').innerHTML=`<p class="notice danger">${esc(e.message)}</p>`;}}
+  function tmdbMatchIsSafe(item, match, kind) {
+    const matchTitle = normalizeSearch(match?.title || match?.name || '');
+    const titles = mergeAliases(item.title || '', item.originalTitle || '', item.aliases || []).map(normalizeSearch).filter(Boolean);
+    const year = String(match?.release_date || match?.first_air_date || '').slice(0, 4);
+    return titles.includes(matchTitle) && (!item.year || !year || String(item.year) === year) && (kind === 'movie' || match?.media_type !== 'movie');
+  }
+  async function applyTmdbMatchToExisting(kind, item, matchId) {
+    const type = kind === 'movie' ? 'movie' : 'series';
+    const store = type === 'movie' ? 'movies' : 'series';
+    const lookupKind = type === 'movie' ? 'movie' : 'tv';
+    const [details, credits, providers, trailer] = await Promise.all([
+      tmdbFetch(`/${lookupKind}/${matchId}`, { language:'it-IT' }),
+      tmdbFetch(`/${lookupKind}/${matchId}/credits`, { language:'it-IT' }),
+      fetchProviders(lookupKind, matchId),
+      fetchTmdbTrailer(type === 'movie' ? 'movie' : 'series', matchId).catch(() => null)
+    ]);
+    const protectedFields = type === 'movie'
+      ? { id:item.id, profileId:item.profileId, addedAt:item.addedAt, watched:item.watched, favorite:item.favorite, rating:item.rating, watchedAt:item.watchedAt, notes:item.notes, state:item.state }
+      : { id:item.id, profileId:item.profileId, addedAt:item.addedAt, status:item.status, favorite:item.favorite, rating:item.rating, notes:item.notes, seasons:item.seasons || [] };
+    if (type === 'movie') {
+      Object.assign(item, { tmdbId:Number(matchId), imdbId:details.imdb_id || item.imdbId || null, title:details.title || item.title, originalTitle:details.original_title || item.originalTitle || null, aliases:mergeAliases(item.aliases || [], item.title, item.originalTitle, details.title, details.original_title), year:(details.release_date || '').slice(0,4) || item.year || null, releaseDate:details.release_date || item.releaseDate || null, overview:details.overview || item.overview || '', genres:(details.genres || []).map(g => g.name), runtime:details.runtime || item.runtime || null, poster:tmdbPoster(details.poster_path) || item.poster || null, backdrop:tmdbBackdrop(details.backdrop_path) || item.backdrop || null, posterGradient:gradient(details.title || item.title), backdropGradient:gradient((details.title || item.title) + ' hero'), providerGroups:providers, cast:(credits.cast || []).slice(0,18).map(c => ({ name:c.name, role:c.character, tmdbId:c.id, photo:tmdbPoster(c.profile_path) })), trailer, trailerCheckedAt:new Date().toISOString(), metadataUpdatedAt:new Date().toISOString() }, protectedFields);
+    } else {
+      const fetchedSeasons = (details.seasons || []).filter(s => s.season_number > 0).map(s => ({ number:s.season_number, name:s.name, overview:s.overview, poster:tmdbPoster(s.poster_path), airDate:s.air_date, episodeCount:s.episode_count, episodes:[] }));
+      Object.assign(item, { tmdbId:Number(matchId), title:details.name || item.title, originalTitle:details.original_name || item.originalTitle || null, aliases:mergeAliases(item.aliases || [], item.title, item.originalTitle, details.name, details.original_name), year:(details.first_air_date || '').slice(0,4) || item.year || null, firstAirDate:details.first_air_date || item.firstAirDate || null, lastAirDate:details.last_air_date || item.lastAirDate || null, overview:details.overview || item.overview || '', genres:(details.genres || []).map(g => g.name), poster:tmdbPoster(details.poster_path) || item.poster || null, backdrop:tmdbBackdrop(details.backdrop_path) || item.backdrop || null, posterGradient:gradient(details.name || item.title), backdropGradient:gradient((details.name || item.title) + ' hero'), providerGroups:providers, cast:(credits.cast || []).slice(0,18).map(c => ({ name:c.name, role:c.character, tmdbId:c.id, photo:tmdbPoster(c.profile_path) })), trailer, trailerCheckedAt:new Date().toISOString(), metadataUpdatedAt:new Date().toISOString(), seasons:mergeSeriesSeasons(protectedFields.seasons, fetchedSeasons, item.id) }, protectedFields);
+    }
+    await dbPut(store, item);
+    await saveSharedCatalog(type, item, 'tmdb');
+  }
+  function tmdbMatchChoiceHtml(rows, kind) {
+    return `<p>Scegli la corrispondenza corretta.</p><div class="search-results">${rows.map(x => `<article class="search-result"><div class="thumb">${x.poster_path ? `<img class="poster-img" src="${tmdbPoster(x.poster_path)}" alt="">` : ''}</div><div><h3>${esc(x.title || x.name)}</h3><p>${esc((x.release_date || x.first_air_date || '').slice(0,4))} · ${esc(x.overview || '')}</p></div><button class="primary" data-tmdb-match="${x.id}" data-kind="${kind}">Scegli</button></article>`).join('')}</div>`;
+  }
+  async function enrichMovieFlow(m) {
+    if (!tmdbIsReady()) { showToast('TMDB non configurato','I metadati pubblici restano comunque disponibili.','!'); return; }
+    try {
+      const data = await tmdbFetch('/search/movie',{query:m.title,language:'it-IT',region:'IT',year:m.year||''});
+      const rows = (data.results || []).slice(0,5);
+      const apply = async matchId => { await applyTmdbMatchToExisting('movie', m, Number(matchId)); closeModal(); await reloadData(); renderMovieDetail(m.id); showToast('Metadati aggiornati', m.title, '✓'); };
+      if (rows.length === 1 && tmdbMatchIsSafe(m, rows[0], 'movie')) { await apply(rows[0].id); return; }
+      openModal('Collega il film a TMDB','<p>Sto cercando il titolo nei metadati italiani…</p>');
+      $('#modalRoot .modal-body').innerHTML = rows.length ? tmdbMatchChoiceHtml(rows, 'movie') : '<p class="notice warning">Nessuna corrispondenza sicura trovata.</p>';
+      $$('[data-tmdb-match]').forEach(button => button.addEventListener('click', event => runButtonAction(event.currentTarget, () => apply(event.currentTarget.dataset.tmdbMatch), 'Collegamento in corso…')));
+    } catch (error) { $('#modalRoot .modal-body').innerHTML = `<p class="notice danger">${esc(error.message)}</p>`; }
+  }
   async function enrichSeriesFlow(s){if(!state.settings.tmdbToken&&!(window.WATCHVERSE_CONFIG||{}).tmdbProxyUrl){showToast('TMDB non configurato','I metadati pubblici restano comunque disponibili.','!');return;}openModal('Collega la serie a TMDB','<p>Sto cercando la serie nei metadati italiani…</p>');try{const d=await tmdbFetch('/search/tv',{query:s.title,language:'it-IT',first_air_date_year:s.year||''});const res=(d.results||[]).slice(0,5);$('#modalRoot .modal-body').innerHTML=`<p>Scegli la corrispondenza corretta. Gli episodi già visti non verranno persi.</p><div class="search-results">${res.map(x=>`<article class="search-result"><div class="thumb">${x.poster_path?`<img class="poster-img" src="${tmdbPoster(x.poster_path)}" alt="">`:''}</div><div><h3>${esc(x.name)}</h3><p>${esc((x.first_air_date||'').slice(0,4))} · ${esc(x.overview||'')}</p></div><button class="primary" data-match="${x.id}">Scegli</button></article>`).join('')}</div>`;$$('[data-match]').forEach(b=>b.addEventListener('click',async()=>{const added=await addFromTMDB('tv',Number(b.dataset.match));const old=s;const importedSeasons=s.seasons||[];Object.assign(old,added,{id:s.id,profileId:state.profileId,status:s.status,favorite:s.favorite,rating:s.rating,seasons:mergeSeriesSeasons(importedSeasons,added.seasons,s.id)});await dbPut('series',old);await dbDelete('series',added.id);closeModal();await reloadData();renderSeriesDetail(s.id);}));}catch(e){$('#modalRoot .modal-body').innerHTML=`<p class="notice danger">${esc(e.message)}</p>`;}}
 
   function statsPeriodStart(period) {
@@ -4932,7 +5003,7 @@
     window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();state.deferredInstall=event;$('#installButton')?.classList.remove('hidden');});
     $('#skipToContent')?.addEventListener('click',()=>$('#main')?.focus({preventScroll:false}));
     $('#installButton')?.addEventListener('click',installApp);
-    $('#metadataStatusButton')?.addEventListener('click',showMetadataStatus);
+    $('#metadataStatusButton')?.addEventListener('click',openMetadataStatusWithFeedback);
     $('#blockingLoader')?.addEventListener('click', event => event.stopPropagation());
     $('#blockingLoader')?.addEventListener('keydown', event => event.stopPropagation());
     $('#notificationButton')?.addEventListener('click',showNotifications);

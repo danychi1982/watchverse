@@ -72,10 +72,14 @@ async function seedLibrary(page) {
     });
     db.close();
   });
-  await page.evaluate(() => { localStorage.setItem('watchverse.session.v2', JSON.stringify({ mode: 'local', createdAt: Date.now() })); sessionStorage.removeItem('watchverse.session.temporary.v2'); });
   await page.reload({ waitUntil:'domcontentloaded' });
-  await page.waitForSelector('[data-profile-choice]');
-  await page.locator('[data-profile-choice]').filter({ hasText:'Daniela' }).click();
+  await page.waitForFunction(() => Boolean(document.querySelector('[data-profile-choice], #loginForm, #main:not([hidden])')));
+  if (await page.locator('#loginForm').count()) {
+    await page.fill('#loginUser','mobile'); await page.fill('#loginPassword','abcdef');
+    await page.click('#loginForm button[type="submit"]');
+    await page.waitForFunction(() => Boolean(document.querySelector('[data-profile-choice], #main:not([hidden])')));
+  }
+  if (await page.locator('[data-profile-choice]').count()) await page.locator('[data-profile-choice]').filter({ hasText:'Daniela' }).click();
   await page.waitForSelector('#main');
 }
 

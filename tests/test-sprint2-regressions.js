@@ -75,6 +75,38 @@ assert(app.includes("['home', 'series', 'movies', 'movie', 'search'].includes(pa
 assert(app.includes('await syncCloudProfile(profile);'));
 assert(app.includes("route({ loader: false, preserveScroll: true, skipCloudRefresh: true })"));
 
+// WVERSE-212/231/232/233: modale metadati stabile, feedback immediato e
+// ritorno dal dettaglio senza costringere l'utente a richiudere il pop-up.
+for (const marker of [
+  'openMetadataStatusWithFeedback',
+  'Apertura stato fonti',
+  'const scrollTop = modal?.scrollTop || 0',
+  'metadata-status-overview',
+  'backMetadataStatus',
+  'Torna allo stato fonti'
+]) assert(app.includes(marker), `Flusso modale metadati incompleto: ${marker}`);
+for (const marker of [
+  '.metadata-top-actions { position:sticky; top:76px',
+  '.metadata-status-overview',
+  '.metadata-back-button',
+  '#metadataStatusButton, #notificationButton, #quickAddButton'
+]) assert(css.includes(marker), `Layout metadati mobile non uniformato: ${marker}`);
+
+// WVERSE-218/227/228/229/230/234: refresh sicuro e vista disponibilità
+// compatta, senza istruzioni tecniche o record temporanei duplicati.
+for (const marker of [
+  'provider-logo-list',
+  'provider-logo-only',
+  'const seen = new Set()',
+  'applyTmdbMatchToExisting',
+  'tmdbMatchIsSafe',
+  'Collegamento in corso…',
+  "manualPublicMetadata(kind, item, { announce:false })",
+  "help.hidden = true"
+]) assert(app.includes(marker), `Refresh dettaglio non sicuro o incompleto: ${marker}`);
+assert(!app.includes("const added=await addFromTMDB('movie',Number(matchId));"), 'Il refresh film non deve creare un record TMDB temporaneo da ricopiare.');
+assert(css.includes('.provider-logo-list') && css.includes('.provider-logo-only'), 'La disponibilità compatta a soli loghi non è stilata.');
+
 // WVERSE-166/167/178: esistono basi condivise per responsive, accessibilità,
 // focus visibile e dialog di sostituzione dati.
 for (const marker of ['@media', ':focus-visible', 'continueReplacement', 'Sostituisci i dati attuali del profilo']) {
