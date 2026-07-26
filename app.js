@@ -5001,11 +5001,18 @@
           state.initialCloudHydrationError = error?.message || 'Sincronizzazione cloud non riuscita.';
           console.warn('Watchverse background profile sync:', error);
           if (state.profileSelected && state.profileId === id) void route({ loader:false, skipCloudRefresh:true });
+        } finally {
+          // Il catalogo deve partire sui dati definitivi: in precedenza il
+          // worker poteva partire prima del reload cloud e restare associato
+          // a una copia ormai sostituita della libreria.
+          if (state.profileSelected && state.profileId === id && !state.metadataRunning && !state.metadataQueue.length) {
+            state.metadataBackgroundStarted = false;
+            idle(() => scheduleBackgroundMetadataSync(true));
+          }
         }
       };
       if (shouldHydrateCloud) setTimeout(refreshCloudProfile, 0);
       else idle(refreshCloudProfile);
-      idle(scheduleBackgroundMetadataSync);
       idle(()=>syncDefaultPublicSources(false));
     } finally {
       hideBlockingLoader(loaderToken, 480);
