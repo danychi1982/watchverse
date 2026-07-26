@@ -7,11 +7,24 @@ const path = require('node:path');
 
 const ROOT = process.cwd();
 
+async function waitForAppIdle(page) {
+  await page.waitForFunction(() => {
+    const loader = document.querySelector('#blockingLoader');
+    return !loader || loader.getAttribute('aria-hidden') === 'true' || !loader.classList.contains('is-visible');
+  }, null, { timeout: 30000 });
+}
+
 function startStaticServer() {
   const types = { '.html':'text/html; charset=utf-8', '.js':'text/javascript; charset=utf-8', '.css':'text/css; charset=utf-8', '.json':'application/json; charset=utf-8', '.png':'image/png', '.jpg':'image/jpeg' };
+  const localConfig = `window.WATCHVERSE_CONFIG = Object.freeze({ appName:'Watchverse', accountUsername:'', recoveryEmail:'', supabaseUrl:'', supabaseAnonKey:'', allowCloudSignup:false, tmdbProxyUrl:'', publicSourcesProxyUrl:'', defaultSources:Object.freeze({ streamingLookup:Object.freeze({enabled:false}), tvSchedule:Object.freeze({enabled:false}), cinema:Object.freeze({enabled:false}) }) });`;
   const server = http.createServer((request, response) => {
     const url = new URL(request.url, 'http://127.0.0.1');
     const requested = url.pathname === '/' ? '/index.html' : decodeURIComponent(url.pathname);
+    if (requested === '/config.js') {
+      response.writeHead(200, { 'Content-Type': types['.js'], 'Cache-Control': 'no-store' });
+      response.end(localConfig);
+      return;
+    }
     const filePath = path.resolve(ROOT, `.${requested}`);
     if (!filePath.startsWith(ROOT)) { response.writeHead(403); response.end('Forbidden'); return; }
     fs.readFile(filePath, (error, body) => {
@@ -23,11 +36,17 @@ function startStaticServer() {
   return new Promise(resolve => server.listen(0, '127.0.0.1', () => resolve({ server, url:`http://127.0.0.1:${server.address().port}/` })));
 }
 
-function useLocalTestConfig(page, baseUrl) {
-  return page.route(`${baseUrl}config.js**`, route => route.fulfill({
-    contentType:'text/javascript; charset=utf-8',
-    body:`window.WATCHVERSE_CONFIG = Object.freeze({ appName:'Watchverse', accountUsername:'', recoveryEmail:'', supabaseUrl:'', supabaseAnonKey:'', allowCloudSignup:false, tmdbProxyUrl:'', publicSourcesProxyUrl:'', defaultSources:Object.freeze({ streamingLookup:Object.freeze({enabled:false}), tvSchedule:Object.freeze({enabled:false}), cinema:Object.freeze({enabled:false}) }) });`
-  }));
+async function loginAndSelectDaniela(page, { allowAlreadyAuthenticated = true } = {}) {
+  if (allowAlreadyAuthenticated && await page.locator('#aivengersButton:not(.hidden)').count()) return;
+  if (await page.locator('#loginForm').count()) {
+    await page.fill('#loginUser','utente');
+    await page.fill('#loginPassword','abcdef');
+    if (await page.locator('#rememberLogin').count() && !await page.locator('#rememberLogin').isChecked()) await page.check('#rememberLogin');
+    await page.click('#loginForm button[type="submit"]');
+  }
+  await page.waitForSelector('[data-profile-choice]');
+  await page.locator('[data-profile-choice]').filter({ hasText:'Daniela' }).click();
+  await page.waitForSelector('#aivengersButton:not(.hidden)');
 }
 
 async function seedAccount(page) {
@@ -41,12 +60,8 @@ async function seedAccount(page) {
     localStorage.setItem('watchverse.account.v2', JSON.stringify({ username:'utente', email:'utente@example.com', passwordHash:btoa(String.fromCharCode(...new Uint8Array(bits))), salt:saltB64, iterations:160000 }));
   });
   await page.reload({ waitUntil:'domcontentloaded' });
-  await page.fill('#loginUser','utente');
-  await page.fill('#loginPassword','abcdef');
-  await page.check('#rememberLogin');
-  await page.click('#loginForm button[type="submit"]');
-  await page.locator('[data-profile-choice]').filter({ hasText:'Daniela' }).click();
-  await page.waitForSelector('#aivengersButton:not(.hidden)');
+  await page.waitForSelector('#loginForm');
+  await loginAndSelectDaniela(page, { allowAlreadyAuthenticated:false });
 }
 
 async function putFixtures(page) {
@@ -62,15 +77,10 @@ async function putFixtures(page) {
     });
     db.close();
   });
-  await page.evaluate(() => { localStorage.setItem('watchverse.session.v2', JSON.stringify({mode:'local',createdAt:Date.now()})); localStorage.setItem('watchverse.currentProfile','profile-daniela'); });
+  await page.evaluate(() => { localStorage.setItem('watchverse.currentProfile','profile-daniela'); });
   await page.reload({ waitUntil:'domcontentloaded' });
-  if (await page.locator('#loginForm').count()) {
-    await page.fill('#loginUser','utente');
-    await page.fill('#loginPassword','abcdef');
-    await page.check('#rememberLogin');
-    await page.click('#loginForm button[type="submit"]');
-  }
-  if (await page.locator('[data-profile-choice]').count()) await page.locator('[data-profile-choice]').filter({hasText:'Daniela'}).click();
+  await page.waitForFunction(() => Boolean(document.querySelector('#loginForm, [data-profile-choice], #aivengersButton:not(.hidden)')));
+  await loginAndSelectDaniela(page);
 }
 
 (async () => {
@@ -78,13 +88,13 @@ async function putFixtures(page) {
   try {
     const browser=await openBrowser(chromium);
     const page=await browser.newPage({viewport:{width:1280,height:900}});
-    await useLocalTestConfig(page,url);
     await page.goto(url,{waitUntil:'domcontentloaded'});
     await seedAccount(page);
     await putFixtures(page);
 
     await page.goto(`${url}#/movie/profile-daniela%7Cmovie-functional`,{waitUntil:'domcontentloaded'});
     await page.waitForSelector('.detail-hero');
+    await waitForAppIdle(page);
     assert(await page.locator('#refreshMovieMetadata').count()===1,'Il dettaglio film deve avere un solo pulsante Aggiorna.');
     assert(await page.locator('#enrichMovieTmdb, #enrichMoviePublic').count()===0,'I pulsanti tecnici separati non devono essere visibili.');
     assert(await page.locator('.availability-trailer-card').count()===1,'Trailer e streaming devono stare nello stesso box.');
@@ -96,6 +106,8 @@ async function putFixtures(page) {
 
     await page.goto(`${url}#/series/profile-daniela%7Cseries-functional`,{waitUntil:'domcontentloaded'});
     await page.waitForSelector('.detail-hero');
+    await waitForAppIdle(page);
+    if (await page.locator('[data-detail-tab="info"]').count()) await page.locator('[data-detail-tab="info"]').click();
     assert(await page.locator('#refreshSeriesMetadata').count()===1,'Il dettaglio serie deve avere un solo pulsante Aggiorna.');
     assert(await page.locator('.availability-trailer-card').count()===1,'Anche la serie deve usare il box unificato.');
     await browser.close();
