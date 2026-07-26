@@ -46,12 +46,20 @@ indicatori complementari: non vanno convertiti matematicamente tra loro.
 
 ### Verifica tecnica del salvataggio
 
-Non considerare sufficiente una risposta di successo dell'integrazione: riaprire
-l'issue e controllare i valori nella sezione **Dettagli**. Se `Story Points` o
-`Original Estimate` non sono esposti dalla schermata di modifica/API Jira,
-registrare il blocco e non dichiarare completato il censimento delle stime.
-L'abilitazione dei campi sulla schermata deve essere corretta prima di un nuovo
-tentativo di aggiornamento massivo.
+Non considerare sufficiente una risposta di successo dell'integrazione: dopo
+ogni aggiornamento rileggere l'issue e verificare entrambi i valori.
+
+- Scrivere e leggere gli Story Points nel campo `customfield_10038`.
+  `customfield_10016` è un campo Jira distinto e **non** va usato per
+  Watchverse.
+- Scrivere la stima nell'oggetto `timetracking.originalEstimate`; in lettura,
+  verificare sia `timetracking.originalEstimate` sia
+  `timeoriginalestimate` (secondi).
+- Se la rilettura API restituisce valori non nulli ma la UI Jira mostra ancora
+  campi vuoti, aggiornare o riaprire la scheda prima di segnalare un problema
+  di configurazione.
+- Registrare un blocco solo se la rilettura API non conferma i valori: non
+  dedurre l'assenza dei campi dal tipo issue o da una schermata non aggiornata.
 
 ## Gate operativo
 
