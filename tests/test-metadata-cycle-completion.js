@@ -7,7 +7,13 @@ assert(app.includes('Copertura effettiva dei metadati'), 'La copertura non è pr
 assert(app.includes('Titoli da verificare'), 'Gli elementi non risolti non sono indicati separatamente');
 assert(app.includes('Errori tecnici'), 'Gli errori tecnici non sono distinti dai titoli incompleti');
 assert(app.includes('function scheduleMetadataRecoveryPass()'), 'Manca il recupero automatico dei metadati falliti');
-assert(app.includes('Retry automatico avviato'), 'Manca il recupero automatico degli elementi falliti');
+assert(app.includes('Ultimo tentativo automatico'), 'Manca il recupero finale degli elementi falliti');
+assert(app.includes('const MAX_METADATA_AUTO_RETRIES = 1'), 'Manca il limite ai retry automatici dei metadati');
+assert(app.includes('task.finalRecovery || attempts > MAX_METADATA_AUTO_RETRIES'), 'Gli errori finali non passano al retry manuale');
+assert(app.includes('state.metadataRecoveryDone = true'), 'Il recupero finale puÃ² ripartire indefinitamente');
+assert(app.includes('Retry automatici esauriti'), 'Il pannello non comunica il passaggio al retry manuale');
+assert(app.includes('function ensureMetadataStatusButtonMarkup(button)'), 'Manca il ripristino del markup dell\'icona metadati');
+assert(app.includes("button.id === 'metadataStatusButton'"), 'Lo stato busy può ancora sovrascrivere l\'icona metadati');
 assert(app.includes("$('#retryMetadata')"), "Manca l'azione esplicita di retry dei metadati");
 assert(app.includes('function scheduleNextMetadataBatch()'), 'Manca la continuazione automatica dei lotti metadati');
 assert(app.includes('state.metadataAutoBudget = 72'), 'Manca il reset del budget per il lotto successivo');

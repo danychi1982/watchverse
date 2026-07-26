@@ -23,8 +23,8 @@ if (!app.includes("location.hash = kind === 'series' ? '#/series' : '#/movies';"
 if (!app.includes('function isCandidateInLibrary(row)') || !app.includes('!isCandidateInLibrary(row)')) {
   throw new Error('Le proposte non escludono la libreria gia\u0027 presente.');
 }
-if (!app.includes('scheduleMetadataRecoveryPass();\n      return;')) {
-  throw new Error('I retry metadati persistenti non richiedono una scelta manuale.');
+if (!app.includes('pendingRetry && !state.metadataRecoveryDone') || !app.includes('Aggiornamento manuale richiesto')) {
+  throw new Error('Gli errori metadati persistenti non passano al recupero finale e poi alla scelta manuale.');
 }
 
 console.log('Watchverse 1.0.0: refresh e fallback offline verificati');

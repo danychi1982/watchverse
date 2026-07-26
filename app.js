@@ -248,6 +248,14 @@
   }
   function setButtonBusy(button, busy, busyLabel = 'Operazione in corso') {
     if (!button) return;
+    if (button.id === 'metadataStatusButton') {
+      ensureMetadataStatusButtonMarkup(button);
+      button.disabled = busy;
+      button.toggleAttribute('aria-busy', busy);
+      button.classList.toggle('view-action-busy', busy);
+      button.title = busy ? busyLabel : 'Stato aggiornamento metadati';
+      return;
+    }
     if (busy) {
       if (!button.dataset.idleLabel) button.dataset.idleLabel = button.textContent.trim();
       if (!Object.prototype.hasOwnProperty.call(button.dataset, 'idleTitle')) button.dataset.idleTitle = button.title || '';
@@ -1630,10 +1638,11 @@
     const extendedCoveragePercent = totalTitles ? Math.max(0, Math.min(100, Math.round(allRows.filter(row => row.extendedComplete).length / totalTitles * 100))) : 100;
     const active = state.metadataQueue.length + state.metadataRunning > 0;
     const remainingWork = totalTitles > 0 && allRows.some(row => needsPublicMetadata(row.item, row.kind, true));
+    const manualRetryRequired = allRows.filter(row => row.item.publicMetadata?.manualRetryRequired).length;
     const waitingForRetry = !active && remainingWork && failed > 0;
     const nextRetryAt = allRows.map(row => row.nextRetryAt).filter(value => value && dateMs(value) > Date.now()).sort((a, b) => dateMs(a) - dateMs(b))[0] || null;
     const batchCompleted = totalTitles === 0 || (!active && !remainingWork && !!state.metadataCycleCompletedAt);
-    const cyclePercent = batchCompleted ? 100 : (active ? Math.max(1, Math.min(99, Math.round((state.metadataCompletedThisSession + state.metadataFailedThisSession) / Math.max(1, state.metadataCompletedThisSession + state.metadataFailedThisSession + state.metadataQueue.length + state.metadataRunning) * 100))) : (remainingWork ? Math.min(99, coveragePercent) : 0));
+    const cyclePercent = batchCompleted ? 100 : (active ? Math.max(1, Math.min(99, Math.round((state.metadataCompletedThisSession + state.metadataFailedThisSession) / Math.max(1, state.metadataCompletedThisSession + state.metadataFailedThisSession + state.metadataQueue.length + state.metadataRunning) * 100))) : ((remainingWork || manualRetryRequired) ? Math.min(99, coveragePercent) : 0));
     return {
       totalTitles,
       coreReady,
@@ -1660,6 +1669,7 @@
       active,
       remainingWork,
       waitingForRetry,
+      manualRetryRequired,
       nextRetryAt,
       cycleStartedAt: state.metadataCycleStartedAt,
       cycleCompletedAt: state.metadataCycleCompletedAt,
@@ -1672,9 +1682,14 @@
     clearTimeout(state.metadataHeaderTimer);
     state.metadataHeaderTimer = setTimeout(updateMetadataHeader, 180);
   }
+  function ensureMetadataStatusButtonMarkup(button) {
+    if (!button || button.querySelector('.metadata-status-symbol')) return;
+    button.innerHTML = '<span class="metadata-status-symbol" aria-hidden="true">↻</span><span id="metadataStatusDot" class="metadata-status-dot" aria-hidden="true"></span><span class="metadata-status-copy" aria-hidden="true"><strong id="metadataStatusLabel">Metadati</strong><small id="metadataStatusSummary">Aggiornamento libreria</small></span><span class="metadata-status-track" aria-hidden="true"><span id="metadataStatusBar"></span></span>';
+  }
   function updateMetadataHeader() {
     const button = $('#metadataStatusButton');
     if (!button) return;
+    ensureMetadataStatusButtonMarkup(button);
     if (!state.profileSelected || libraryIsEmpty() || !state.settings.publicMetadataEnabled) {
       button.classList.add('hidden');
       return;
@@ -1784,7 +1799,7 @@
     const cinemaShowtimes=state.movies.reduce((sum,x)=>sum+(x.cinemaShowtimes||[]).length,0);
     const linkedCinemas=preferredCinemas().filter(x=>x.officialUrl).length;
     return [
-      {name:'Catalogo e metadati',percent:status.coveragePercent,state:status.active?`Aggiornamento in corso · copertura ${status.coveragePercent}%`:status.waitingForRetry?`In attesa di retry · copertura ${status.coveragePercent}%`:(status.essentialIncomplete||status.failed)?`Copertura ${status.coveragePercent}% · ${status.essentialIncomplete} titoli da verificare${status.failed?` · ${status.failed} errori tecnici`:''}`:'Catalogo completo',updated:status.coreReady,updatedLabel:'Titoli con locandina e descrizione',errors:status.failed,last:state.catalogEntries.map(x=>x.updatedAt).sort().at(-1)||null,next:status.active?'In corso':status.waitingForRetry?(status.nextRetryAt?`Retry automatico: ${fmtDateTime(status.nextRetryAt)}`:'Retry automatico pianificato'):status.essentialIncomplete?'Retry automatico e correzione dal dettaglio elementi':'Controllo incrementale al prossimo avvio'},
+      {name:'Catalogo e metadati',percent:status.coveragePercent,state:status.active?`Aggiornamento in corso · copertura ${status.coveragePercent}%`:status.manualRetryRequired?`Completato con ${status.manualRetryRequired} retry manuali`:(status.essentialIncomplete||status.failed)?`Copertura ${status.coveragePercent}% · ${status.essentialIncomplete} titoli da verificare${status.failed?` · ${status.failed} errori tecnici`:''}`:'Catalogo completo',updated:status.coreReady,updatedLabel:'Titoli con locandina e descrizione',errors:status.failed,last:state.catalogEntries.map(x=>x.updatedAt).sort().at(-1)||null,next:status.active?'In corso':status.manualRetryRequired?'Aggiornamento manuale richiesto':status.essentialIncomplete?'Aggiornamento manuale dal dettaglio elementi':'Controllo quando aggiungi un nuovo titolo'},
       {name:'Disponibilità streaming in Italia',percent:Math.round(streamingCount/total*100),state:streamingCount?`Disponibilità effettiva trovata per ${streamingCount} titoli`:tmdbReady?'Nessuna disponibilità ancora trovata':'TMDB non configurato',updated:sourceState.streaming.checked||0,updatedLabel:'Titoli controllati',errors:0,last:sourceState.streaming.last||null,next:tmdbReady?'Su apertura o aggiornamento del titolo':'Configura TMDB per il controllo JustWatch'},
       {name:'Palinsesti TV italiani',percent:publicMetadataApi()?100:0,state:publicMetadataApi()?`Fonte pubblica preconfigurata${sourceState.tv.matches?` · ${sourceState.tv.matches} passaggi trovati`:''}`:'Da configurare',updated:sourceState.tv.checked||tvCount,updatedLabel:'Titoli controllati',errors:0,last:sourceState.tv.last||null,next:`Controllo automatico ogni ${Number(defaults.tvSchedule.refreshHours||12)} ore`},
       {name:'Programmazione cinema',percent:state.movies.length?Math.round(state.movies.filter(x=>x.cinemaCheckedAt).length/state.movies.length*100):0,state:linkedCinemas?`${linkedCinemas} siti ufficiali collegati${cinemaShowtimes?` · ${cinemaShowtimes} spettacoli trovati`:' · nessun orario ancora trovato'}`:'Da configurare',updated:state.movies.filter(x=>x.cinemaCheckedAt).length,updatedLabel:'Film controllati',errors:0,last:sourceState.cinema.last||null,next:'Su apertura del film; solo orari dai siti ufficiali'}
@@ -1796,12 +1811,14 @@
 
   function metadataStatusModalHtml(s) {
     const groups = syncSourceGroups(s);
-    const cycleLabel = s.active ? 'Aggiornamento in corso' : s.waitingForRetry ? 'In attesa di retry' : s.remainingWork ? 'Ciclo parziale' : 'Ciclo completato';
+    const cycleLabel = s.active ? 'Aggiornamento in corso' : s.waitingForRetry ? 'In attesa di retry' : s.manualRetryRequired ? 'Richiede retry manuale' : s.remainingWork ? 'Ciclo parziale' : 'Ciclo completato';
     const durationCopy = s.cycleDurationLabel ? `<p class="metadata-cycle-duration"><strong>Durata complessiva del ciclo:</strong> ${esc(s.cycleDurationLabel)}</p>` : '';
     const liveCopy = s.active
       ? `<p class="metadata-live-line"><span class="inline-spinner" aria-hidden="true"></span>Aggiornamento in corso: ${s.running} elaborazioni attive e ${s.queued} titoli in coda. Puoi continuare a usare l’app.</p>`
       : s.waitingForRetry
         ? `<p class="metadata-live-line metadata-retry-line"><strong>In attesa di retry.</strong> ${s.failed} errori tecnici registrati${s.nextRetryAt ? ` · prossimo tentativo ${fmtDateTime(s.nextRetryAt)}` : ' · prossimo tentativo pianificato'}.</p>`
+        : s.manualRetryRequired
+          ? `<p class="metadata-live-line metadata-retry-line"><strong>Retry automatici esauriti.</strong> ${s.manualRetryRequired} titoli richiedono un aggiornamento manuale.</p>`
         : durationCopy;
     return `<div class="metadata-status-detail"><div class="metadata-status-overview"><div class="metadata-status-big"><strong>${s.coveragePercent}%</strong><div><span>Copertura effettiva dei metadati</span><small class="metadata-cycle-state">${cycleLabel}</small></div></div><div class="metadata-status-live">${liveCopy}</div><div class="progress-track metadata-progress large"><div class="progress-fill" style="width:${s.coveragePercent}%"></div></div><div class="metadata-recap-grid"><div><strong>${s.totalTitles.toLocaleString('it-IT')}</strong><span>Titoli del profilo</span></div><div><strong>${s.essentialIncomplete.toLocaleString('it-IT')}</strong><span>Titoli da verificare</span></div><div><strong>${s.failed.toLocaleString('it-IT')}</strong><span>Errori tecnici</span></div></div></div><div class="metadata-top-actions" role="group" aria-label="Azioni metadati"><button class="primary" id="resumeMetadata" type="button">Aggiorna ora</button><button class="ghost" id="openMetadataIssues" type="button">Dettaglio titoli</button><button class="ghost" id="openSourceDetails" type="button">Vedi fonti</button><button class="secondary" id="retryMetadata" type="button">Riprova non riusciti</button></div><div class="sync-source-groups">${groups.map(syncGroupHtml).join('')}</div></div>`;
   }
@@ -1846,13 +1863,13 @@
       const row=button.closest('.metadata-issue-row');
       const kind=row.dataset.kind; const collection=kind==='series'?state.series:state.movies; const item=collection.find(x=>x.id===row.dataset.id);
       if(!item)return;
-      item.publicMetadata={...(item.publicMetadata||{}),failedAt:null,error:null,nextRetryAt:null,parts:{...(item.publicMetadata?.parts||{}),coreComplete:false}};
+      item.publicMetadata={...(item.publicMetadata||{}),failedAt:null,error:null,nextRetryAt:null,manualRetryRequired:false,parts:{...(item.publicMetadata?.parts||{}),coreComplete:false}};
       state.metadataAutoBudget+=2;
       queuePublicMetadata(kind,[item],{force:true,unlimited:true,includeCast:true,silent:false});
       closeModal(); showToast('Nuovo tentativo avviato',item.title,'↻');
     }));
     $('#retryAllMetadataIssues')?.addEventListener('click',()=>{
-      for(const row of rows){row.item.publicMetadata={...(row.item.publicMetadata||{}),failedAt:null,error:null,nextRetryAt:null,parts:{...(row.item.publicMetadata?.parts||{}),coreComplete:false}};}
+      for(const row of rows){row.item.publicMetadata={...(row.item.publicMetadata||{}),failedAt:null,error:null,nextRetryAt:null,manualRetryRequired:false,parts:{...(row.item.publicMetadata?.parts||{}),coreComplete:false}};}
       const series=rows.filter(row=>row.kind==='series').map(row=>row.item); const movies=rows.filter(row=>row.kind==='movie').map(row=>row.item);
       state.metadataAutoBudget+=rows.length;
       queuePublicMetadata('series',series,{force:true,unlimited:true,includeCast:true,silent:true});
@@ -1870,7 +1887,7 @@
     openModal('Stato aggiornamento fonti', `<div class="metadata-status-detail"><div class="metadata-status-big"><strong>${s.coveragePercent}%</strong><div><span>Copertura effettiva dei metadati</span><small class="metadata-cycle-state">${cycleLabel}</small></div></div><div class="progress-track metadata-progress large"><div class="progress-fill" style="width:${s.coveragePercent}%"></div></div><div class="metadata-recap-grid"><div><strong>${s.totalTitles.toLocaleString('it-IT')}</strong><span>Titoli del profilo</span></div><div><strong>${s.essentialIncomplete.toLocaleString('it-IT')}</strong><span>Titoli da verificare</span></div><div><strong>${s.failed.toLocaleString('it-IT')}</strong><span>Errori tecnici</span></div></div><div class="sync-source-groups">${groups.map(syncGroupHtml).join('')}</div>${s.active ? `<p class="metadata-live-line"><span class="inline-spinner" aria-hidden="true"></span>Aggiornamento in corso: ${s.running} elaborazioni attive e ${s.queued} titoli in coda. Puoi continuare a usare l’app.</p>` : durationCopy}</div>`, `<button class="ghost" id="openSourceDetails">Vedi fonti</button><button class="ghost" id="openMetadataIssues">Dettaglio titoli</button><button class="secondary" id="retryMetadata">Riprova non riusciti</button><button class="primary" id="resumeMetadata">Aggiorna ora</button>`);
     $('#openSourceDetails')?.addEventListener('click',()=>{closeModal();state.profileSettingsTab='data';location.hash='#/settings';route();});
     $('#openMetadataIssues')?.addEventListener('click',()=>showMetadataIssues('all'));
-    $('#retryMetadata')?.addEventListener('click',()=>{for(const item of [...state.series,...state.movies])if(item.publicMetadata?.failedAt||item.publicMetadata?.error)item.publicMetadata={...item.publicMetadata,failedAt:null,error:null,nextRetryAt:null,parts:{...(item.publicMetadata?.parts||{}),coreComplete:false}};state.metadataBackgroundStarted=false;state.metadataRecoveryScheduled=false;state.metadataRecoveryDone=false;state.metadataAutoBudget+=50;scheduleBackgroundMetadataSync(true);syncDefaultPublicSources(true);closeModal();showToast('Nuovo tentativo avviato','Le fonti non riuscite verranno ricontrollate.','↻');});
+    $('#retryMetadata')?.addEventListener('click',()=>{for(const item of [...state.series,...state.movies])if(item.publicMetadata?.failedAt||item.publicMetadata?.error)item.publicMetadata={...item.publicMetadata,failedAt:null,error:null,nextRetryAt:null,manualRetryRequired:false,parts:{...(item.publicMetadata?.parts||{}),coreComplete:false}};state.metadataBackgroundStarted=false;state.metadataRecoveryScheduled=false;state.metadataRecoveryDone=false;state.metadataAutoBudget+=50;scheduleBackgroundMetadataSync(true);syncDefaultPublicSources(true);closeModal();showToast('Nuovo tentativo avviato','Le fonti non riuscite verranno ricontrollate.','↻');});
     $('#resumeMetadata')?.addEventListener('click', () => { state.metadataBackgroundStarted = false; state.metadataAutoBudget += 50; scheduleBackgroundMetadataSync(true); syncDefaultPublicSources(true); closeModal(); showToast('Aggiornamento in background', 'Catalogo, streaming, TV e cinema verranno controllati secondo le fonti configurate.', '↻', 4200); });
   }
 
@@ -1895,7 +1912,7 @@
   function bindMetadataStatusActions() {
     $('#openSourceDetails')?.addEventListener('click',()=>{closeModal();state.profileSettingsTab='data';location.hash='#/settings';route();});
     $('#openMetadataIssues')?.addEventListener('click',()=>showMetadataIssues('all'));
-    $('#retryMetadata')?.addEventListener('click',()=>{for(const item of [...state.series,...state.movies])if(item.publicMetadata?.failedAt||item.publicMetadata?.error)item.publicMetadata={...(item.publicMetadata||{}),failedAt:null,error:null,nextRetryAt:null,parts:{...(item.publicMetadata?.parts||{}),coreComplete:false}};state.metadataBackgroundStarted=false;state.metadataRecoveryScheduled=false;state.metadataRecoveryDone=false;state.metadataAutoBudget+=50;scheduleBackgroundMetadataSync(true);syncDefaultPublicSources(true);closeModal();showToast('Nuovo tentativo avviato','Le fonti non riuscite verranno ricontrollate.','↻');});
+    $('#retryMetadata')?.addEventListener('click',()=>{for(const item of [...state.series,...state.movies])if(item.publicMetadata?.failedAt||item.publicMetadata?.error)item.publicMetadata={...(item.publicMetadata||{}),failedAt:null,error:null,nextRetryAt:null,manualRetryRequired:false,parts:{...(item.publicMetadata?.parts||{}),coreComplete:false}};state.metadataBackgroundStarted=false;state.metadataRecoveryScheduled=false;state.metadataRecoveryDone=false;state.metadataAutoBudget+=50;scheduleBackgroundMetadataSync(true);syncDefaultPublicSources(true);closeModal();showToast('Nuovo tentativo avviato','Le fonti non riuscite verranno ricontrollate.','↻');});
     $('#resumeMetadata')?.addEventListener('click', () => { state.metadataBackgroundStarted = false; state.metadataAutoBudget += 50; scheduleBackgroundMetadataSync(true); syncDefaultPublicSources(true); updateMetadataStatusModal(); showToast('Aggiornamento in background', 'Catalogo, streaming, TV e cinema verranno controllati secondo le fonti configurate.', '↻', 4200); });
   }
   function showMetadataStatus() {
@@ -1933,13 +1950,13 @@
     $$('[data-metadata-retry]').forEach(button => button.addEventListener('click', async () => {
       const row = rows.find(candidate => candidate.item.id === button.closest('[data-id]')?.dataset.id && candidate.kind === button.closest('[data-kind]')?.dataset.kind);
       if (!row) return;
-      row.item.publicMetadata = { ...(row.item.publicMetadata || {}), failedAt:null, error:null, nextRetryAt:null, parts:{ ...(row.item.publicMetadata?.parts || {}), coreComplete:false } };
+      row.item.publicMetadata = { ...(row.item.publicMetadata || {}), failedAt:null, error:null, nextRetryAt:null, manualRetryRequired:false, parts:{ ...(row.item.publicMetadata?.parts || {}), coreComplete:false } };
       await dbPut(row.kind === 'series' ? 'series' : 'movies', row.item);
       await retryMetadataItems([row], { silent:false });
       showMetadataIssues(filter);
     }));
     $('#retryAllMetadataIssues')?.addEventListener('click', async () => {
-      for (const row of rows) { row.item.publicMetadata = { ...(row.item.publicMetadata || {}), failedAt:null, error:null, nextRetryAt:null, parts:{ ...(row.item.publicMetadata?.parts || {}), coreComplete:false } }; await dbPut(row.kind === 'series' ? 'series' : 'movies', row.item); }
+      for (const row of rows) { row.item.publicMetadata = { ...(row.item.publicMetadata || {}), failedAt:null, error:null, nextRetryAt:null, manualRetryRequired:false, parts:{ ...(row.item.publicMetadata?.parts || {}), coreComplete:false } }; await dbPut(row.kind === 'series' ? 'series' : 'movies', row.item); }
       await retryMetadataItems(rows, { silent:true });
       closeModal();
     });
@@ -2797,11 +2814,6 @@
     if ($('#notifyPermission')) $('#notifyPermission').addEventListener('click', requestNotifications);
     bindHorizontalRails($('#main'));
     bindCommonMediaActions($('#main'));
-    const visibleSeries = [...recentlyWatched, ...latestReleased].map(x => x.s);
-    if (!state.metadataBackgroundStarted) {
-      queuePublicMetadata('series', visibleSeries, { silent:true, includeCast:true });
-      queuePublicMetadata('movie', watchFilms.slice(0, 6), { silent:true, includeCast:true });
-    }
   }
 
   function filterTabs(type) {
@@ -2920,7 +2932,6 @@
       else { targets.forEach(item => { item.publicMetadata = { ...(item.publicMetadata || {}), failedAt: null, parts: { ...(item.publicMetadata?.parts || {}), coreComplete: false, castComplete: false, episodesAt: null } }; }); queuePublicMetadata('series', targets, { force:true, includeCast:true, silent:false }); }
     });
     bindCommonMediaActions($('#main'));
-    queuePublicMetadata('series', visible.slice(0, 14), { silent:true, includeCast:false }); scheduleBackgroundMetadataSync();
   }
 
   function renderMovieLibrary() {
@@ -2954,7 +2965,6 @@
       else{targets.forEach(item=>{item.publicMetadata={...(item.publicMetadata||{}),failedAt:null};});queuePublicMetadata('movie',targets,{force:true,includeCast:true,silent:false});}
     });
     bindCommonMediaActions($('#main'));
-    queuePublicMetadata('movie', visible.slice(0, 12), { silent:true, includeCast:false }); scheduleBackgroundMetadataSync();
   }
 
   function recommendationScore(seed, candidate, seedKind, candidateKind) {
@@ -3209,12 +3219,14 @@
     if (/Fonte metadati non disponibile|5\d\d/i.test(message)) return { code:'source-error', label:'Fonte temporaneamente non disponibile' };
     return { code:'unknown', label:'Errore tecnico' };
   }
-  function metadataRetryDelay(attempts = 1) {
-    return 1000 * 60 * 10;
-  }
+  // Ogni ciclo prova prima tutti i titoli e fa poi un unico recupero finale
+  // dei falliti. Dopo quel recupero l'eventuale errore richiede un'azione
+  // esplicita: la navigazione non deve riavviare richieste alla fonte.
+  const MAX_METADATA_AUTO_RETRIES = 1;
   function needsPublicMetadata(item, kind, includeCast = false) {
     if (!state.settings.publicMetadataEnabled || !publicMetadataApi()) return false;
     const meta = item.publicMetadata || {}; const parts = metadataParts(item);
+    if (meta.manualRetryRequired) return false;
     if (meta.nextRetryAt && dateMs(meta.nextRetryAt) > Date.now()) return false;
     if (meta.failedAt && !meta.nextRetryAt && Date.now() - dateMs(meta.failedAt) < 1000 * 60 * 60 * 24) return false;
     const hasCoreData = Boolean(item.poster) && !isImportedPlaceholder(item.overview);
@@ -3344,7 +3356,7 @@
         officialSite: metadata.officialSite || item.officialSite || null,
         providerStatus: metadata.statusText || item.providerStatus || null,
         seasons: mergeSeriesSeasons(item.seasons || [], metadata.seasons || [], item.id),
-        publicMetadata: { ...previousMeta, provider: metadata.provider, providerLabel: metadata.providerLabel, providerId: metadata.providerId, sourceUrl: metadata.sourceUrl, italianSourceUrl: metadata.italianSourceUrl, englishSourceUrl: metadata.englishSourceUrl, language: metadata.language, resolution, parts, failedAt: null, error: null, errorCode: null, errorCategory: null, attempts: 0, nextRetryAt: coreComplete && castComplete ? null : new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(), updatedAt: now }
+        publicMetadata: { ...previousMeta, provider: metadata.provider, providerLabel: metadata.providerLabel, providerId: metadata.providerId, sourceUrl: metadata.sourceUrl, italianSourceUrl: metadata.italianSourceUrl, englishSourceUrl: metadata.englishSourceUrl, language: metadata.language, resolution, parts, failedAt: null, error: null, errorCode: null, errorCategory: null, attempts: 0, nextRetryAt: coreComplete && castComplete ? null : new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(), manualRetryRequired: false, updatedAt: now }
       }, userFields);
       await dbPut('series', item);
       await saveSharedCatalog('series', item, 'public-metadata');
@@ -3363,7 +3375,7 @@
         cast: resolvedCast,
         wikidataId: metadata.wikidataId || item.wikidataId || null,
         imdbId: item.imdbId || metadata.imdbId || null,
-        publicMetadata: { ...previousMeta, provider: metadata.provider, providerLabel: metadata.providerLabel, providerId: metadata.providerId || metadata.tmdbId || null, sourceUrl: metadata.sourceUrl, italianSourceUrl: metadata.italianSourceUrl, englishSourceUrl: metadata.englishSourceUrl, language: metadata.language, resolution, parts, failedAt: null, error: null, errorCode: null, errorCategory: null, attempts: 0, nextRetryAt: coreComplete && castComplete ? null : new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(), updatedAt: now }
+        publicMetadata: { ...previousMeta, provider: metadata.provider, providerLabel: metadata.providerLabel, providerId: metadata.providerId || metadata.tmdbId || null, sourceUrl: metadata.sourceUrl, italianSourceUrl: metadata.italianSourceUrl, englishSourceUrl: metadata.englishSourceUrl, language: metadata.language, resolution, parts, failedAt: null, error: null, errorCode: null, errorCategory: null, attempts: 0, nextRetryAt: coreComplete && castComplete ? null : new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(), manualRetryRequired: false, updatedAt: now }
       });
       await dbPut('movies', item);
       await saveSharedCatalog('movie', item, 'public-metadata');
@@ -3388,33 +3400,21 @@
     state.metadataRerenderTimer = setTimeout(refresh, delay);
   }
   function scheduleMetadataRecoveryPass() {
-    if (!navigator.onLine || !state.settings.publicMetadataEnabled || !publicMetadataApi()) return;
-    const failedSeries = state.series.filter(item => item.publicMetadata?.failedAt);
-    const failedMovies = state.movies.filter(item => item.publicMetadata?.failedAt);
+    if (!navigator.onLine || !state.settings.publicMetadataEnabled || !publicMetadataApi() || !state.metadataBackgroundStarted || state.metadataRecoveryDone) return;
+    const failedSeries = state.series.filter(item => item.publicMetadata?.failedAt && !item.publicMetadata?.manualRetryRequired);
+    const failedMovies = state.movies.filter(item => item.publicMetadata?.failedAt && !item.publicMetadata?.manualRetryRequired);
     const failed = [...failedSeries.map(item => ({ kind:'series', item })), ...failedMovies.map(item => ({ kind:'movie', item }))];
-    if (!failed.length) return;
+    if (!failed.length) { state.metadataRecoveryDone = true; return; }
     clearTimeout(state.metadataRecoveryTimer);
-    const now = Date.now();
-    const due = failed.filter(({ item }) => !item.publicMetadata?.nextRetryAt || dateMs(item.publicMetadata.nextRetryAt) <= now);
-    if (!due.length) {
-      const nextRetryAt = failed.map(({ item }) => dateMs(item.publicMetadata?.nextRetryAt)).filter(Number.isFinite).sort((a, b) => a - b)[0];
-      state.metadataRecoveryScheduled = true;
-      state.metadataRecoveryTimer = setTimeout(() => {
-        state.metadataRecoveryScheduled = false;
-        scheduleMetadataRecoveryPass();
-      }, Math.max(1000, nextRetryAt - now));
-      return;
-    }
     state.metadataRecoveryScheduled = true;
-    state.metadataRecoveryDone = false;
-    state.metadataBackgroundStarted = true;
-    for (const { kind, item } of due) {
-      // Keep the failure marker until the queued attempt succeeds or fails
-      // again, so the status panel remains deterministic during hand-off.
-      queuePublicMetadata(kind, [item], { force:true, unlimited:true, includeCast:true, silent:true });
+    // Un solo pass finale: se fallisce anche qui, il worker marca il titolo
+    // come manuale e chiude il ciclo senza farlo ripartire sulla navigazione.
+    state.metadataRecoveryDone = true;
+    for (const { kind, item } of failed) {
+      queuePublicMetadata(kind, [item], { force:true, unlimited:true, includeCast:true, silent:true, finalRecovery:true });
     }
     state.metadataRecoveryScheduled = false;
-    showToast('Retry automatico avviato', `${due.length} titoli non riusciti verranno ricontrollati.`, '↻', 4200, { kind:'warning' });
+    showToast('Ultimo tentativo automatico', `${failed.length} titoli non riusciti vengono ricontrollati una sola volta.`, '↻', 4200, { kind:'warning' });
   }
 
   function scheduleNextMetadataBatch() {
@@ -3423,15 +3423,14 @@
       const kind = state.series.includes(item) ? 'series' : 'movie';
       return needsPublicMetadata(item, kind, true);
     });
-    const pendingRetry = [...state.series, ...state.movies].some(item => item.publicMetadata?.failedAt || item.publicMetadata?.error || (item.publicMetadata?.nextRetryAt && dateMs(item.publicMetadata.nextRetryAt) > Date.now()));
-    if (!remaining && !pendingRetry) {
+    const pendingRetry = [...state.series, ...state.movies].some(item => item.publicMetadata?.failedAt || item.publicMetadata?.error);
+    if (!remaining) {
+      if (pendingRetry && !state.metadataRecoveryDone) {
+        scheduleMetadataRecoveryPass();
+        return;
+      }
       completeMetadataCycle();
       state.metadataBackgroundStarted = false;
-      return;
-    }
-    if (!remaining && pendingRetry) {
-      state.metadataBackgroundStarted = false;
-      scheduleMetadataRecoveryPass();
       return;
     }
     state.metadataContinuationTimer = setTimeout(() => {
@@ -3460,8 +3459,9 @@
           const previous = task.item.publicMetadata || {};
           const attempts = Number(previous.attempts || 0) + 1;
           const errorInfo = metadataErrorInfo(error);
-          const nextRetryAt = new Date(now.getTime() + metadataRetryDelay(attempts)).toISOString();
-          task.item.publicMetadata = { ...previous, failedAt: now.toISOString(), error: error.message, errorCode: errorInfo.code, errorCategory: errorInfo.label, attempts, nextRetryAt };
+          const manualRetryRequired = task.finalRecovery || attempts > MAX_METADATA_AUTO_RETRIES;
+          const nextRetryAt = null;
+          task.item.publicMetadata = { ...previous, failedAt: now.toISOString(), error: error.message, errorCode: errorInfo.code, errorCategory: errorInfo.label, attempts, nextRetryAt, manualRetryRequired };
           try { await dbPut(task.kind === 'series' ? 'series' : 'movies', task.item); } catch {}
           try { await saveSharedCatalog(task.kind, task.item, 'public-metadata-error'); } catch {}
           if (!task.silent) showToast('Metadati non trovati', `${task.item.title}: ${error.message}`, '!', 6000, { kind: 'error' });
@@ -3471,7 +3471,6 @@
           state.metadataQueuedIds.delete(`${task.kind}:${task.item.id}`);
           scheduleMetadataHeaderUpdate();
           if (state.metadataRunning === 0 && state.metadataQueue.length === 0) {
-            scheduleMetadataRecoveryPass();
             scheduleNextMetadataBatch();
           }
           pumpMetadataQueue();
@@ -3489,8 +3488,13 @@
       if (!options.force && !needsPublicMetadata(item, kind, options.includeCast)) continue;
       if (!options.force && !options.unlimited && state.metadataAutoBudget <= 0) break;
       if (!options.force && !options.unlimited) state.metadataAutoBudget--;
+      if (state.metadataCycleCompletedAt || !state.metadataCycleStartedAt) {
+        state.metadataRecoveryDone = false;
+        startMetadataCycle();
+      }
+      state.metadataBackgroundStarted = true;
       state.metadataQueuedIds.add(key);
-      state.metadataQueue.push({ kind, item, includeCast: !!options.includeCast, silent: options.silent !== false, force: options.force === true });
+      state.metadataQueue.push({ kind, item, includeCast: !!options.includeCast, silent: options.silent !== false, force: options.force === true, finalRecovery: options.finalRecovery === true });
     }
     scheduleMetadataHeaderUpdate();
     idle(pumpMetadataQueue);
@@ -3499,7 +3503,7 @@
     const retryRows = rows.filter(row => row?.item && row?.kind);
     if (!retryRows.length) return 0;
     for (const row of retryRows) {
-      row.item.publicMetadata = { ...(row.item.publicMetadata || {}), failedAt:null, error:null, errorCode:null, errorCategory:null, nextRetryAt:null, parts:{ ...(row.item.publicMetadata?.parts || {}), coreComplete:false } };
+      row.item.publicMetadata = { ...(row.item.publicMetadata || {}), failedAt:null, error:null, errorCode:null, errorCategory:null, nextRetryAt:null, manualRetryRequired:false, parts:{ ...(row.item.publicMetadata?.parts || {}), coreComplete:false } };
       await dbPut(row.kind === 'series' ? 'series' : 'movies', row.item);
     }
     clearTimeout(state.metadataRecoveryTimer);
@@ -3512,8 +3516,7 @@
     return retryRows.length;
   }
   function scheduleBackgroundMetadataSync(force = false) {
-    if ((!force && state.metadataBackgroundStarted) || !navigator.onLine || !state.settings.publicMetadataEnabled || libraryIsEmpty()) return;
-    if (!force && [...state.series, ...state.movies].some(item => item.publicMetadata?.failedAt || item.publicMetadata?.error)) scheduleMetadataRecoveryPass();
+    if ((!force && (state.metadataBackgroundStarted || state.metadataCycleCompletedAt)) || !navigator.onLine || !state.settings.publicMetadataEnabled || libraryIsEmpty()) return;
     // Forced work bypasses the retry gate in queuePublicMetadata. Persisted
     // failures are cleared only by the worker after a successful attempt.
     const hasRemainingMetadata = [...state.series, ...state.movies].some(item => {
@@ -3534,7 +3537,7 @@
       }
       for (const target of targets) queuePublicMetadata(target.kind, [target.item], { silent:true, includeCast:true });
       scheduleMetadataHeaderUpdate();
-      if (!state.metadataQueue.length && state.metadataRunning === 0) scheduleMetadataRecoveryPass();
+      if (!state.metadataQueue.length && state.metadataRunning === 0) scheduleNextMetadataBatch();
     });
   }
   function publicMetadataSourceHtml(item) {
@@ -3546,7 +3549,7 @@
   async function manualPublicMetadata(kind, item, { announce = true } = {}) {
     if (!navigator.onLine) { showToast('Connessione assente', 'I metadati pubblici richiedono internet.', '!', 5000, { kind: 'error' }); return; }
     if (announce) showToast('Aggiornamento avviato', item.title, '↻', 2500);
-    item.publicMetadata = { ...(item.publicMetadata || {}), nextRetryAt: null };
+    item.publicMetadata = { ...(item.publicMetadata || {}), failedAt:null, error:null, nextRetryAt:null, manualRetryRequired:false };
     await dbPut(kind === 'series' ? 'series' : 'movies', item);
     queuePublicMetadata(kind, [item], { force: true, includeCast: true, silent: false });
   }
@@ -4346,7 +4349,7 @@
       await dbPut('imports',{id:`${profileId}|gdpr-${Date.now()}`,profileId,sourceName:plan.sourceFileName||'TV Time GDPR ZIP',date:new Date().toISOString(),report,counts:plan.counts});
       state.settings.demoSeeded=false;state.settings.seriesFilter='unwatched';state.settings.movieFilter='watched';state.settings.seriesSort='latestEpisode';state.settings.movieSort='recent';saveSettings();
       state.seriesFilter='unwatched';state.movieFilter='watched';state.seriesSort='latestEpisode';state.movieSort='recent';state.metadataAutoBudget=36;
-      state.gdprPreview=null;await reloadData();state.metadataBackgroundStarted=false;idle(scheduleBackgroundMetadataSync);setOperationProgress(100,'Importazione completata.','La libreria è pronta.');clearGdprResume(plan);await new Promise(resolve=>setTimeout(resolve,250));
+      state.gdprPreview=null;await reloadData();state.metadataBackgroundStarted=false;state.metadataRecoveryDone=false;idle(()=>scheduleBackgroundMetadataSync(true));setOperationProgress(100,'Importazione completata.','La libreria è pronta.');clearGdprResume(plan);await new Promise(resolve=>setTimeout(resolve,250));
       if(cloudWritesSuspended){window.WatchverseCloudSync.resumeWrites?.();cloudWritesSuspended=false;await syncCloudProfile(currentProfile());}
       queuePublicMetadata('series',sortSeriesItems(state.series,'latestEpisode').slice(0,8),{silent:true});queuePublicMetadata('movie',sortMovieItems(state.movies.filter(m=>m.watched),'recent').slice(0,8),{silent:true});
       showImportReport(report);showToast('Importazione completata',`${series.length.toLocaleString('it-IT')} serie, ${movies.length.toLocaleString('it-IT')} film e ${progress.length.toLocaleString('it-IT')} episodi salvati.`,'✓',7000,{kind:'success'});
@@ -4371,7 +4374,7 @@
     const series=data.series.map(x=>{const base=String(x.id||uid('series')).split('|').pop();const id=profileScoped(base);idMap.set(x.id,id);return{...x,id,profileId:state.profileId,seasons:(x.seasons||[]).map(season=>({...season,episodes:(season.episodes||[]).map(ep=>({...ep,id:`${id}:s${season.number}:e${ep.episode}`}))}))};});
     const movies=data.movies.map(x=>({...x,id:profileScoped(String(x.id||uid('movie')).split('|').pop()),profileId:state.profileId}));
     const progress=(data.progress||[]).map(x=>{const seriesId=idMap.get(x.seriesId)||profileScoped(String(x.seriesId||'series').split('|').pop());return{...x,profileId:state.profileId,seriesId,id:`${state.profileId}|${String(seriesId).split('|').pop()}:s${x.season}:e${x.episode}`};});
-    await dbBulkPutBatched('series',series);await dbBulkPutBatched('movies',movies);await dbBulkPutBatched('progress',progress);await reloadData();state.metadataBackgroundStarted=false;idle(scheduleBackgroundMetadataSync);showToast('Backup ripristinato',`${series.length} serie e ${movies.length} film.`);location.hash='#/home';
+    await dbBulkPutBatched('series',series);await dbBulkPutBatched('movies',movies);await dbBulkPutBatched('progress',progress);await reloadData();state.metadataBackgroundStarted=false;state.metadataRecoveryDone=false;idle(()=>scheduleBackgroundMetadataSync(true));showToast('Backup ripristinato',`${series.length} serie e ${movies.length} film.`);location.hash='#/home';
   }
 
 
