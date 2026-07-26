@@ -6,6 +6,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const ROOT = process.cwd();
+const RETRY_MODE = process.env.WATCHVERSE_RETRY_MODE || 'massive';
 const CONFIG = `window.WATCHVERSE_CONFIG = Object.freeze({ appName:'Watchverse', accountUsername:'', recoveryEmail:'', supabaseUrl:'', supabaseAnonKey:'', allowCloudSignup:false, tmdbProxyUrl:'', publicSourcesProxyUrl:'', defaultSources:Object.freeze({ streamingLookup:Object.freeze({enabled:false}), tvSchedule:Object.freeze({enabled:false}), cinema:Object.freeze({enabled:false}) }) });`;
 
 function startServer() {
@@ -48,9 +49,12 @@ async function seed(page) {
   const {server,url}=await startServer();
   try {
     const browser=await openBrowser(chromium); const page=await browser.newPage({viewport:{width:1280,height:900}});
+    const metadataScript=fs.readFileSync(path.join(ROOT,'public-metadata.js'),'utf8');
+    await page.route(`${url}public-metadata.js`,route=>route.fulfill({contentType:'text/javascript; charset=utf-8',body:`${metadataScript}\nwindow.WatchversePublicMetadata.lookupMovie=async()=>{throw new Error('Errore simulato della fonte');};`}));
     await page.goto(url,{waitUntil:'domcontentloaded'}); await seed(page);
     await page.locator('#metadataStatusButton').click(); await page.waitForSelector('#openMetadataIssues'); await page.locator('#openMetadataIssues').click();
-    await page.waitForSelector('#retryAllMetadataIssues'); await page.locator('#retryAllMetadataIssues').click();
+    if (RETRY_MODE === 'single') { await page.waitForSelector('[data-metadata-retry]'); await page.locator('[data-metadata-retry]').first().click(); }
+    else { await page.waitForSelector('#retryAllMetadataIssues'); await page.locator('#retryAllMetadataIssues').click(); }
     assert((await page.locator('.toast').count()) > 0, 'Il retry deve mostrare un feedback visibile.');
     await page.waitForFunction(async()=>{const db=await new Promise((resolve,reject)=>{const request=indexedDB.open('watchverse-db',4);request.onsuccess=()=>resolve(request.result);request.onerror=reject;});const row=await new Promise((resolve,reject)=>{const tx=db.transaction('movies','readonly');const request=tx.objectStore('movies').get('profile-daniela|retry-film');request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);});db.close();return row?.publicMetadata?.parts?.coreComplete===true&&row.publicMetadata.error==null&&Number(row.publicMetadata.attempts||0)===0;},{}, {timeout:30000});
     await browser.close(); console.log('✓ E2E retry metadati: retry massivo in coda, ciclo preservato e copertura aggiornata');
