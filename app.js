@@ -3228,7 +3228,10 @@
     if (!state.settings.publicMetadataEnabled || !publicMetadataApi()) return false;
     const meta = item.publicMetadata || {}; const parts = metadataParts(item);
     if (meta.manualRetryRequired) return false;
-    if (meta.nextRetryAt && dateMs(meta.nextRetryAt) > Date.now()) return false;
+    // I retry differiti erano usati nelle versioni precedenti. Per un errore
+    // persistito non devono più bloccare il ciclo: il recupero finale decide
+    // subito se riprovare o richiedere l'azione manuale.
+    if (meta.nextRetryAt && !meta.failedAt && !meta.error && dateMs(meta.nextRetryAt) > Date.now()) return false;
     if (meta.failedAt && !meta.nextRetryAt && Date.now() - dateMs(meta.failedAt) < 1000 * 60 * 60 * 24) return false;
     const hasCoreData = Boolean(item.poster) && !isImportedPlaceholder(item.overview);
     const hasCastData = Array.isArray(item.cast) && item.cast.length > 0;
