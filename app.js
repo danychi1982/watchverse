@@ -160,6 +160,7 @@
     state.metadataCycleCompletedAt = new Date().toISOString();
     state.metadataCycleDurationMs = Math.max(0, Date.parse(state.metadataCycleCompletedAt) - Date.parse(state.metadataCycleStartedAt));
     saveMetadataCycle();
+    if (state.defaultSourceSyncDeferred) idle(() => syncDefaultPublicSources(false));
   }
   const PROFILE_SETTINGS_TABS = Object.freeze([
     { id:'identity', label:'Identità', icon:'◉' },
@@ -1718,6 +1719,14 @@
   }
   async function syncDefaultPublicSources(force = false) {
     if (state.defaultSourceSyncRunning || !state.profileSelected) return state.defaultSourceStatus;
+    const catalogStatus = metadataGlobalStatus();
+    if (catalogStatus.active || catalogStatus.remainingWork) {
+      // Catalogo e metadati sono la base per le fonti derivate: rimandiamo i
+      // palinsesti generali finché non è terminato il ciclo corrente.
+      state.defaultSourceSyncDeferred = true;
+      return state.defaultSourceStatus;
+    }
+    state.defaultSourceSyncDeferred = false;
     if (!state.defaultSourceStatus) loadDefaultSourceStatus();
     const config = defaultSourceConfig();
     const now = new Date().toISOString();
@@ -3543,7 +3552,9 @@
         if (seriesTargets[index]) targets.push({ kind:'series', item:seriesTargets[index] });
         if (movieTargets[index] && targets.length < max) targets.push({ kind:'movie', item:movieTargets[index] });
       }
-      for (const target of targets) queuePublicMetadata(target.kind, [target.item], { silent:true, includeCast:true });
+      // Questo è il worker di ciclo completo: non deve dipendere dalla scelta
+      // che limita l'arricchimento visibile nelle singole schermate.
+      for (const target of targets) queuePublicMetadata(target.kind, [target.item], { silent:true, includeCast:true, unlimited:true });
       scheduleMetadataHeaderUpdate();
       if (!state.metadataQueue.length && state.metadataRunning === 0) scheduleNextMetadataBatch();
     });

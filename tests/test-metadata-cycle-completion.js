@@ -13,6 +13,7 @@ assert(app.includes('task.finalRecovery || attempts > MAX_METADATA_AUTO_RETRIES'
 assert(app.includes('state.metadataRecoveryDone = true'), 'Il recupero finale puÃ² ripartire indefinitamente');
 assert(app.includes('meta.nextRetryAt && !meta.failedAt && !meta.error'), 'I retry differiti legacy bloccano ancora gli errori da recuperare');
 assert(app.includes('const hasLegacyRetry = [...state.series, ...state.movies].some'), 'Un retry legacy non riapre il ciclo dopo il refresh');
+assert(app.includes('includeCast:true, unlimited:true'), 'Il worker automatico resta bloccato dall\'arricchimento visibile');
 assert(app.includes('Retry automatici esauriti'), 'Il pannello non comunica il passaggio al retry manuale');
 assert(app.includes('function ensureMetadataStatusButtonMarkup(button)'), 'Manca il ripristino del markup dell\'icona metadati');
 assert(app.includes("button.id === 'metadataStatusButton'"), 'Lo stato busy può ancora sovrascrivere l\'icona metadati');
