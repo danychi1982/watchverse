@@ -17,6 +17,8 @@ Questa cartella conserva il contesto necessario per riprendere il progetto in un
 - Le attivita operative restano nel backlog; una voce non va duplicata in questo documento.
 - Ogni avanzamento significativo su decisioni, architettura o backlog aggiorna nella stessa sessione anche questa knowledge base e/o il registro delle decisioni, quando necessario.
 - I documenti devono distinguere fatti verificati, decisioni, ipotesi e attivita ancora da testare.
+- Dati personali, credenziali, token, configurazioni private, screenshot ed evidenze locali sensibili devono restare solo nell'ambiente locale: non vanno versionati e devono essere aggiunti al `.gitignore` prima di essere creati o importati nel repository.
+- Se un elemento sensibile e gia entrato nella storia Git, va rimosso anche dalla cronologia pubblicata, non solo dal branch corrente; dopo la bonifica verificare i commit riscritti e il repository remoto.
 - Ogni nuova chat dovrebbe iniziare leggendo questo indice, il contesto, il registro decisioni e il backlog.
 
 ## Prompt di ripresa
