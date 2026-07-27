@@ -3007,11 +3007,22 @@
     state.movies.forEach(item => add('movie', item));
     return { sharedIds, titleKeys };
   }
+  function profileLibraryCandidates(seed = null, kind = '', limit = 12) {
+    const collection = [...state.series.map(item => ({ item, kind:'series' })), ...state.movies.map(item => ({ item, kind:'movie' }))];
+    return collection.filter(row => row.item.id !== seed?.id).map(row => ({ ...row, source: 'library' }))
+      .sort((a, b) => {
+        const aPriority = (a.item.favorite ? 4 : 0) + (a.kind === 'series' ? (seriesNeedsWatching(a.item) ? 3 : 0) : (a.item.watched ? 0 : 3)) + (Number(a.item.rating || 0) >= 8 ? 2 : 0);
+        const bPriority = (b.item.favorite ? 4 : 0) + (b.kind === 'series' ? (seriesNeedsWatching(b.item) ? 3 : 0) : (b.item.watched ? 0 : 3)) + (Number(b.item.rating || 0) >= 8 ? 2 : 0);
+        return bPriority - aPriority || String(a.item.title).localeCompare(String(b.item.title), 'it');
+      }).slice(0, limit);
+  }
   function similarSuggestions(item, kind, limit = 8) {
     const exclusions = buildLibraryExclusionIndex();
-    const pool = state.catalogEntries
+    const localPool = profileLibraryCandidates(item, kind, limit * 2);
+    const catalogPool = state.catalogEntries
       .map(entry => ({ item: { ...(entry.data || {}), id: entry.id, sharedCatalogId: entry.id }, kind: entry.kind }))
       .filter(row => row.item.title && !isCandidateInLibrary(row, exclusions));
+    const pool = [...localPool, ...catalogPool];
     const ranked = pool.map(row=>({...row,score:recommendationScore(item,row.item,kind,row.kind)})).sort((a,b)=>b.score-a.score||String(a.item.title).localeCompare(String(b.item.title),'it'));
     const relevant = ranked.filter(row => row.score > 0);
     return (relevant.length >= Math.min(4, limit) ? relevant : ranked).slice(0, limit);
@@ -3052,7 +3063,14 @@
       return {...row,score};
     }).sort((a,b)=>b.score-a.score||String(a.item.title).localeCompare(String(b.item.title),'it'));
     const relevant = ranked.filter(row => row.score > 0);
-    return (relevant.length >= Math.min(4, limit) ? relevant : ranked).slice(0, limit);
+    const sourceRows = (relevant.length >= Math.min(4, limit) ? relevant : ranked).slice(0, limit);
+    if (sourceRows.length >= Math.min(4, limit)) return sourceRows;
+    const localFallback = [...state.series.map(item => ({ item, kind: 'series', source: 'library' })), ...state.movies.map(item => ({ item, kind: 'movie', source: 'library' }))]
+      .sort((a, b) => {
+        const priority = row => (row.item.favorite ? 4 : 0) + (row.kind === 'series' ? (seriesNeedsWatching(row.item) ? 3 : 0) : (row.item.watched ? 0 : 3)) + (Number(row.item.rating || 0) >= 8 ? 2 : 0);
+        return priority(b) - priority(a) || String(a.item.title).localeCompare(String(b.item.title), 'it');
+      });
+    return [...sourceRows, ...localFallback].slice(0, limit);
   }
   function suggestionReason(seed, candidate) {
     const shared=(candidate.genres||[]).filter(g=>(seed.genres||[]).some(x=>normalizeSearch(x)===normalizeSearch(g))).slice(0,2);
@@ -3060,7 +3078,7 @@
   }
   function suggestionCardHtml(row, seed = null) {
     const item=row.item, href=row.kind==='series'?`#/series/${encodeURIComponent(item.id)}`:`#/movie/${encodeURIComponent(item.id)}`;
-    const reason=seed?suggestionReason(seed,item):(item.genres||[]).slice(0,2).join(' · ')||'Suggerito dal tuo profilo';
+    const reason=item.profileId ? 'Già nella tua libreria' : (seed?suggestionReason(seed,item):(item.genres||[]).slice(0,2).join(' · ')||'Suggerito dal tuo profilo');
     const action = item.sharedCatalogId ? `<button class="suggestion-card" type="button" data-add-suggestion="${esc(item.sharedCatalogId)}" aria-label="Aggiungi ${esc(item.title)}"><span class="suggestion-poster" style="background:${item.posterGradient||gradient(item.title)}">${item.poster?`<img class="poster-img" src="${esc(item.poster)}" alt="" loading="lazy" decoding="async">`:esc(item.title.slice(0,2).toUpperCase())}</span><span class="suggestion-copy"><strong>${esc(item.title)}</strong><small>${esc([item.year,row.kind==='series'?'Serie':'Film'].filter(Boolean).join(' · '))}</small><em>${esc(reason)}</em><b>Aggiungi</b></span></button>` : `<a class="suggestion-card" href="${href}" aria-label="Apri ${esc(item.title)}"><span class="suggestion-poster" style="background:${item.posterGradient||gradient(item.title)}">${item.poster?`<img class="poster-img" src="${esc(item.poster)}" alt="" loading="lazy" decoding="async">`:esc(item.title.slice(0,2).toUpperCase())}</span><span class="suggestion-copy"><strong>${esc(item.title)}</strong><small>${esc([item.year,row.kind==='series'?'Serie':'Film'].filter(Boolean).join(' · '))}</small><em>${esc(reason)}</em></span></a>`;
     return action;
   }
@@ -3084,6 +3102,22 @@
       shell.replaceWith(wrapper.firstElementChild);
       bindHorizontalRails($('#main'));
       bindRecommendationActions(suggestions);
+      void (async () => {
+        const related = await fetchRelatedFromSources(item, kind, 8);
+        if (!related.length || requestId !== state.navigationRequestId) return;
+        const cached = await cacheRelatedCatalogRows(related);
+        if (!cached.length || requestId !== state.navigationRequestId) return;
+        const current = parseRoute();
+        if (current.id !== item.id || (kind === 'series' && current.page !== 'series') || (kind === 'movie' && current.page !== 'movie')) return;
+        const shellNow = $$('[data-similar-shell]').find(element => element.dataset.similarKind === kind && element.dataset.similarId === item.id);
+        const currentSection = document.getElementById(`similar-rail-${kind}-${slug(item.id || item.title)}`)?.closest('.similar-section') || $('#main .similar-section');
+        const nextSuggestions = similarSuggestions(item, kind, 12);
+        const wrapperNow = document.createElement('div');
+        wrapperNow.innerHTML = similarSectionHtml(item, kind, nextSuggestions);
+        (shellNow || currentSection)?.replaceWith(wrapperNow.firstElementChild);
+        bindHorizontalRails($('#main'));
+        bindRecommendationActions(nextSuggestions);
+      })();
     });
   }
 
@@ -3639,6 +3673,70 @@
   }
   function tmdbPoster(path) { return path ? `${TMDB_IMG}${path}` : null; }
   function tmdbBackdrop(path) { return path ? `${TMDB_BACKDROP}${path}` : null; }
+  async function fetchRelatedFromSources(item, kind, limit = 8) {
+    const rows = [];
+    const tmdbConfigured = Boolean(state.settings.tmdbToken?.trim() || (window.WATCHVERSE_CONFIG || {}).tmdbProxyUrl);
+    if (tmdbConfigured && item.tmdbId) {
+      try {
+        const tmdbKind = kind === 'series' ? 'tv' : 'movie';
+        const data = await tmdbFetch(`/${tmdbKind}/${item.tmdbId}/similar`, { language:'it-IT', page:1 });
+        rows.push(...(data.results || []).slice(0, limit).map(candidate => ({
+          kind, source:'tmdb', item: {
+            mediaType: kind === 'series' ? 'tv' : 'movie', tmdbId: candidate.id,
+            title: candidate.title || candidate.name, originalTitle: candidate.original_title || candidate.original_name || null,
+            year: String(candidate.release_date || candidate.first_air_date || '').slice(0,4) || null,
+            overview: candidate.overview || '', poster: tmdbPoster(candidate.poster_path),
+            posterGradient: gradient(candidate.title || candidate.name), genres: [], cast: [],
+            publicMetadata: { provider:'tmdb', providerId:candidate.id, parts:{ coreComplete:Boolean(candidate.poster_path && candidate.overview) } }
+          }
+        })));
+      } catch { /* Il fallback locale resta disponibile. */ }
+    }
+    if (kind === 'series') {
+      const provider = String(item.publicMetadata?.provider || '').toLowerCase();
+      const providerId = item.publicMetadata?.providerId || item.tvmazeId;
+      if (provider.includes('tvmaze') && providerId) {
+        try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 12000);
+          const response = await fetch(`https://api.tvmaze.com/shows/${encodeURIComponent(providerId)}/recommendations`, { signal: controller.signal, headers:{Accept:'application/json'} });
+          clearTimeout(timeout);
+          if (response.ok) {
+            const data = await response.json();
+            rows.push(...(data || []).slice(0, limit).map(entry => {
+              const candidate = entry.show || entry;
+              return { kind, source:'tvmaze', item: {
+                mediaType:'tv', tvdbId:candidate.externals?.thetvdb || null, title:candidate.name,
+                originalTitle:candidate.name, year:String(candidate.premiered || '').slice(0,4) || null, overview:String(candidate.summary || '').replace(/<[^>]*>/g, ''),
+                poster:candidate.image?.original || candidate.image?.medium || null, posterGradient:gradient(candidate.name),
+                genres:candidate.genres || [], cast:[], network:candidate.network?.name || candidate.webChannel?.name || null,
+                publicMetadata:{ provider:'tvmaze', providerId:candidate.id, parts:{ coreComplete:Boolean(candidate.image && candidate.summary) } }
+              }};
+            }));
+          }
+          clearTimeout(timeout);
+        } catch { /* Il fallback locale resta disponibile. */ }
+      }
+    }
+    const exclusions = buildLibraryExclusionIndex();
+    return rows.filter(row => row.item.title && !isCandidateInLibrary({ item:{...row.item, sharedCatalogId:null}, kind:row.kind }, exclusions));
+  }
+  async function cacheRelatedCatalogRows(rows = []) {
+    const cachedRows = [];
+    for (const row of rows) {
+      const type = catalogKind(row.kind); const identityKeys = catalogIdentityKeys(type, row.item);
+      if (!identityKeys.length) continue;
+      const existing = findSharedCatalogEntry(type, row.item);
+      if (existing) { cachedRows.push({ ...row, item:{ ...row.item, sharedCatalogId:existing.id } }); continue; }
+      const now = new Date().toISOString();
+      const entry = { id:`catalog|${identityKeys[0]}`, schemaVersion:SHARED_CATALOG_SCHEMA, kind:type, identityKeys,
+        data:extractSharedCatalogData(type, row.item), source:row.source || 'recommendation', createdAt:now, updatedAt:now };
+      await dbPut('catalog', entry);
+      const next = state.catalogEntries.filter(existingEntry => existingEntry.id !== entry.id); next.push(entry); rebuildCatalogIndex(next);
+      cachedRows.push({ ...row, item:{ ...row.item, sharedCatalogId:entry.id } });
+    }
+    return cachedRows;
+  }
 
   async function searchTMDB(query) {
     if (!query.trim()) return [];
