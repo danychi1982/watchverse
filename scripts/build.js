@@ -17,8 +17,24 @@ const entries = [
   "public-metadata.js",
   "accessibility-report.js",
   "styles.css",
-  "assets",
-  "docs"
+  "assets/fonts/UnifrakturCook-Bold.ttf",
+  "assets/vendor/pako_inflate.min.js",
+  "assets/brand/watchverse-dragon-w.svg",
+  "assets/brand/watchverse-dragon-wordmark.svg",
+  "assets/brand/watchverse-bat-w.svg",
+  "assets/icons/icon-192.png",
+  "assets/icons/icon-512.png",
+  "assets/themes/buffy-cemetery.svg",
+  "assets/themes/buffy-gentlemen.svg",
+  "assets/themes/last-of-us-infected-wall.svg",
+  "assets/themes/last-of-us-proposal-3-wallpaper.jpg",
+  "assets/themes/the-last-of-us-official-logo.png",
+  "assets/themes/tlou-backpack.svg",
+  "assets/themes/tlou-cordyceps.svg",
+  "assets/themes/tlou-firefly.svg",
+  "assets/themes/tlou-flashlight.svg",
+  "assets/themes/tlou-loader-cordyceps.svg",
+  "assets/themes/tlou-tattoo.svg"
 ];
 
 function sleep(ms) {

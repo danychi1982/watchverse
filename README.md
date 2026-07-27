@@ -22,34 +22,12 @@ Per generare l’artefatto pubblicabile:
 npm run build
 ```
 
-## Documentazione
-
-La documentazione è organizzata in `docs/` per contesto, procedure, analisi, specifiche e guide.
-
-- [Indice documentazione](docs/README.md)
-- [Documentazione di progetto](docs/specifications/product/DOCUMENTAZIONE_PROGETTO.md)
-- [Design system](docs/specifications/design/DESIGN_SYSTEM.md)
-- [Architettura dati](docs/specifications/architecture/ARCHITETTURA_DATI.md)
-- [Snapshot backlog storico](docs/archive/backlog/BACKLOG_CLOUD_2026-07.md)
-- [Knowledge base di progetto](docs/knowledge/README.md)
-- [Dichiarazione di accessibilità](docs/specifications/design/DICHIARAZIONE_ACCESSIBILITA.md)
-- [Proposte logo](docs/specifications/design/LOGHI_PROPOSTE.md)
-- [Preview visuale del design system](docs/design-system-preview.html)
-- [Manuale operativo](docs/guides/manuale_watchverse.html)
-- [Guida introduttiva](docs/guides/README_PRIMA_DI_INIZIARE.txt)
-- [Changelog](docs/CHANGELOG.md)
-- [Report WCAG completo](docs/reference/REPORT_WCAG_2.2.json)
-- [Attribuzioni e licenze](docs/legal/ATTRIBUZIONI.txt)
-
 ## Struttura del codice
 
 I file runtime frontend (`app.js`, `auth.js`, `cloud-sync.js`, `config.js`, `gdpr-import.js`, `public-metadata.js`, `accessibility-report.js` e `styles.css`) restano nella root perché `index.html` li carica direttamente e la build statica li pubblica senza bundler. In questo progetto è una scelta deliberata di semplicità, non una dimenticanza: introdurre una cartella `src/` richiederebbe un bundler o una fase di riscrittura dei percorsi senza un beneficio attuale.
 
-- `scripts/`: build, server locale e orchestrazione test.
-- `tests/`: test unitari, statici ed end-to-end.
-- `assets/`: asset grafici e vendor pubblici.
-- `supabase/`: schema e funzioni backend.
-- `docs/`: guide, reference, specifiche, preview e materiali legali.
+- `scripts/`, `tests/`, `supabase/` e `docs/` contengono materiali di sviluppo e documentazione locale; non vengono inclusi nell'artefatto GitHub Pages.
+- `assets/`: asset grafici e vendor necessari al runtime, selezionati dalla build.
 
 ## Contribuire
 
