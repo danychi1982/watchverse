@@ -2940,7 +2940,7 @@
       state.metadataAutoBudget += 20;
       const targets = visible.filter(item => needsPublicMetadata(item, 'series', true)).slice(0, 12);
       if (!targets.length) showToast('Metadati già aggiornati', 'I titoli visibili hanno già una scheda recente.', '✓');
-      else { targets.forEach(item => { item.publicMetadata = { ...(item.publicMetadata || {}), failedAt: null, parts: { ...(item.publicMetadata?.parts || {}), coreComplete: false, castComplete: false, episodesAt: null } }; }); queuePublicMetadata('series', targets, { force:true, includeCast:true, silent:false }); }
+      else { targets.forEach(item => { item.publicMetadata = { ...(item.publicMetadata || {}), failedAt: null, parts: { ...(item.publicMetadata?.parts || {}), coreComplete: false, episodesAt: null } }; }); queuePublicMetadata('series', targets, { force:true, includeCast:false, silent:false }); }
     });
     bindCommonMediaActions($('#main'));
   }
@@ -2973,7 +2973,7 @@
       state.metadataAutoBudget += 20;
       const targets=visible.filter(item=>needsPublicMetadata(item,'movie',true)).slice(0,10);
       if(!targets.length)showToast('Metadati già aggiornati','I titoli visibili hanno già una scheda recente.','✓');
-      else{targets.forEach(item=>{item.publicMetadata={...(item.publicMetadata||{}),failedAt:null};});queuePublicMetadata('movie',targets,{force:true,includeCast:true,silent:false});}
+      else{targets.forEach(item=>{item.publicMetadata={...(item.publicMetadata||{}),failedAt:null};});queuePublicMetadata('movie',targets,{force:true,includeCast:false,silent:false});}
     });
     bindCommonMediaActions($('#main'));
   }
@@ -3234,6 +3234,14 @@
   // dei falliti. Dopo quel recupero l'eventuale errore richiede un'azione
   // esplicita: la navigazione non deve riavviare richieste alla fonte.
   const MAX_METADATA_AUTO_RETRIES = 4;
+  const METADATA_TASK_TIMEOUT_MS = 45000;
+  function withMetadataTimeout(promise, timeoutMs = METADATA_TASK_TIMEOUT_MS) {
+    let timer;
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error('Timeout durante l\'aggiornamento dei metadati')), timeoutMs);
+    });
+    return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+  }
   function needsPublicMetadata(item, kind, includeCast = false) {
     if (!state.settings.publicMetadataEnabled || !publicMetadataApi()) return false;
     const meta = item.publicMetadata || {}; const parts = metadataParts(item);
@@ -3447,7 +3455,7 @@
     state.metadataBackgroundStarted = true;
     const remaining = [...state.series, ...state.movies].some(item => {
       const kind = state.series.includes(item) ? 'series' : 'movie';
-      return needsPublicMetadata(item, kind, true);
+      return needsPublicMetadata(item, kind, false);
     });
     const pendingRetry = [...state.series, ...state.movies].some(item => item.publicMetadata?.failedAt || item.publicMetadata?.error);
     if (!remaining) {
@@ -3473,7 +3481,7 @@
       const task = state.metadataQueue.shift();
       state.metadataRunning++;
       scheduleMetadataHeaderUpdate();
-      enrichWithPublicMetadata(task.kind, task.item, { includeCast: task.includeCast, force: task.force })
+      withMetadataTimeout(enrichWithPublicMetadata(task.kind, task.item, { includeCast: task.includeCast, force: task.force }))
         .then(() => {
           state.metadataCompletedThisSession++;
           if (!task.silent) showToast('Metadati aggiornati', task.item.title, '✓', 2600);
@@ -3551,13 +3559,13 @@
     // failures are cleared only by the worker after a successful attempt.
     const hasRemainingMetadata = [...state.series, ...state.movies].some(item => {
       const kind = state.series.includes(item) ? 'series' : 'movie';
-      return needsPublicMetadata(item, kind, true);
+      return needsPublicMetadata(item, kind, false);
     });
     if (hasRemainingMetadata && (!state.metadataBackgroundStarted && (!state.metadataCycleStartedAt || state.metadataCycleCompletedAt))) startMetadataCycle();
     state.metadataBackgroundStarted = true;
     idle(() => {
-      const seriesTargets = sortSeriesItems(state.series, 'recent').filter(item => needsPublicMetadata(item, 'series', true));
-      const movieTargets = sortMovieItems(state.movies, 'recent').filter(item => needsPublicMetadata(item, 'movie', true));
+      const seriesTargets = sortSeriesItems(state.series, 'recent').filter(item => needsPublicMetadata(item, 'series', false));
+      const movieTargets = sortMovieItems(state.movies, 'recent').filter(item => needsPublicMetadata(item, 'movie', false)).slice(0, 60);
       // Prima i titoli usati più di recente; poi il resto. Core, cast ed episodi vengono acquisiti insieme e salvati una sola volta.
       const targets = [];
       const max = Math.max(1, Number(state.metadataAutoBudget || 36));
@@ -3567,7 +3575,7 @@
       }
       // Questo è il worker di ciclo completo: non deve dipendere dalla scelta
       // che limita l'arricchimento visibile nelle singole schermate.
-      for (const target of targets) queuePublicMetadata(target.kind, [target.item], { silent:true, includeCast:true, unlimited:true });
+      for (const target of targets) queuePublicMetadata(target.kind, [target.item], { silent:true, includeCast:false, unlimited:true });
       scheduleMetadataHeaderUpdate();
       if (!state.metadataQueue.length && state.metadataRunning === 0) scheduleNextMetadataBatch();
     });

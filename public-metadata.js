@@ -119,21 +119,28 @@
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, value);
     });
-    let response;
-    if (config.tmdbProxyUrl) {
-      const session = root.WatchverseAuth?.restoreSession ? await root.WatchverseAuth.restoreSession() : null;
-      response = await fetch(config.tmdbProxyUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}) },
-        body: JSON.stringify({ path, params })
-      });
-    } else {
-      const token = root.WatchverseState?.settings?.tmdbToken || '';
-      if (!token) throw new Error('TMDB non configurato');
-      response = await fetch(url, { headers: { Authorization: `Bearer ${token}`, accept: 'application/json' } });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 16000);
+    try {
+      let response;
+      if (config.tmdbProxyUrl) {
+        const session = root.WatchverseAuth?.restoreSession ? await root.WatchverseAuth.restoreSession() : null;
+        response = await fetch(config.tmdbProxyUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}) },
+          body: JSON.stringify({ path, params }),
+          signal: controller.signal
+        });
+      } else {
+        const token = root.WatchverseState?.settings?.tmdbToken || '';
+        if (!token) throw new Error('TMDB non configurato');
+        response = await fetch(url, { headers: { Authorization: `Bearer ${token}`, accept: 'application/json' }, signal: controller.signal });
+      }
+      if (!response.ok) throw new Error(`Fonte TMDB non disponibile (${response.status})`);
+      return response.json();
+    } finally {
+      clearTimeout(timeout);
     }
-    if (!response.ok) throw new Error(`Fonte TMDB non disponibile (${response.status})`);
-    return response.json();
   }
 
   function tmdbImage(path, base = TMDB_IMAGE) { return path ? `${base}${path}` : null; }
