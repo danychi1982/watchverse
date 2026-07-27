@@ -93,9 +93,15 @@
     const account = readAccount();
     if (!account) throw new Error('Account non ancora configurato.');
     const id = String(identifier || '').trim().toLowerCase();
-    if (id !== account.username && id !== account.email) throw new Error('Nome utente o password non corretti.');
+    const isCloudEmail = cloudConfigured() && id.includes('@');
+    if (id !== account.username && id !== account.email && !isCloudEmail) throw new Error('Nome utente o password non corretti.');
     if (cloudConfigured()) {
-      const data = await cloudPasswordGrant(account.email, password);
+      // In the public build the account email is intentionally not persisted in config.js.
+      // Allow the user to authenticate with the email they enter, while retaining the
+      // configured username alias for local/private overrides.
+      const cloudEmail = id.includes('@') ? id : account.email;
+      if (!cloudEmail) throw new Error('Per l’accesso cloud inserisci l’indirizzo email dell’account.');
+      const data = await cloudPasswordGrant(cloudEmail, password);
       storeSession({ mode: 'cloud', ...data, createdAt: Date.now(), remember }, remember);
       return account;
     }

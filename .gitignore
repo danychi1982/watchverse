@@ -8,6 +8,11 @@ coverage/
 watchverse_offline.html
 manuale_watchverse_singolo_file.html
 
+# Personal screenshots and local evidence
+assets/screens_watchverse/
+screenshots/
+evidence/
+
 # Dependencies and caches
 node_modules/
 __pycache__/

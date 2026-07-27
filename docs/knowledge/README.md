@@ -6,7 +6,7 @@ Questa cartella conserva il contesto necessario per riprendere il progetto in un
 
 1. [Contesto di progetto](context/PROJECT_CONTEXT.md): obiettivo, architettura, ambiente, vincoli e regole operative.
 2. [Registro delle decisioni](decisions/DECISION_LOG.md): decisioni importanti, motivazioni, conseguenze e stato.
-3. [Jira/WVERSE](Jira/WVERSE): fonte operativa per priorita, stato, owner, sprint ed effort. Il [backlog storico](../archive/backlog/BACKLOG_CLOUD_2026-07.md) conserva razionale e contesto.
+3. Jira/WVERSE: fonte operativa per priorità, stato, owner, sprint ed effort. Il [backlog storico](../archive/backlog/BACKLOG_CLOUD_2026-07.md) conserva razionale e contesto.
 4. [Gestione Jira](operations/JIRA_WORKFLOW.md): regole di censimento, tipizzazione, sprint, review e configurazione dell'integrazione.
 5. [Playbook operativi](playbooks/README.md): classificazione, triage, scomposizione e collaudo delle issue.
 

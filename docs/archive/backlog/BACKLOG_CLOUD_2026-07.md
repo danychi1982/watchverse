@@ -289,7 +289,7 @@ Decisioni confermate:
 
 - backend cloud gratuito: Supabase;
 - account unico intestato a Daniela;
-- email di recupero: `configured-privately-not-versioned`;
+- email di recupero: configurata privatamente in Supabase e non versionata;
 - registrazioni pubbliche disattivate;
 - profili iniziali fissi: Daniela ed Elena;
 - Elena usa le stesse credenziali dell'account e può aprire entrambi i profili, modificando normalmente il proprio;
