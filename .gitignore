@@ -13,6 +13,24 @@ assets/screens_watchverse/
 screenshots/
 evidence/
 
+# Local-only project material
+docs/
+tests/
+supabase/
+scripts/serve.js
+scripts/test.js
+avvia-chrome-e2e.bat
+avvia_server.py
+netlify.toml
+.github/workflows/e2e.yml
+
+# Unused design proposals and local license notes
+assets/brand/proposals/
+assets/brand/watchverse-mark-frame.svg
+assets/brand/watchverse-mark-portal.svg
+assets/brand/watchverse-mark-reel.svg
+assets/fonts/UnifrakturCook-OFL.txt
+
 # Dependencies and caches
 node_modules/
 __pycache__/
