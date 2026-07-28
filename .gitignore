@@ -14,6 +14,7 @@ screenshots/
 evidence/
 
 # Local-only project material
+AGENTS.md
 docs/
 tests/
 supabase/
