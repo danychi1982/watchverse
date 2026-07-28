@@ -3134,6 +3134,7 @@
   function renderSeriesDetail(id) {
     const s = state.series.find(x=>x.id===id); if(!s){setPage('Serie non trovata','Errore','series');setMain('<div class="empty-state"><h3>Serie non trovata</h3><a class="primary" href="#/series">Torna alla libreria</a></div>');return;}
     const detailRequestId = state.navigationRequestId;
+    const totalEpisodes=(s.seasons||[]).reduce((sum,season)=>sum+(season.episodes||[]).length,0)||Number(s.episodeCount||0);
     setPage(s.title,'Dettaglio serie','series'); const prog=seriesProgress(s); const ep=nextEpisode(s); const latest=latestReleasedUnwatched(s);
     const info = `<div class="two-column"><div>
       <section class="content-card section"><div class="content-card-heading"><h3>Trama</h3>${publicMetadataSourceHtml(s)}</div><p>${esc(s.overview||'Descrizione non disponibile.')}</p></section>
@@ -3145,6 +3146,13 @@
       ${ep?`<article class="content-card" style="margin-bottom:18px"><span class="kicker">Continua il monitoraggio</span><h3>S${pad2(ep.season)} E${pad2(ep.episode)} · ${esc(ep.title)}</h3><p>${esc(ep.overview||'')}</p>${ep.airDate?`<p class="season-meta">Uscita: ${fmtDate(ep.airDate)}</p>`:''}<button class="primary" id="continueEpisode">✓ Segna visto</button></article>`:''}
       ${(s.seasons||[]).slice().sort((a,b)=>a.number-b.number).map(season=>{const eps=(season.episodes||[]).slice().sort((a,b)=>a.episode-b.episode);const watched=eps.filter(e=>isEpisodeWatched(s.id,e.season,e.episode)).length;return `<section class="season"><button class="season-head" data-season-toggle="${season.number}" aria-expanded="true" aria-controls="season-body-${season.number}"><span><strong>${esc(season.name||`Stagione ${season.number}`)}</strong><br><span class="season-meta">${watched}/${eps.length} episodi visti</span></span><span class="season-chevron" aria-hidden="true">⌄</span></button><div class="episode-list" id="season-body-${season.number}" data-season-body="${season.number}">${eps.map(e=>`<article class="episode-row"><div class="episode-thumb">${e.image?`<img src="${esc(e.image)}" alt="" loading="lazy" decoding="async">`:`S${pad2(e.season)}E${pad2(e.episode)}`}</div><div><h4>${esc(e.title||`Episodio ${e.episode}`)}</h4><p>${e.airDate?fmtDate(e.airDate)+' · ':''}${e.runtime||50} min</p>${e.overview?`<small>${esc(e.overview.slice(0,180))}</small>`:''}</div><button class="watch-check ${isEpisodeWatched(s.id,e.season,e.episode)?'watched':''}" data-ep="${e.episode}" data-season="${e.season}" data-title="${esc(e.title||'')}" aria-label="${isEpisodeWatched(s.id,e.season,e.episode)?'Segna come non visto':'Segna come visto'}: S${pad2(e.season)} E${pad2(e.episode)} ${esc(e.title||'')}">✓</button></article>`).join('')}</div></section>`;}).join('')||'<div class="empty-state"><h3>Nessun episodio disponibile</h3><p>L’aggiornamento pubblico verrà tentato automaticamente quando sei online.</p></div>'}</section>`;
     setMain(`${detailHero(s,'series')}<div class="tabbar"><button class="tab-button ${state.detailTab==='info'?'active':''}" data-detail-tab="info">Info</button><button class="tab-button ${state.detailTab==='episodes'?'active':''}" data-detail-tab="episodes">Episodi</button></div>${state.detailTab==='info'?info:episodes}`);
+    const seriesStateList = document.querySelector('.detail-grid aside .info-list');
+    if (seriesStateList && !seriesStateList.querySelector('[data-total-episodes]')) {
+      seriesStateList.insertAdjacentHTML('afterbegin', `<div class="info-row" data-total-episodes><span>Episodi totali</span><strong>${totalEpisodes || '—'}</strong></div>`);
+    }
+    document.querySelectorAll('.notice').forEach(notice => {
+      if (notice.textContent.includes('Calendario ed episodi collegati ai metadati pubblici.')) notice.textContent = 'Gli episodi e le date disponibili sono aggiornati automaticamente.';
+    });
     $$('[data-season-toggle]').forEach(button => {
       const key = `${s.id}:${button.dataset.seasonToggle}`;
       const open = state.seasonAccordionState.get(key);
