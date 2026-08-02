@@ -46,6 +46,22 @@
     }
   }
 
+  function postgrestIn(values = []) {
+    return `in.(${values.map(value => encodeURIComponent(String(value))).join(',')})`;
+  }
+
+  async function requestMatchingRows(path, values = [], chunkSize = 80) {
+    const uniqueValues = [...new Set(values.filter(value => value !== null && value !== undefined).map(String))];
+    if (!uniqueValues.length) return [];
+    const pages = [];
+    for (let index = 0; index < uniqueValues.length; index += chunkSize) {
+      const chunk = uniqueValues.slice(index, index + chunkSize);
+      pages.push(request(`${path}&local_id=${postgrestIn(chunk)}`));
+    }
+    const rows = await Promise.all(pages);
+    return rows.flatMap(page => Array.isArray(page) ? page : []);
+  }
+
   function accountId() { return auth()?.getSession()?.user?.id || null; }
   function isEnabled() { return configured() && !!accountId(); }
   function profileId(profile) { return profile?.cloudId || null; }
@@ -162,7 +178,10 @@
     const remotePath = store === 'progress'
       ? `/episode_progress?select=local_id,series_local_id,season,episode,revision,updated_at,deleted_at&profile_id=eq.${encodeURIComponent(profile.cloudId)}`
       : `/library_records?select=local_id,kind,revision,updated_at,deleted_at&profile_id=eq.${encodeURIComponent(profile.cloudId)}`;
-    const remote = await requestAll(remotePath);
+    // Il controllo dei conflitti deve considerare solo i record del batch.
+    // Rileggere l'intero profilo prima di ogni upsert amplifica l'egress,
+    // soprattutto durante importazioni con migliaia di elementi.
+    const remote = await requestMatchingRows(remotePath, rows.map(row => row.local_id), store === 'progress' ? 100 : 80);
     const remoteByKey = new Map(remote.map(row => [key(row), row]));
     const upload = [];
     for (const row of rows) {
@@ -253,12 +272,15 @@
     if (!isEnabled() || !profileId(profile)) return null;
     const onlyProgress = options.onlyProgress === true;
     const skipProgress = options.skipProgress === true;
+    const since = options.since ? String(options.since) : '';
+    const incremental = Boolean(since);
     let cloudId = profile.cloudId;
     const id = () => encodeURIComponent(cloudId);
+    const changedSince = () => since ? `&updated_at=gt.${encodeURIComponent(since)}` : '';
     let libraryResult = await Promise.allSettled([
-      onlyProgress ? Promise.resolve([]) : requestAll(`/library_records?select=local_id,kind,payload,revision,updated_at,deleted_at&profile_id=eq.${id()}`)
+      onlyProgress ? Promise.resolve([]) : requestAll(`/library_records?select=local_id,kind,payload,revision,updated_at,deleted_at&profile_id=eq.${id()}${changedSince()}`)
     ]);
-    if (!onlyProgress && libraryResult[0].status === 'fulfilled' && libraryResult[0].value.length === 0) {
+    if (!incremental && !onlyProgress && libraryResult[0].status === 'fulfilled' && libraryResult[0].value.length === 0) {
       // Compatibilita per importazioni create prima del riallineamento degli UUID
       // cloud: il prefisso local_id identifica ancora senza ambiguita il profilo.
       const prefix = encodeURIComponent(`${profile.id}|%`);
@@ -272,14 +294,16 @@
       }
     }
     const [progressResult, settingsResult] = await Promise.allSettled([
-      skipProgress ? Promise.resolve([]) : requestAll(`/episode_progress?select=local_id,series_local_id,season,episode,watched,watched_at,rating,payload,revision,updated_at,deleted_at&profile_id=eq.${id()}`),
-      onlyProgress ? Promise.resolve([]) : request(`/profile_settings?select=payload,revision,updated_at&profile_id=eq.${id()}`)
+      skipProgress ? Promise.resolve([]) : requestAll(`/episode_progress?select=local_id,series_local_id,season,episode,watched,watched_at,rating,payload,revision,updated_at,deleted_at&profile_id=eq.${id()}${changedSince()}`),
+      onlyProgress ? Promise.resolve([]) : request(`/profile_settings?select=payload,revision,updated_at&profile_id=eq.${id()}${changedSince()}`)
     ]);
     const libraryResultValue = libraryResult[0];
     if (libraryResultValue.status === 'rejected') throw libraryResultValue.reason;
     const library = libraryResultValue.value;
     const progress = progressResult.status === 'fulfilled' ? progressResult.value : [];
     const settings = settingsResult.status === 'fulfilled' ? settingsResult.value : [];
+    const maxUpdatedAt = [...(library || []), ...(progress || []), ...(settings || [])]
+      .map(row => row.updated_at).filter(Boolean).sort().at(-1) || null;
     const records = { series: [], movies: [], progress: [], deleted: { series: [], movies: [], progress: [] } };
     for (const row of library || []) {
       const store = row.kind === 'series' ? 'series' : 'movies';
@@ -292,6 +316,8 @@
     }
     return {
       ...records,
+      incremental,
+      maxUpdatedAt,
       settings: settings?.[0]?.payload || null,
       settingsMeta: settings?.[0] ? { revision: Number(settings[0].revision || 1), updatedAt: settings[0].updated_at } : null,
       warnings: {

@@ -661,8 +661,11 @@
       showToast('Profilo cloud non collegato', `Daniela non è visibile per l’utente Supabase ${userId}. Confronta questo ID con account_id nella tabella profiles.`, '!', 12000, { kind: 'error' });
       return false;
     }
+    const checkpointKey = `watchverse.${activeProfile.id}.cloud-sync-checkpoint`;
+    const checkpoint = localStorage.getItem(checkpointKey) || '';
+    const syncOptions = { ...options, since: options.forceFull ? '' : checkpoint };
     let cloud;
-    try { cloud = await sync.pullProfile(activeProfile, options); } catch (error) {
+    try { cloud = await sync.pullProfile(activeProfile, syncOptions); } catch (error) {
       console.warn('Watchverse cloud profile pull:', error);
       showToast('Libreria cloud non caricata', 'Controlla la connessione e riprova. I dati online non sono stati cancellati.', '!', 7000, { kind: 'error' });
       return false;
@@ -693,7 +696,10 @@
         else if (current) pendingUpload.push(current);
         localById.delete(tombstone.id);
       }
-      for (const value of localById.values()) {
+      // In un pull incrementale l'assenza dalla risposta significa "non cambiato",
+      // non "presente solo localmente": i record locali vengono quindi lasciati
+      // intatti e non rispediti al cloud.
+      if (!cloud.incremental) for (const value of localById.values()) {
         winners.push(value);
         pendingUpload.push(value);
       }
@@ -713,6 +719,8 @@
         localStorage.setItem(settingsKey, JSON.stringify(cloud.settings));
       }
     } else if (localSettings) await sync.saveSettings(activeProfile, localSettings);
+    const nextCheckpoint = cloud.maxUpdatedAt || (cloud.incremental ? checkpoint : new Date().toISOString());
+    if (nextCheckpoint) localStorage.setItem(checkpointKey, nextCheckpoint);
     return true;
   }
 
