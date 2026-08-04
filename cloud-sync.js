@@ -6,6 +6,7 @@
   let writesSuspended = false;
   let activeWrites = 0;
   let writeIdleResolvers = [];
+  const pushQueues = new Map();
   const auth = () => root.WatchverseAuth;
   const configured = () => !!(config.supabaseUrl && config.supabaseAnonKey && auth()?.getSession()?.access_token);
   const base = () => `${String(config.supabaseUrl || '').replace(/\/$/, '')}/rest/v1`;
@@ -160,11 +161,26 @@
     return [];
   }
 
+  function pushQueueKey(profile, store) {
+    return `${profileId(profile) || ''}:${store}`;
+  }
+
   async function pushRecord(profile, store, value) {
     return pushRecords(profile, store, [value]);
   }
 
   async function pushRecords(profile, store, values = []) {
+    const queueKey = pushQueueKey(profile, store);
+    const previous = pushQueues.get(queueKey) || Promise.resolve();
+    const run = previous.catch(() => undefined).then(() => pushRecordsNow(profile, store, values));
+    const settled = run.finally(() => {
+      if (pushQueues.get(queueKey) === settled) pushQueues.delete(queueKey);
+    });
+    pushQueues.set(queueKey, settled);
+    return run;
+  }
+
+  async function pushRecordsNow(profile, store, values = []) {
     if (!isEnabled() || !profileId(profile)) return;
     const releaseWrite = beginWrite();
     if (!releaseWrite) return { uploaded: 0, skipped: values.length, suspended: true };

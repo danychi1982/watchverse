@@ -1037,6 +1037,8 @@ main:focus { outline: none; }
 /* Watchverse 2.0.8: statistiche separate per Film e Serie TV */
 .stats-head { align-items:center; }
 .stats-tabs { margin:0 0 10px; }
+.stats-tabs { min-width:0; }
+.stats-tabs .tab-button { min-width:0; overflow:hidden; text-overflow:ellipsis; }
 .stats-period-note { margin:0 0 22px; color:var(--muted); font-size:13px; }
 .chart-title { margin-bottom:18px; }
 .chart-title h3 { margin:3px 0 0; }
@@ -1050,8 +1052,11 @@ main:focus { outline: none; }
 @media (max-width:520px) {
   .stats-head { align-items:stretch; }
   .stats-head select { width:100%; }
-  .stats-tabs { width:100%; }
-  .stats-tabs .tab-button { flex:1; }
+  .stats-tabs { width:100%; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); overflow:hidden; }
+  .stats-tabs .tab-button { flex:initial; width:100%; padding-inline:7px; font-size:12px; }
+  .stats-grid { grid-template-columns:repeat(2,minmax(0,1fr)); min-width:0; }
+  .stat-card { min-width:0; overflow:hidden; }
+  .stat-card strong,.stat-card small { overflow-wrap:anywhere; }
   .chart-card .hbar-row { grid-template-columns:96px 1fr 48px; }
 }
 
