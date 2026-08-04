@@ -2024,6 +2024,11 @@
     const image = item.poster ? `<img class="poster-img" src="${esc(item.poster)}" alt="" loading="lazy" decoding="async">` : '';
     return `${image}<span class="poster-title">${esc(item.title)}</span>`;
   }
+  function favoriteButtonMarkup(item, extra = '') {
+    const active = Boolean(item.favorite);
+    const label = active ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti';
+    return `<button class="favorite-button ${active ? 'active' : ''}" data-action="favorite" ${extra} aria-label="${label}" title="${label}" data-tooltip="${label}" aria-pressed="${String(active)}">${active ? '&#9829;' : '&#9825;'}</button>`;
+  }
   function mediaCard(item, kind = 'series', options = {}) {
     const isSeries = kind === 'series'; const prog = isSeries ? seriesProgress(item) : null; const completed = isSeries && seriesIsCompleted(item);
     const hasNextEpisode = isSeries && !!nextEpisode(item);
@@ -2033,7 +2038,7 @@
       <a href="${href}" class="poster" style="background:${item.posterGradient || gradient(item.title)}">
         ${posterInner(item)}
       </a>
-      <button class="favorite-button ${item.favorite ? 'active' : ''}" data-action="favorite" aria-label="${item.favorite ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'}" aria-pressed="${String(Boolean(item.favorite))}">${item.favorite ? '♥' : '♡'}</button>
+      ${favoriteButtonMarkup(item)}
       <div class="card-body">
         <p class="card-title">${esc(item.title)}</p>
         <div class="card-meta"><span>${esc(meta)}</span>${item.rating ? `<span>★ ${item.rating}</span>` : ''}</div>
@@ -2055,7 +2060,7 @@
         <div class="row-meta"><span>${item.year || '—'}</span><span>${isSeries ? `${prog.remaining} episodi residui` : item.watched ? `Visto ${fmtDate(item.watchedAt)}` : 'Da vedere'}</span>${item.rating ? `<span>★ ${item.rating}</span>` : ''}${item.favorite ? '<span>♥ Preferito</span>' : ''}</div>
         ${isSeries ? `<div class="progress-track"><div class="progress-fill" style="width:${prog.percent}%"></div></div>` : ''}
       </div>
-      <div class="row-actions"><button class="favorite-button ${item.favorite ? 'active' : ''}" data-action="favorite" style="position:static" aria-label="${item.favorite ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'}" aria-pressed="${String(Boolean(item.favorite))}">${item.favorite ? '♥' : '♡'}</button>
+      <div class="row-actions">${favoriteButtonMarkup(item, 'style="position:relative"')}
         ${isSeries ? `<a class="secondary" href="${href}">Apri</a>` : `<button class="secondary" data-action="watched">${item.watched ? 'Segna non visto' : 'Segna visto'}</button>`}</div>
     </article>`;
   }
@@ -2231,7 +2236,10 @@
       const card = button.closest('[data-kind][data-id]');
       if (!card || card.dataset.kind !== kind || card.dataset.id !== id) return;
       button.classList.toggle('active', active);
-      button.setAttribute('aria-label', active ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti');
+      const label = active ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti';
+      button.setAttribute('aria-label', label);
+      button.setAttribute('title', label);
+      button.setAttribute('data-tooltip', label);
       button.setAttribute('aria-pressed', String(active));
       button.textContent = active ? '♥' : '♡';
     });
@@ -2790,7 +2798,7 @@
         <a href="${href}" class="poster episode-card-poster" style="background:${s.posterGradient || gradient(s.title)}" aria-label="Apri ${esc(s.title)}, ${esc(episodeCode)}">
           ${posterInner(s)}
         </a>
-        <button class="favorite-button ${s.favorite ? 'active' : ''}" data-action="favorite" aria-label="${s.favorite ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'}">${s.favorite ? '♥' : '♡'}</button>
+        ${favoriteButtonMarkup(s)}
         <div class="card-body">
           <p class="card-title"><a href="${href}" title="${esc(s.title)}">${esc(s.title)}</a></p>
           <div class="episode-title-row"><span class="episode-code">${esc(episodeCode)}</span><p class="episode-card-title">${esc(ep.title || 'Titolo episodio non disponibile')}</p></div>
