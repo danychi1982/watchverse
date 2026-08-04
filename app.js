@@ -2320,13 +2320,7 @@
     button.className = 'danger-button detail-remove-button';
     button.type = 'button';
     button.textContent = 'Rimuovi dalla libreria';
-    button.setAttribute('aria-describedby', 'detail-remove-help');
-    const help = document.createElement('small');
-    help.id = 'detail-remove-help';
-    help.className = 'danger-help';
-    help.textContent = 'La conferma viene richiesta nel passaggio successivo.';
-    help.hidden = true;
-    panel.append(button, help);
+    panel.append(button);
     button.addEventListener('click', () => removeFromLibrary(kind, item.id));
   }
   async function toggleEpisode(seriesId, season, episode, episodeTitle = '') {
