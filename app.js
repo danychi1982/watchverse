@@ -2344,7 +2344,9 @@
     }
     rebuildIndexes();
     void route({ loader:false, preserveScroll:true });
-    if (markedWatched) showToast('Episodio segnato come visto', `${series?.title || 'Serie'} · ${episodeTitle || `S${pad2(season)} E${pad2(episode)}`}`, '✓', 3600);
+    const label = `${series?.title || 'Serie'} · ${episodeTitle || `S${pad2(season)} E${pad2(episode)}`}`;
+    if (markedWatched) showToast('Episodio segnato come visto', label, '✓', 3600);
+    else showToast('Episodio rimesso da vedere', label, '↶', 3600);
   }
   async function legacyToggleEpisode(seriesId, season, episode, episodeTitle = '') {
     const existing = progressRecord(seriesId, season, episode);
