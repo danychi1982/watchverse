@@ -2040,6 +2040,12 @@
     const issueActions = $('.modal-actions'); const issuePanel = $('.metadata-issues');
     if (issueActions && issuePanel) issuePanel.prepend(issueActions);
     $('.metadata-issues')?.insertAdjacentHTML('afterbegin', '<div class="metadata-audit-actions"><button class="ghost compact" id="exportMetadataAudit" type="button">Esporta audit JSON</button></div>');
+    const auditActions = $('.metadata-audit-actions');
+    const auditButton = $('#exportMetadataAudit');
+    if (auditActions && auditButton && issueActions) {
+      issueActions.prepend(auditButton);
+      auditActions.remove();
+    }
     $$('[data-metadata-filter]').forEach(button => button.addEventListener('click', () => showMetadataIssues(button.dataset.metadataFilter)));
     $('#backMetadataStatus')?.addEventListener('click', showMetadataStatus);
     $('#exportMetadataAudit')?.addEventListener('click', exportMetadataAudit);

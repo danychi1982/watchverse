@@ -314,7 +314,8 @@ html.modal-open, body.modal-open { overflow:hidden; }
 .modal-head h2 { margin:0; }
 .modal-close { width:38px; height:38px; border-radius:11px; border:1px solid var(--line); background:var(--surface); color:var(--text); }
 .modal-body { min-width:0; padding:20px; overflow-x:hidden; }
-.modal-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:20px; }
+.modal-actions { display:flex; flex-wrap:nowrap; justify-content:flex-end; gap:10px; margin-top:20px; }
+.modal-actions > button { flex:0 0 auto; white-space:nowrap; }
 
 .toast-region { position:fixed; right:18px; bottom:18px; z-index:120; display:grid; gap:10px; width:min(370px,calc(100vw - 36px)); }
 .toast { display:flex; gap:12px; align-items:start; padding:15px; border-radius:14px; color:var(--text); background:#202025; border:1px solid #3d3d45; box-shadow:var(--shadow); animation:toastIn .22s ease; }
@@ -3106,8 +3107,8 @@ html[data-theme="buffy"] .settings-card { border-color:color-mix(in srgb,var(--l
 .metadata-analysis { display:grid; gap:12px; min-width:0; padding:16px; border:1px solid var(--line); border-radius:14px; background:var(--surface-2); overflow:hidden; }
 .metadata-analysis h3, .metadata-analysis h4 { margin:0; }
 .metadata-analysis p { margin:5px 0 0; color:var(--muted); }
-.metadata-analysis-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); align-items:start; gap:10px; min-width:0; }
-.metadata-analysis-grid article:last-child { grid-column:1 / -1; }
+.metadata-analysis-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; gap:10px; min-width:0; }
+.metadata-analysis-grid article:nth-child(3), .metadata-analysis-grid article:nth-child(4) { grid-column:1 / -1; }
 .metadata-analysis-grid article:last-child .metadata-analysis-empty { display:inline-block; margin-right:18px; }
 :is(.primary,.secondary,.ghost,.danger-button) { min-height:var(--control-h); line-height:1.1; letter-spacing:-.01em; }
 .metadata-analysis-grid article { min-width:0; overflow:hidden; padding:12px; border:1px solid var(--line); border-radius:12px; background:var(--surface-1); }
@@ -3187,6 +3188,7 @@ html[data-theme="buffy"] .mini-reel i, html[data-theme="buffy"] .mini-reel::afte
   html[data-theme="buffy"] .cinema-loader-art::after { animation:none; }
 }
 @media (max-width:720px) {
+  .modal-actions { flex-wrap:wrap; justify-content:flex-start; }
   .metadata-issues-summary { grid-template-columns:1fr; }
   .metadata-analysis-grid { grid-template-columns:1fr; }
   .metadata-issue-row { grid-template-columns:1fr; }
