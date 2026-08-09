@@ -3799,6 +3799,7 @@
     return !hasRunnable && !hasAutomaticRetry;
   }
   function scheduleBackgroundMetadataSync(force = false) {
+    void scheduleTargetedMetadataRepair();
     const hasLegacyRetry = [...state.series, ...state.movies].some(item => {
       const meta = item.publicMetadata || {};
       return !meta.manualRetryRequired && Boolean(meta.failedAt || meta.error) && dateMs(meta.nextRetryAt) > Date.now();
@@ -3860,6 +3861,34 @@
       scheduleMetadataHeaderUpdate();
       if (!state.metadataQueue.length && state.metadataRunning === 0) scheduleNextMetadataBatch();
     });
+  }
+
+  async function scheduleTargetedMetadataRepair() {
+    if (state.targetedMetadataRepairStarted || !state.settings.publicMetadataEnabled || !navigator.onLine) return;
+    const resolver = window.WatchversePublicMetadata?.getTargetedMovieResolution;
+    if (!resolver) return;
+    const repairVersion = 'localized-match-20260809-v1';
+    const targets = state.movies.filter(item => {
+      const meta = item.publicMetadata || {};
+      const match = resolver(item);
+      return match && meta.targetedRepairVersion !== repairVersion && needsPublicMetadata(item, 'movie', false);
+    });
+    if (!targets.length) return;
+    state.targetedMetadataRepairStarted = true;
+    for (const item of targets) {
+      item.publicMetadata = {
+        ...(item.publicMetadata || {}), targetedRepairVersion: repairVersion,
+        failedAt:null, error:null, errorCode:null, errorCategory:null,
+        nextRetryAt:null, manualRetryRequired:false,
+        parts:{ ...(item.publicMetadata?.parts || {}), coreComplete:false }
+      };
+      try { await dbPut('movies', item); } catch {}
+    }
+    state.metadataAutoHalted = false;
+    state.metadataStallAttempts = 0;
+    state.metadataLastCoveragePercent = null;
+    state.metadataBackgroundStarted = true;
+    queuePublicMetadata('movie', targets, { force:true, unlimited:true, includeCast:true, silent:false });
   }
   function publicMetadataSourceHtml(item) {
     const meta = item.publicMetadata;

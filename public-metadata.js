@@ -54,6 +54,27 @@
   }
   function hasLatinTitle(value = '') { return /[A-Za-zÀ-ÖØ-öø-ÿ]/.test(String(value || '')); }
 
+  // Importati da TV Time con titolo originale o variante non indicizzata.
+  // Il resolver è volutamente limitato a queste famiglie verificate.
+  const TARGETED_MOVIE_RESOLUTIONS = [
+    { aliases: ["La Vie d'Adèle - Chapitres 1 et 2", "La Vie d'Adèle", 'Blue Is the Warmest Color'] },
+    { aliases: ['F*ck Valentines Day', "F Valentine's Day"], tmdbId: 1429605 },
+    { aliases: ['映画『８番出口』', 'Exit 8', '８番出口'] },
+    { aliases: ['어쩔수가없다', 'No Other Choice'], tmdbId: 639988 },
+    { aliases: ['Mijn beste vriendin Anne Frank', 'My Best Friend Anne Frank'] },
+    { aliases: ['Непослушная', 'Naughty'] },
+    { aliases: ['Sidelined: The QB & Me', 'Sidelined: The QB and Me', 'The QB Bad Boy and Me'] },
+    { aliases: ['The Good Father: The Martin MacNeill Story', 'The Good Father'] }
+  ];
+
+  function targetedMovieResolution(input = {}) {
+    const values = unique([input.title, input.originalTitle, ...(input.aliases || [])]);
+    return TARGETED_MOVIE_RESOLUTIONS.find(rule => {
+      const keys = rule.aliases.map(normalize);
+      return values.some(value => keys.includes(normalize(value)));
+    }) || null;
+  }
+
   function unique(values = []) {
     const seen = new Set();
     return values.filter(Boolean).map(v => String(v).trim()).filter(v => {
@@ -167,8 +188,15 @@
   async function findTmdbMovie(input = {}) {
     // The first title variant is the historical no-year retry (via: 'title-without-year').
     const attempts = [];
-    const queryTitles = unique([input.title, input.originalTitle, ...(input.aliases || [])]).filter(Boolean).slice(0, 3);
-    if (input.imdbId) {
+    const targeted = targetedMovieResolution(input);
+    const queryTitles = unique([...(targeted?.aliases || []), input.title, input.originalTitle, ...(input.aliases || [])]).filter(Boolean).slice(0, 5);
+    if (targeted?.tmdbId) {
+      try {
+        const candidate = await tmdbJson(`/movie/${targeted.tmdbId}`, { language: 'it-IT' });
+        if (candidate?.id) attempts.push({ candidate, via: 'targeted-tmdb-id', query: targeted.aliases[0], url: `${TMDB_BASE}/movie/${targeted.tmdbId}` });
+      } catch { /* fallback to aliases */ }
+    }
+    if (!attempts.length && input.imdbId) {
       try {
         const found = await tmdbJson('/find/' + encodeURIComponent(input.imdbId), { external_source: 'imdb_id', language: 'it-IT' });
         const candidate = found?.movie_results?.[0];
@@ -192,7 +220,11 @@
       }
     }
     const best = ranked[0];
-    return best?.validation.accepted ? { ...best, rejected: ranked.filter(row => !row.validation.accepted).map(row => row.validation.reasons).flat() } : null;
+    return best?.validation.accepted ? {
+      ...best,
+      resolution: targeted ? { strategy: best.via, aliases: targeted.aliases, tmdbId: targeted.tmdbId || null } : { strategy: best.via },
+      rejected: ranked.filter(row => !row.validation.accepted).map(row => row.validation.reasons).flat()
+    } : null;
   }
 
   async function tmdbMovieMetadata(input, match, includeCast) {
@@ -213,7 +245,7 @@
       title, originalTitle, year: yearOf(resolvedDetail.release_date), overview: resolvedDetail.overview || '',
       poster: tmdbImage(resolvedDetail.poster_path), backdrop: tmdbImage(resolvedDetail.backdrop_path, TMDB_BACKDROP),
       genres: (resolvedDetail.genres || []).map(genre => genre.name), runtime: resolvedDetail.runtime || null,
-      sourceUrl: `https://www.themoviedb.org/movie/${id}`, cast,
+      sourceUrl: `https://www.themoviedb.org/movie/${id}`, cast, resolution: match.resolution || null,
       language: 'it', matchScore: match.validation.score, rejectionReasons: match.validation.reasons,
       resolvedType: 'movie', coreComplete: Boolean(resolvedDetail.poster_path && resolvedDetail.overview),
       castComplete: !includeCast || cast.length > 0,
@@ -948,7 +980,7 @@
 
   return {
     lookupSeries, lookupMovie, lookupPerson, lookupItalySchedule, searchSeries, searchMovies,
-    stripHtml, cleanWikiTitle, normalize, titleScore,
+    stripHtml, cleanWikiTitle, normalize, titleScore, getTargetedMovieResolution: targetedMovieResolution,
     attribution: {
       series: 'Dati di serie, episodi e cast forniti da TVmaze (CC BY-SA); titoli e descrizioni localizzati tramite Wikipedia.',
       movies: 'Titoli, descrizioni, immagini e cast da Wikipedia/Wikidata/Wikimedia Commons, con fallback italiano/inglese.'
