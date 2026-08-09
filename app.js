@@ -3288,6 +3288,10 @@
 
   function renderMovieDetail(id) {
     const m=state.movies.find(x=>x.id===id);if(!m){setPage('Film non trovato','Errore','movies');setMain('<div class="empty-state"><h3>Film non trovato</h3></div>');return;}
+    if (m.tmdbId && m.poster && m.overview && (m.cast || []).length && (m.publicMetadata?.error || m.publicMetadata?.manualRetryRequired || m.publicMetadata?.failedAt)) {
+      m.publicMetadata = { ...(m.publicMetadata || {}), error:null, errorCode:null, errorCategory:null, failedAt:null, nextRetryAt:null, manualRetryRequired:false, attempts:0 };
+      dbPut('movies', m);
+    }
     const detailRequestId = state.navigationRequestId;
     setPage(m.title,'Dettaglio film','movies');
     setMain(`${detailHero(m,'movie')}<div class="two-column"><div>
