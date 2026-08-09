@@ -3240,7 +3240,7 @@
     const totalEpisodes=(s.seasons||[]).reduce((sum,season)=>sum+(season.episodes||[]).length,0)||Number(s.episodeCount||0);
     setPage(s.title,'Dettaglio serie','series'); const prog=seriesProgress(s); const ep=nextEpisode(s); const latest=latestReleasedUnwatched(s);
     const info = `<div class="two-column"><div>
-      <section class="content-card section"><div class="content-card-heading"><h3>Trama</h3>${publicMetadataSourceHtml(s)}</div><p>${esc(s.overview||'Descrizione non disponibile.')}</p></section>
+      <section class="content-card section"><div class="content-card-heading"><h3>Trama</h3>${publicMetadataSourceHtml(s)}</div>${publicMetadataWarningHtml(s)}<p>${esc(s.overview||'Descrizione non disponibile.')}</p></section>
       ${availabilityAndTrailerHtml(s,'series')}
       ${castPanelHtml(s,'series')}
        ${similarSectionPlaceholderHtml(s,'series')}
@@ -3289,7 +3289,7 @@
     const detailRequestId = state.navigationRequestId;
     setPage(m.title,'Dettaglio film','movies');
     setMain(`${detailHero(m,'movie')}<div class="two-column"><div>
-      <section class="content-card section"><div class="content-card-heading"><h3>Trama</h3>${publicMetadataSourceHtml(m)}</div><p>${esc(m.overview||'Descrizione non disponibile.')}</p></section>
+      <section class="content-card section"><div class="content-card-heading"><h3>Trama</h3>${publicMetadataSourceHtml(m)}</div>${publicMetadataWarningHtml(m)}<p>${esc(m.overview||'Descrizione non disponibile.')}</p></section>
       ${cinemaProgrammingHtml(m)}
       ${availabilityAndTrailerHtml(m,'movie')}
       ${castPanelHtml(m,'movie')}
@@ -3847,6 +3847,11 @@
     if (!meta?.providerLabel) return '<span class="metadata-source pending">Metadati pubblici in aggiornamento</span>';
     const link = meta.sourceUrl ? ` href="${esc(meta.sourceUrl)}" target="_blank" rel="noopener noreferrer"` : '';
     return `<a class="metadata-source"${link}>Fonte: ${esc(meta.providerLabel)}${meta.language==='en'?' · testo inglese':''}</a>`;
+  }
+  function publicMetadataWarningHtml(item) {
+    const row = metadataItemDiagnostics(item, item.mediaType === 'tv' ? 'series' : 'movie');
+    if (row.classification === 'Completato' || (!row.error && !row.failedAt && !row.essentialMissing.length)) return '';
+    return `<p class="metadata-detail-warning"><strong>Aggiornamento manuale consigliato.</strong> ${esc(row.reason)}. Usa il pulsante <strong>Aggiorna</strong> per verificare nuovamente questo titolo.</p>`;
   }
   async function manualPublicMetadata(kind, item, { announce = true } = {}) {
     if (!navigator.onLine) { showToast('Connessione assente', 'I metadati pubblici richiedono internet.', '!', 5000, { kind: 'error' }); return; }
