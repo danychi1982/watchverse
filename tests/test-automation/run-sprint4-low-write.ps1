@@ -24,7 +24,7 @@ function Save-Shot($session,$name){$shot=Invoke-Gi 'web_screenshot' @{session=$s
 $cases=@(
   @{feature='pwa';id='TC-S4-PWA';issues=@('WVERSE-41','WVERSE-166','WVERSE-167','WVERSE-170');expected='Manifest, service worker, responsive, accessibility and lazy loading'},
   @{feature='library';id='TC-S4-LIBRARY';issues=@('WVERSE-199','WVERSE-200');expected='Series card, episode feedback, empty state and local library persistence'},
-  @{feature='metadata';id='TC-S4-METADATA';issues=@('WVERSE-24','WVERSE-30','WVERSE-31','WVERSE-32','WVERSE-33','WVERSE-201','WVERSE-207','WVERSE-208','WVERSE-209','WVERSE-211','WVERSE-212','WVERSE-216','WVERSE-218','WVERSE-233');expected='Metadata cycle, diagnostics, sources, duration, navigation and UI'}
+  @{feature='metadata';id='TC-S4-METADATA';issues=@('WVERSE-24','WVERSE-30','WVERSE-31','WVERSE-32','WVERSE-33','WVERSE-201','WVERSE-207','WVERSE-208','WVERSE-209','WVERSE-211','WVERSE-212','WVERSE-216','WVERSE-218','WVERSE-233','WVERSE-252','WVERSE-253','WVERSE-254');expected='Metadata cycle, diagnostics, sources, duration, navigation, retry scheduling, partial coverage and UI'}
 )
 try {
   $server.StandardInput.WriteLine('{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"watchverse-sprint4-low-write","version":"1"}}}');$server.StandardInput.Flush();[void]$server.StandardOutput.ReadLine()

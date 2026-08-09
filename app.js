@@ -234,7 +234,7 @@
     detailTab: 'info', tvScheduleFilter: 'today', importPreview: null, gdprPreview: null, deferredInstall: null, seasonAccordionState: new Map(),
     notifications: [], tmdbResults: [], publicResults: [], catalogResults: [], recommendationResults: [], searchQuery: '', isLoading: false, pendingAvatarProfileId: null, personFilmographyFilter: 'all', profileSettingsTab: 'identity',
     catalogEntries: [], catalogIndex: new Map(), catalogHydratedThisSession: 0, catalogNetworkAvoidedThisSession: 0,
-    metadataQueue: [], metadataRunning: 0, metadataQueuedIds: new Set(), metadataAutoBudget: 72, metadataConcurrency: 4, metadataRenderPending: false, metadataRerenderTimer: null, metadataBackgroundStarted: false, metadataContinuationTimer: null, metadataHeaderTimer: null, metadataCompletedThisSession: 0, metadataFailedThisSession: 0, metadataRecoveryScheduled: false, metadataRecoveryDone: false, metadataRecoveryPasses: 0, metadataCycleStartedAt: null, metadataCycleCompletedAt: null, metadataCycleDurationMs: null, wcagStatusFilter: 'all', wcagLevelFilter: 'all', accessibilityTab: 'declaration', searchRecommendationFilter: 'all', navigationLoaderToken: 0, navigationRequestId: 0, initialCloudHydrationPending: false, initialCloudHydrationError: null,
+    metadataQueue: [], metadataRunning: 0, metadataQueuedIds: new Set(), metadataAutoBudget: 72, metadataConcurrency: 4, metadataRenderPending: false, metadataRerenderTimer: null, metadataBackgroundStarted: false, metadataContinuationTimer: null, metadataRetryTimer: null, metadataHeaderTimer: null, metadataCompletedThisSession: 0, metadataFailedThisSession: 0, metadataRecoveryScheduled: false, metadataRecoveryDone: false, metadataRecoveryPasses: 0, metadataCycleStartedAt: null, metadataCycleCompletedAt: null, metadataCycleDurationMs: null, wcagStatusFilter: 'all', wcagLevelFilter: 'all', accessibilityTab: 'declaration', searchRecommendationFilter: 'all', navigationLoaderToken: 0, navigationRequestId: 0, initialCloudHydrationPending: false, initialCloudHydrationError: null,
     sidebarCollapsed: localStorage.getItem('watchverse.sidebarCollapsed') === '1', cinemaSearchLocation: null, cinemaSearchQuery: '', cinemaLocationFeedback: null, aivengersInitialized: false, lastRenderedRoute: '', defaultSourceStatus: null, defaultSourceSyncRunning: false, viewActionBusy: false, pendingFavoriteKeys: new Set(), cloudRefreshRunning: false, cloudRefreshAt: 0, lastUserInteractionAt: 0, cloudRefreshTimer: null, routeProgressTimer: null, dataRevision: 0, viewCache: { revision: -1, searchRecommendations: null, programmingMarkup: null }
   };
 
@@ -1663,13 +1663,17 @@
     const missingEpisodes = allRows.filter(row => row.missing.includes('Episodi')).length;
     const failed = allRows.filter(row => !!row.error || !!row.failedAt).length;
     const essentialIncomplete = allRows.filter(row => !row.essentialComplete).length;
+    const partial = allRows.filter(row => !row.essentialComplete && !row.error && !row.failedAt).length;
+    const retryScheduledTitles = allRows.filter(row => row.nextRetryAt && dateMs(row.nextRetryAt) > Date.now()).length;
     const supplementalIncomplete = allRows.filter(row => row.essentialComplete && row.missing.length > 0).length;
     const coveragePercent = totalTitles ? Math.max(0, Math.min(100, Math.round(coreReady / totalTitles * 100))) : 100;
     const extendedCoveragePercent = totalTitles ? Math.max(0, Math.min(100, Math.round(allRows.filter(row => row.extendedComplete).length / totalTitles * 100))) : 100;
     const active = state.metadataQueue.length + state.metadataRunning > 0;
     const remainingWork = totalTitles > 0 && allRows.some(row => needsPublicMetadata(row.item, row.kind, true));
     const manualRetryRequired = allRows.filter(row => row.item.publicMetadata?.manualRetryRequired).length;
-    const waitingForRetry = !active && remainingWork && failed > 0;
+    const betweenBatches = !active && Boolean(state.metadataContinuationTimer);
+    const retryScheduled = !active && Boolean(state.metadataRetryTimer);
+    const waitingForRetry = retryScheduled;
     const nextRetryAt = allRows.map(row => row.nextRetryAt).filter(value => value && dateMs(value) > Date.now()).sort((a, b) => dateMs(a) - dateMs(b))[0] || null;
     const batchCompleted = totalTitles === 0 || (!active && !remainingWork && !!state.metadataCycleCompletedAt);
     const cyclePercent = batchCompleted ? 100 : (active ? Math.max(1, Math.min(99, Math.round((state.metadataCompletedThisSession + state.metadataFailedThisSession) / Math.max(1, state.metadataCompletedThisSession + state.metadataFailedThisSession + state.metadataQueue.length + state.metadataRunning) * 100))) : ((remainingWork || manualRetryRequired) ? Math.min(99, coveragePercent) : 0));
@@ -1686,6 +1690,8 @@
       batchCompleted,
       incomplete: essentialIncomplete,
       essentialIncomplete,
+      partial,
+      retryScheduledTitles,
       supplementalIncomplete,
       unresolvedSteps: essentialIncomplete,
       missingPoster,
@@ -1697,6 +1703,8 @@
       queued: state.metadataQueue.length,
       running: state.metadataRunning,
       active,
+      betweenBatches,
+      retryScheduled,
       remainingWork,
       waitingForRetry,
       manualRetryRequired,
@@ -1738,7 +1746,7 @@
     if (summary) summary.textContent = status.active
       ? `${status.running} in corso · ${status.queued} in coda · copertura ${status.coveragePercent}%`
       : status.remainingWork
-        ? `${status.incomplete} titoli da verificare · ${status.waitingForRetry ? 'in attesa di retry' : 'ciclo ancora in corso'}`
+        ? `${status.incomplete} titoli da verificare · ${status.betweenBatches ? 'preparazione prossimo lotto' : status.waitingForRetry ? 'retry pianificato' : 'ciclo ancora in corso'}`
       : status.incomplete > 0
         ? `${status.incomplete} titoli incompleti${status.failed ? ` · ${status.failed} errori` : ''}`
         : 'Catalogo completo';
@@ -1849,16 +1857,18 @@
 
   function metadataStatusModalHtml(s) {
     const groups = syncSourceGroups(s);
-    const cycleLabel = s.active ? 'Aggiornamento in corso' : s.waitingForRetry ? 'In attesa di retry' : s.manualRetryRequired ? 'Richiede retry manuale' : s.remainingWork ? 'Ciclo parziale' : 'Ciclo completato';
+    const cycleLabel = s.active ? 'Aggiornamento in corso' : s.betweenBatches ? 'Preparazione prossimo lotto' : s.waitingForRetry ? 'Retry pianificato' : s.manualRetryRequired ? 'Richiede retry manuale' : s.remainingWork ? 'Ciclo parziale' : 'Ciclo completato';
     const durationCopy = s.cycleDurationLabel ? `<p class="metadata-cycle-duration"><strong>Durata complessiva del ciclo:</strong> ${esc(s.cycleDurationLabel)}</p>` : '';
     const liveCopy = s.active
       ? `<p class="metadata-live-line"><span class="inline-spinner" aria-hidden="true"></span>Aggiornamento in corso: ${s.running} elaborazioni attive e ${s.queued} titoli in coda. Puoi continuare a usare l’app.</p>`
+      : s.betweenBatches
+        ? `<p class="metadata-live-line"><strong>Preparazione prossimo lotto.</strong> ${s.incomplete} titoli ancora da verificare.</p>`
       : s.waitingForRetry
-        ? `<p class="metadata-live-line metadata-retry-line"><strong>In attesa di retry.</strong> ${s.failed} errori tecnici registrati${s.nextRetryAt ? ` · prossimo tentativo ${fmtDateTime(s.nextRetryAt)}` : ' · prossimo tentativo pianificato'}.</p>`
+        ? `<p class="metadata-live-line metadata-retry-line"><strong>Retry pianificato.</strong> ${s.failed} errori tecnici registrati${s.nextRetryAt ? ` · prossimo tentativo ${fmtDateTime(s.nextRetryAt)}` : ''}.</p>`
         : s.manualRetryRequired
           ? `<p class="metadata-live-line metadata-retry-line"><strong>Retry automatici esauriti.</strong> ${s.manualRetryRequired} titoli richiedono un aggiornamento manuale.</p>`
         : durationCopy;
-    return `<div class="metadata-status-detail"><div class="metadata-status-overview"><div class="metadata-status-big"><strong>${s.coveragePercent}%</strong><div><span>Copertura effettiva dei metadati</span><small class="metadata-cycle-state">${cycleLabel}</small></div></div><div class="metadata-status-live">${liveCopy}</div><div class="progress-track metadata-progress large"><div class="progress-fill" style="width:${s.coveragePercent}%"></div></div><div class="metadata-recap-grid"><div><strong>${s.totalTitles.toLocaleString('it-IT')}</strong><span>Titoli del profilo</span></div><div><strong>${s.essentialIncomplete.toLocaleString('it-IT')}</strong><span>Titoli da verificare</span></div><div><strong>${s.failed.toLocaleString('it-IT')}</strong><span>Errori tecnici</span></div></div></div><div class="metadata-top-actions" role="group" aria-label="Azioni metadati"><button class="primary" id="resumeMetadata" type="button">Aggiorna ora</button><button class="ghost" id="openMetadataIssues" type="button">Dettaglio titoli</button><button class="ghost" id="openSourceDetails" type="button">Vedi fonti</button><button class="secondary" id="retryMetadata" type="button">Riprova non riusciti</button></div><div class="sync-source-groups">${groups.map(syncGroupHtml).join('')}</div></div>`;
+    return `<div class="metadata-status-detail"><div class="metadata-status-overview"><div class="metadata-status-big"><strong>${s.coveragePercent}%</strong><div><span>Copertura effettiva dei metadati</span><small class="metadata-cycle-state">${cycleLabel}</small></div></div><div class="metadata-status-live">${liveCopy}</div><div class="progress-track metadata-progress large"><div class="progress-fill" style="width:${s.coveragePercent}%"></div></div><div class="metadata-recap-grid"><div><strong>${s.totalTitles.toLocaleString('it-IT')}</strong><span>Titoli del profilo</span></div><div><strong>${s.essentialIncomplete.toLocaleString('it-IT')}</strong><span>Titoli da verificare</span></div><div><strong>${s.partial.toLocaleString('it-IT')}</strong><span>Risultati parziali</span></div><div><strong>${s.failed.toLocaleString('it-IT')}</strong><span>Errori tecnici</span></div></div></div><div class="metadata-top-actions" role="group" aria-label="Azioni metadati"><button class="primary" id="resumeMetadata" type="button">Aggiorna ora</button><button class="ghost" id="openMetadataIssues" type="button">Dettaglio titoli</button><button class="ghost" id="openSourceDetails" type="button">Vedi fonti</button><button class="secondary" id="retryMetadata" type="button">Riprova non riusciti</button></div><div class="sync-source-groups">${groups.map(syncGroupHtml).join('')}</div></div>`;
   }
 
   function updateMetadataStatusModal() {
@@ -3316,6 +3326,8 @@
   // esplicita: la navigazione non deve riavviare richieste alla fonte.
   const MAX_METADATA_AUTO_RETRIES = 4;
   const METADATA_TASK_TIMEOUT_MS = 45000;
+  const METADATA_RETRY_DELAYS_MS = Object.freeze([15 * 60 * 1000, 60 * 60 * 1000, 6 * 60 * 60 * 1000, 24 * 60 * 60 * 1000]);
+  function metadataRetryDelayMs(attempts) { return METADATA_RETRY_DELAYS_MS[Math.min(Math.max(0, Number(attempts || 1) - 1), METADATA_RETRY_DELAYS_MS.length - 1)]; }
   function withMetadataTimeout(promise, timeoutMs = METADATA_TASK_TIMEOUT_MS) {
     let timer;
     const timeout = new Promise((_, reject) => {
@@ -3502,12 +3514,36 @@
     };
     state.metadataRerenderTimer = setTimeout(refresh, delay);
   }
+  function scheduleMetadataRetryTimer() {
+    clearTimeout(state.metadataRetryTimer);
+    state.metadataRetryTimer = null;
+    if (!navigator.onLine || !state.settings.publicMetadataEnabled || libraryIsEmpty()) return null;
+    const nextRetryAt = [...state.series, ...state.movies]
+      .map(item => item.publicMetadata || {})
+      .filter(meta => !meta.manualRetryRequired && meta.nextRetryAt && dateMs(meta.nextRetryAt) > Date.now())
+      .map(meta => meta.nextRetryAt)
+      .sort((a, b) => dateMs(a) - dateMs(b))[0] || null;
+    if (!nextRetryAt) return null;
+    const delay = Math.max(1000, dateMs(nextRetryAt) - Date.now());
+    state.metadataRetryTimer = setTimeout(() => {
+      state.metadataRetryTimer = null;
+      state.metadataBackgroundStarted = false;
+      state.metadataRecoveryDone = false;
+      scheduleBackgroundMetadataSync(true);
+    }, delay);
+    return nextRetryAt;
+  }
   function scheduleMetadataRecoveryPass() {
     if (!navigator.onLine || !state.settings.publicMetadataEnabled || !publicMetadataApi() || !state.metadataBackgroundStarted || state.metadataRecoveryScheduled) return;
     const failedSeries = state.series.filter(item => item.publicMetadata?.failedAt && !item.publicMetadata?.manualRetryRequired);
     const failedMovies = state.movies.filter(item => item.publicMetadata?.failedAt && !item.publicMetadata?.manualRetryRequired);
-    const failed = [...failedSeries.map(item => ({ kind:'series', item })), ...failedMovies.map(item => ({ kind:'movie', item }))];
-    if (!failed.length) { state.metadataRecoveryDone = true; return; }
+    const failed = [...failedSeries.map(item => ({ kind:'series', item })), ...failedMovies.map(item => ({ kind:'movie', item }))]
+      .filter(({ item }) => !item.publicMetadata?.nextRetryAt || dateMs(item.publicMetadata.nextRetryAt) <= Date.now());
+    if (!failed.length) {
+      state.metadataRecoveryDone = true;
+      scheduleMetadataRetryTimer();
+      return;
+    }
     if (state.metadataRecoveryPasses >= MAX_METADATA_AUTO_RETRIES) {
       for (const { kind, item } of failed) {
         item.publicMetadata = { ...(item.publicMetadata || {}), manualRetryRequired:true, nextRetryAt:null };
@@ -3544,6 +3580,10 @@
         scheduleMetadataRecoveryPass();
         return;
       }
+      if (scheduleMetadataRetryTimer()) {
+        state.metadataBackgroundStarted = false;
+        return;
+      }
       completeMetadataCycle();
       state.metadataBackgroundStarted = false;
       return;
@@ -3575,7 +3615,7 @@
           const attempts = Number(previous.attempts || 0) + 1;
           const errorInfo = metadataErrorInfo(error);
           const manualRetryRequired = attempts > MAX_METADATA_AUTO_RETRIES;
-          const nextRetryAt = null;
+          const nextRetryAt = manualRetryRequired ? null : new Date(Date.now() + metadataRetryDelayMs(attempts)).toISOString();
           task.item.publicMetadata = { ...previous, failedAt: now.toISOString(), error: error.message, errorCode: errorInfo.code, errorCategory: errorInfo.label, attempts, nextRetryAt, manualRetryRequired };
           try { await dbPut(task.kind === 'series' ? 'series' : 'movies', task.item); } catch {}
           try { await saveSharedCatalog(task.kind, task.item, 'public-metadata-error'); } catch {}
@@ -3635,7 +3675,12 @@
       const meta = item.publicMetadata || {};
       return !meta.manualRetryRequired && Boolean(meta.failedAt || meta.error) && dateMs(meta.nextRetryAt) > Date.now();
     });
-    if ((!force && (state.metadataBackgroundStarted || (state.metadataCycleCompletedAt && !hasLegacyRetry))) || !navigator.onLine || !state.settings.publicMetadataEnabled || libraryIsEmpty()) return;
+    if (!navigator.onLine || !state.settings.publicMetadataEnabled || libraryIsEmpty()) return;
+    if (!force && state.metadataBackgroundStarted) return;
+    if (!force && state.metadataCycleCompletedAt && !hasLegacyRetry) {
+      scheduleMetadataRetryTimer();
+      return;
+    }
     // Forced work bypasses the retry gate in queuePublicMetadata. Persisted
     // failures are cleared only by the worker after a successful attempt.
     const hasRemainingMetadata = [...state.series, ...state.movies].some(item => {
@@ -5124,7 +5169,7 @@
       void window.WatchverseCloudSync?.saveSettings(profile, state.settings).catch(error => console.warn('Watchverse cloud settings sync:', error));
       state.seriesFilter=state.settings.seriesFilter||'unwatched';state.movieFilter=state.settings.movieFilter||'watched';
       state.seriesSort=state.settings.seriesSort||'latestEpisode';state.movieSort=state.settings.movieSort||'recent';
-      state.seriesVisible=60;state.movieVisible=60;state.metadataAutoBudget=72;state.metadataQueue=[];state.metadataQueuedIds.clear();clearTimeout(state.metadataContinuationTimer);state.metadataContinuationTimer=null;state.metadataBackgroundStarted=false;state.metadataCompletedThisSession=0;state.metadataFailedThisSession=0;state.metadataRecoveryScheduled=false;state.metadataRecoveryDone=false;
+      state.seriesVisible=60;state.movieVisible=60;state.metadataAutoBudget=72;state.metadataQueue=[];state.metadataQueuedIds.clear();clearTimeout(state.metadataContinuationTimer);state.metadataContinuationTimer=null;clearTimeout(state.metadataRetryTimer);state.metadataRetryTimer=null;state.metadataBackgroundStarted=false;state.metadataCompletedThisSession=0;state.metadataFailedThisSession=0;state.metadataRecoveryScheduled=false;state.metadataRecoveryDone=false;
       // Dalla 2.0.3 i profili partono vuoti. Rimuove automaticamente eventuali demo create da versioni precedenti.
       if(state.settings.demoSeeded){
         for(const store of ['series','movies','progress','imports']) await dbClearProfile(store);
