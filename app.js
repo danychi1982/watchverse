@@ -4335,6 +4335,15 @@
       const fetchedSeasons = (details.seasons || []).filter(s => s.season_number > 0).map(s => ({ number:s.season_number, name:s.name, overview:s.overview, poster:tmdbPoster(s.poster_path), airDate:s.air_date, episodeCount:s.episode_count, episodes:[] }));
       Object.assign(item, { tmdbId:Number(matchId), title:details.name || item.title, originalTitle:details.original_name || item.originalTitle || null, aliases:mergeAliases(item.aliases || [], item.title, item.originalTitle, details.name, details.original_name), year:(details.first_air_date || '').slice(0,4) || item.year || null, firstAirDate:details.first_air_date || item.firstAirDate || null, lastAirDate:details.last_air_date || item.lastAirDate || null, overview:details.overview || item.overview || '', genres:(details.genres || []).map(g => g.name), poster:tmdbPoster(details.poster_path) || item.poster || null, backdrop:tmdbBackdrop(details.backdrop_path) || item.backdrop || null, posterGradient:gradient(details.name || item.title), backdropGradient:gradient((details.name || item.title) + ' hero'), providerGroups:providers, cast:(credits.cast || []).slice(0,18).map(c => ({ name:c.name, role:c.character, tmdbId:c.id, photo:tmdbPoster(c.profile_path) })), trailer, trailerCheckedAt:new Date().toISOString(), metadataUpdatedAt:new Date().toISOString(), seasons:mergeSeriesSeasons(protectedFields.seasons, fetchedSeasons, item.id) }, protectedFields);
     }
+    // A manual provider link is a successful resolution: clear any stale automatic retry state.
+    item.publicMetadata = {
+      ...(item.publicMetadata || {}), provider:'tmdb', providerLabel:'TMDB', providerId:Number(matchId),
+      sourceUrl:`https://www.themoviedb.org/${type === 'movie' ? 'movie' : 'tv'}/${Number(matchId)}`,
+      error:null, errorCode:null, errorCategory:null, failedAt:null, nextRetryAt:null,
+      manualRetryRequired:false, attempts:0,
+      parts:{ ...(item.publicMetadata?.parts || {}), coreComplete:true, castComplete:(item.cast || []).length > 0 },
+      resolution:{ ...(item.publicMetadata?.resolution || {}), provider:'tmdb', providerId:Number(matchId), sourceUrl:`https://www.themoviedb.org/${type === 'movie' ? 'movie' : 'tv'}/${Number(matchId)}`, matchScore:100, rejectionReasons:[] }
+    };
     await dbPut(store, item);
     await saveSharedCatalog(type, item, 'tmdb');
   }
