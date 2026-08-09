@@ -1394,6 +1394,16 @@
     main.innerHTML = html;
     if (!$('#blockingLoader')?.classList.contains('is-visible')) main.focus({ preventScroll: true });
   }
+  function scrollWindowInstantly(top) {
+    const root = document.documentElement;
+    const previousBehavior = root.style.scrollBehavior;
+    root.style.scrollBehavior = 'auto';
+    try {
+      window.scrollTo({ left: 0, top: Math.max(0, Number(top) || 0), behavior: 'auto' });
+    } finally {
+      root.style.scrollBehavior = previousBehavior;
+    }
+  }
   function updateBackToTopButton() {
     const button = $('#backToTopButton');
     if (!button) return;
@@ -2437,7 +2447,7 @@
       return;
     }
     try {
-      if (!preserveScroll) window.scrollTo({ top: 0, behavior: 'instant' });
+      if (!preserveScroll) scrollWindowInstantly(0);
       updateBackToTopButton();
       if (r.page === 'home') renderHome({ background: options.preserveScroll === true && state.lastRenderedRoute === routeKey });
       else if (r.page === 'series' && r.id) renderSeriesDetail(r.id);
@@ -2454,10 +2464,17 @@
       else if (r.page === 'design-system') renderDesignSystem();
       else renderSettings();
       state.lastRenderedRoute = routeKey;
-      if (preserveScroll) requestAnimationFrame(() => {
-        window.scrollTo({ top: preservedScrollY, behavior: 'instant' });
-        restoreActiveField(preservedField);
-      });
+      if (preserveScroll) {
+        scrollWindowInstantly(preservedScrollY);
+        requestAnimationFrame(() => {
+          // Do not fight a scroll started by the user while the background
+          // rerender was in progress. Restore only layout-induced movement.
+          if (window.scrollY !== preservedScrollY && Date.now() - state.lastUserInteractionAt >= 1200) {
+            scrollWindowInstantly(preservedScrollY);
+          }
+          restoreActiveField(preservedField);
+        });
+      }
       if (!options.skipCloudRefresh && !state.initialCloudHydrationPending) scheduleCloudRouteRefresh(r.page);
     } finally {
       finishRouteProgress(navigationRequestId);
