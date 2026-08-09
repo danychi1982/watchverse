@@ -3639,6 +3639,18 @@
 
   function scheduleNextMetadataBatch() {
     if (state.metadataContinuationTimer || !navigator.onLine || !state.settings.publicMetadataEnabled || libraryIsEmpty()) return;
+    if (state.metadataTargetedRepairActive) {
+      state.metadataTargetedRepairActive = false;
+      state.metadataAutoHalted = true;
+      state.metadataBackgroundStarted = false;
+      clearTimeout(state.metadataContinuationTimer);
+      state.metadataContinuationTimer = null;
+      clearTimeout(state.metadataRetryTimer);
+      state.metadataRetryTimer = null;
+      completeMetadataCycle();
+      scheduleMetadataHeaderUpdate();
+      return;
+    }
     if (state.metadataAutoHalted) {
       state.metadataBackgroundStarted = false;
       return;
@@ -3776,6 +3788,7 @@
     state.metadataRecoveryScheduled = false;
     state.metadataRecoveryDone = false;
     state.metadataAutoHalted = false;
+    state.metadataTargetedRepairActive = true;
     state.metadataStallAttempts = 0;
     state.metadataLastCoveragePercent = null;
     state.metadataBackgroundStarted = true;
@@ -3865,31 +3878,29 @@
 
   async function scheduleTargetedMetadataRepair() {
     if (state.targetedMetadataRepairStarted || !state.settings.publicMetadataEnabled || !navigator.onLine) return;
-    const resolver = window.WatchversePublicMetadata?.getTargetedMovieResolution;
-    if (!resolver) return;
-    const repairVersion = 'localized-match-20260809-v2';
-    const targets = state.movies.filter(item => {
+    if (!window.WatchversePublicMetadata?.lookupMovie) return;
+    const repairVersion = 'localized-match-20260809-v3';
+    const targets = [...state.series.map(item => ({ kind:'series', item })), ...state.movies.map(item => ({ kind:'movie', item }))].filter(({ kind, item }) => {
       const meta = item.publicMetadata || {};
-      const match = resolver(item);
-      const coreIncomplete = !item.poster || isImportedPlaceholder(item.overview);
-      return match && meta.targetedRepairVersion !== repairVersion && coreIncomplete;
+      const missing = metadataItemDiagnostics(item, kind).missing;
+      return meta.targetedRepairVersion !== repairVersion && missing.length > 0;
     });
     if (!targets.length) return;
     state.targetedMetadataRepairStarted = true;
-    for (const item of targets) {
+    for (const { kind, item } of targets) {
       item.publicMetadata = {
         ...(item.publicMetadata || {}), targetedRepairVersion: repairVersion,
         failedAt:null, error:null, errorCode:null, errorCategory:null,
         nextRetryAt:null, manualRetryRequired:false,
         parts:{ ...(item.publicMetadata?.parts || {}), coreComplete:false }
       };
-      try { await dbPut('movies', item); } catch {}
+      try { await dbPut(kind === 'series' ? 'series' : 'movies', item); } catch {}
     }
     state.metadataAutoHalted = false;
     state.metadataStallAttempts = 0;
     state.metadataLastCoveragePercent = null;
     state.metadataBackgroundStarted = true;
-    queuePublicMetadata('movie', targets, { force:true, unlimited:true, includeCast:true, silent:false });
+    for (const { kind, item } of targets) queuePublicMetadata(kind, [item], { force:true, unlimited:true, includeCast:true, silent:false });
   }
   function publicMetadataSourceHtml(item) {
     const meta = item.publicMetadata;
