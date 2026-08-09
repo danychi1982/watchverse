@@ -1902,7 +1902,7 @@ html[data-theme="system"] { --toast-bg:#26231f; --toast-text:#fffdf8; --toast-mu
 .service-disney { background:#102d72; color:#fff; font-size:11px; }
 .service-now { background:#111; color:#00f0a8; }
 .service-max { background:#24105d; color:#fff; font-size:18px; }
-.service-apple { background:#f5f5f7; color:#111; font-size:15px; }
+.service-apple { width:42px; height:42px; border-radius:10px; background:#f5f5f7; color:#111; font-size:10px; letter-spacing:-.45px; line-height:1; white-space:nowrap; }
 .service-paramount { background:#1264d7; color:#fff; }
 .service-rai { background:#1672d3; color:#fff; }
 .service-mediaset { background:#202b65; color:#fff; font-size:24px; }
