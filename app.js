@@ -3725,12 +3725,38 @@
     showToast('Retry avviato', `${retryRows.length} ${retryRows.length === 1 ? 'titolo è stato rimesso' : 'titoli sono stati rimessi'} in coda.`, '↻', 4200);
     return retryRows.length;
   }
+  function metadataHasOnlyManualRetries() {
+    const items = [...state.series, ...state.movies];
+    const hasManual = items.some(item => item.publicMetadata?.manualRetryRequired);
+    if (!hasManual) return false;
+    const hasRunnable = items.some(item => {
+      const kind = state.series.includes(item) ? 'series' : 'movie';
+      return needsPublicMetadata(item, kind, false);
+    });
+    const hasAutomaticRetry = items.some(item => {
+      const meta = item.publicMetadata || {};
+      return !meta.manualRetryRequired && (meta.failedAt || meta.error || (meta.nextRetryAt && dateMs(meta.nextRetryAt) > Date.now()));
+    });
+    return !hasRunnable && !hasAutomaticRetry;
+  }
   function scheduleBackgroundMetadataSync(force = false) {
     const hasLegacyRetry = [...state.series, ...state.movies].some(item => {
       const meta = item.publicMetadata || {};
       return !meta.manualRetryRequired && Boolean(meta.failedAt || meta.error) && dateMs(meta.nextRetryAt) > Date.now();
     });
     if (!navigator.onLine || !state.settings.publicMetadataEnabled || libraryIsEmpty()) return;
+    if (metadataHasOnlyManualRetries()) {
+      clearTimeout(state.metadataContinuationTimer);
+      state.metadataContinuationTimer = null;
+      clearTimeout(state.metadataRetryTimer);
+      state.metadataRetryTimer = null;
+      state.metadataQueue = [];
+      state.metadataQueuedIds.clear();
+      state.metadataBackgroundStarted = false;
+      completeMetadataCycle();
+      scheduleMetadataHeaderUpdate();
+      return;
+    }
     if (!force && state.metadataBackgroundStarted) return;
     if (!force && state.metadataCycleCompletedAt && !hasLegacyRetry) {
       scheduleMetadataRetryTimer();
