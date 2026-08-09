@@ -4341,6 +4341,16 @@
   function tmdbMatchChoiceHtml(rows, kind) {
     return `<p>Scegli la corrispondenza corretta.</p><div class="search-results">${rows.map(x => `<article class="search-result"><div class="thumb">${x.poster_path ? `<img class="poster-img" src="${tmdbPoster(x.poster_path)}" alt="">` : ''}</div><div><h3>${esc(x.title || x.name)}</h3><p>${esc((x.release_date || x.first_air_date || '').slice(0,4))} · ${esc(x.overview || '')}</p></div><button class="primary" data-tmdb-match="${x.id}" data-kind="${kind}">Scegli</button></article>`).join('')}</div>`;
   }
+  function parseTmdbMovieId(value) {
+    const text = String(value || '').trim();
+    const urlMatch = text.match(/themoviedb\.org\/movie\/(\d+)/i);
+    if (urlMatch) return urlMatch[1];
+    const idMatch = text.match(/^\d+$/);
+    return idMatch ? idMatch[0] : null;
+  }
+  function tmdbManualLinkHtml() {
+    return `<div class="notice warning" style="margin-top:1rem"><strong>Collegamento manuale</strong><p>Se il titolo non viene trovato, incolla l’URL della pagina TMDB oppure il suo ID.</p><div class="inline-form"><input id="tmdbManualMovie" type="text" placeholder="https://www.themoviedb.org/movie/1429605" aria-label="URL o ID del film TMDB"><button class="primary" data-tmdb-direct>Collega</button></div></div>`;
+  }
   async function enrichMovieFlow(m) {
     if (!tmdbIsReady()) { showToast('TMDB non configurato','I metadati pubblici restano comunque disponibili.','!'); return; }
     try {
@@ -4349,8 +4359,13 @@
       const apply = async matchId => { await applyTmdbMatchToExisting('movie', m, Number(matchId)); closeModal(); await reloadData(); renderMovieDetail(m.id); showToast('Metadati aggiornati', m.title, '✓'); };
       if (rows.length === 1 && tmdbMatchIsSafe(m, rows[0], 'movie')) { await apply(rows[0].id); return; }
       openModal('Collega il film a TMDB','<p>Sto cercando il titolo nei metadati italiani…</p>');
-      $('#modalRoot .modal-body').innerHTML = rows.length ? tmdbMatchChoiceHtml(rows, 'movie') : '<p class="notice warning">Nessuna corrispondenza sicura trovata.</p>';
+      $('#modalRoot .modal-body').innerHTML = (rows.length ? tmdbMatchChoiceHtml(rows, 'movie') : '<p class="notice warning">Nessuna corrispondenza sicura trovata.</p>') + tmdbManualLinkHtml();
       $$('[data-tmdb-match]').forEach(button => button.addEventListener('click', event => runButtonAction(event.currentTarget, () => apply(event.currentTarget.dataset.tmdbMatch), 'Collegamento in corso…')));
+      $('[data-tmdb-direct]')?.addEventListener('click', event => runButtonAction(event.currentTarget, async () => {
+        const id = parseTmdbMovieId($('#tmdbManualMovie')?.value);
+        if (!id) throw new Error('Inserisci un URL TMDB valido o un ID numerico.');
+        await apply(id);
+      }, 'Collegamento TMDB in corso…'));
     } catch (error) { $('#modalRoot .modal-body').innerHTML = `<p class="notice danger">${esc(error.message)}</p>`; }
   }
   async function enrichSeriesFlow(s){if(!state.settings.tmdbToken&&!(window.WATCHVERSE_CONFIG||{}).tmdbProxyUrl){showToast('TMDB non configurato','I metadati pubblici restano comunque disponibili.','!');return;}openModal('Collega la serie a TMDB','<p>Sto cercando la serie nei metadati italiani…</p>');try{const d=await tmdbFetch('/search/tv',{query:s.title,language:'it-IT',first_air_date_year:s.year||''});const res=(d.results||[]).slice(0,5);$('#modalRoot .modal-body').innerHTML=`<p>Scegli la corrispondenza corretta. Gli episodi già visti non verranno persi.</p><div class="search-results">${res.map(x=>`<article class="search-result"><div class="thumb">${x.poster_path?`<img class="poster-img" src="${tmdbPoster(x.poster_path)}" alt="">`:''}</div><div><h3>${esc(x.name)}</h3><p>${esc((x.first_air_date||'').slice(0,4))} · ${esc(x.overview||'')}</p></div><button class="primary" data-match="${x.id}">Scegli</button></article>`).join('')}</div>`;$$('[data-match]').forEach(b=>b.addEventListener('click',async()=>{const added=await addFromTMDB('tv',Number(b.dataset.match));const old=s;const importedSeasons=s.seasons||[];Object.assign(old,added,{id:s.id,profileId:state.profileId,status:s.status,favorite:s.favorite,rating:s.rating,seasons:mergeSeriesSeasons(importedSeasons,added.seasons,s.id)});await dbPut('series',old);await dbDelete('series',added.id);closeModal();await reloadData();renderSeriesDetail(s.id);}));}catch(e){$('#modalRoot .modal-body').innerHTML=`<p class="notice danger">${esc(e.message)}</p>`;}}

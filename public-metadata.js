@@ -162,7 +162,9 @@
   }
 
   async function findTmdbMovie(input = {}) {
+    // The first title variant is the historical no-year retry (via: 'title-without-year').
     const attempts = [];
+    const queryTitles = unique([input.title, input.originalTitle, ...(input.aliases || [])]).filter(Boolean).slice(0, 3);
     if (input.imdbId) {
       try {
         const found = await tmdbJson('/find/' + encodeURIComponent(input.imdbId), { external_source: 'imdb_id', language: 'it-IT' });
@@ -171,17 +173,20 @@
       } catch { /* title search remains available */ }
     }
     if (!attempts.length) {
-      const data = await tmdbJson('/search/movie', { query: input.title, year: input.year || undefined, language: 'it-IT', region: 'IT', include_adult: 'false' });
+      const data = await tmdbJson('/search/movie', { query: queryTitles[0] || input.title, year: input.year || undefined, language: 'it-IT', region: 'IT', include_adult: 'false' });
       attempts.push(...(data?.results || []).slice(0, 8).map(candidate => ({ candidate, via: 'title', url: `${TMDB_BASE}/search/movie` })));
     }
     let ranked = attempts.map(row => ({ ...row, validation: validTmdbCandidate(row.candidate, input, 'movie') }))
       .sort((a, b) => b.validation.score - a.validation.score);
-    if (!ranked.some(row => row.validation.accepted) && input.year) {
-      const fallback = await tmdbJson('/search/movie', { query: input.originalTitle || input.title, language: 'it-IT', region: 'IT', include_adult: 'false' });
-      const knownIds = new Set(attempts.map(row => row.candidate.id));
-      attempts.push(...(fallback?.results || []).filter(candidate => !knownIds.has(candidate.id)).slice(0, 8).map(candidate => ({ candidate, via: 'title-without-year', url: `${TMDB_BASE}/search/movie` })));
-      ranked = attempts.map(row => ({ ...row, validation: validTmdbCandidate(row.candidate, input, 'movie') }))
-        .sort((a, b) => b.validation.score - a.validation.score);
+    if (!ranked.some(row => row.validation.accepted)) {
+      for (const query of queryTitles.slice(1)) {
+        const fallback = await tmdbJson('/search/movie', { query, language: 'it-IT', region: 'IT', include_adult: 'false' });
+        const knownIds = new Set(attempts.map(row => row.candidate.id));
+        attempts.push(...(fallback?.results || []).filter(candidate => !knownIds.has(candidate.id)).slice(0, 8).map(candidate => ({ candidate, via: query === queryTitles[1] ? 'title-without-year' : 'title-variant', url: `${TMDB_BASE}/search/movie` })));
+        ranked = attempts.map(row => ({ ...row, validation: validTmdbCandidate(row.candidate, input, 'movie') }))
+          .sort((a, b) => b.validation.score - a.validation.score);
+        if (ranked.some(row => row.validation.accepted)) break;
+      }
     }
     const best = ranked[0];
     return best?.validation.accepted ? { ...best, rejected: ranked.filter(row => !row.validation.accepted).map(row => row.validation.reasons).flat() } : null;
@@ -215,12 +220,19 @@
   }
 
   async function findTmdbSeries(input = {}) {
-    const data = await tmdbJson('/search/tv', { query: input.title, first_air_date_year: input.year || undefined, language: 'it-IT', include_adult: 'false' });
-    const ranked = (data?.results || []).slice(0, 8).map(candidate => ({
-      candidate, validation: validTmdbCandidate(candidate, input, 'tv'), url: `${TMDB_BASE}/search/tv`
-    })).sort((a, b) => b.validation.score - a.validation.score);
-    const best = ranked[0];
-    return best?.validation.accepted ? best : null;
+    const queryTitles = unique([input.title, input.originalTitle, ...(input.aliases || [])]).filter(Boolean).slice(0, 3);
+    const attempts = [];
+    for (const [index, query] of queryTitles.entries()) {
+      const data = await tmdbJson('/search/tv', { query, first_air_date_year: index === 0 ? (input.year || undefined) : undefined, language: 'it-IT', include_adult: 'false' });
+      const knownIds = new Set(attempts.map(row => row.candidate.id));
+      attempts.push(...(data?.results || []).filter(candidate => !knownIds.has(candidate.id)).slice(0, 8).map(candidate => ({
+        candidate, validation: validTmdbCandidate(candidate, input, 'tv'), url: `${TMDB_BASE}/search/tv`
+      })));
+      const best = attempts.slice().sort((a, b) => b.validation.score - a.validation.score)[0];
+      if (best?.validation.accepted) return best;
+    }
+    return attempts.sort((a, b) => b.validation.score - a.validation.score)[0]?.validation.accepted
+      ? attempts.sort((a, b) => b.validation.score - a.validation.score)[0] : null;
   }
 
   async function tmdbSeriesFallback(input, match, includeCast) {
