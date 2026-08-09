@@ -3645,6 +3645,7 @@
       state.metadataQueuedIds.clear();
       state.metadataBackgroundStarted = false;
       completeMetadataCycle();
+      $$('.toast-sync').forEach(toast => toast.remove());
       showToast('Aggiornamento automatico sospeso', `La copertura non avanza da ${MAX_METADATA_STALL_ATTEMPTS} tentativi. Aggiorna manualmente i singoli titoli problematici.`, '!', 6500, { kind:'warning' });
       scheduleMetadataHeaderUpdate();
       return;
@@ -5333,7 +5334,7 @@
       state.lastRenderedRoute = '';
       location.hash=requestedHash;
       await route({ loader:false });
-      if (window.WatchverseCloudSync?.isEnabled()) showToast('Sincronizzazione in corso', 'La libreria si aggiorna in background.', '↻', 7000, { kind:'sync' });
+      if (window.WatchverseCloudSync?.isEnabled() && !state.metadataAutoHalted) showToast('Sincronizzazione in corso', 'La libreria si aggiorna in background.', '↻', 7000, { kind:'sync' });
       const refreshCloudProfile = async () => {
         const backgroundProfile = state.profiles.find(item => item.id === id);
         if (!backgroundProfile || state.profileId !== id) return;
