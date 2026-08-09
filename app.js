@@ -3879,11 +3879,11 @@
   async function scheduleTargetedMetadataRepair() {
     if (state.targetedMetadataRepairStarted || !state.settings.publicMetadataEnabled || !navigator.onLine) return;
     if (!window.WatchversePublicMetadata?.lookupMovie) return;
-    const repairVersion = 'localized-match-20260809-v4';
+    const repairVersion = 'localized-match-20260809-v5';
     const targets = [...state.series.map(item => ({ kind:'series', item })), ...state.movies.map(item => ({ kind:'movie', item }))].filter(({ kind, item }) => {
       const meta = item.publicMetadata || {};
       const parts = metadataParts(item);
-      const coreIncomplete = !item.poster || isImportedPlaceholder(item.overview) || parts.coreComplete === false || !meta.provider;
+      const coreIncomplete = !item.poster || isImportedPlaceholder(item.overview) || parts.coreComplete === false;
       const knownSupplementalGap = parts.coreComplete === true && (parts.castComplete === false || (kind === 'series' && !parts.episodesAt));
       const failed = Boolean(meta.error || meta.failedAt || meta.manualRetryRequired);
       return meta.targetedRepairVersion !== repairVersion && (coreIncomplete || knownSupplementalGap || failed);
