@@ -2107,7 +2107,7 @@
 
   function posterInner(item) {
     const image = item.poster ? `<img class="poster-img" src="${esc(item.poster)}" alt="" loading="lazy" decoding="async">` : '';
-    return `${image}<span class="poster-title">${esc(item.title)}</span>`;
+    return `${image}<span class="poster-title">${esc(cleanDisplayedTitle(item.title))}</span>`;
   }
   function favoriteButtonMarkup(item, extra = '') {
     const active = Boolean(item.favorite);
@@ -2125,7 +2125,7 @@
       </a>
       ${favoriteButtonMarkup(item)}
       <div class="card-body">
-        <p class="card-title">${esc(item.title)}</p>
+        <p class="card-title">${esc(cleanDisplayedTitle(item.title))}</p>
         <div class="card-meta"><span>${esc(meta)}</span>${item.rating ? `<span>★ ${item.rating}</span>` : ''}</div>
         ${completed ? '<span class="completion-indicator" role="status" aria-label="Serie completata"><span aria-hidden="true">✓</span> Completata</span>' : ''}
         ${isSeries ? `<div class="progress-track" aria-label="Avanzamento ${prog.percent}%"><div class="progress-fill" style="width:${prog.percent}%"></div></div>` : ''}
@@ -2140,8 +2140,8 @@
     const isSeries = kind === 'series'; const prog = isSeries ? seriesProgress(item) : null;
     const href = isSeries ? `#/series/${encodeURIComponent(item.id)}` : `#/movie/${encodeURIComponent(item.id)}`;
     return `<article class="media-row" data-id="${esc(item.id)}" data-kind="${kind}">
-      <a href="${href}" class="row-poster" style="background:${item.posterGradient || gradient(item.title)}">${item.poster ? `<img class="poster-img" src="${esc(item.poster)}" alt="" decoding="async">` : esc(item.title)}</a>
-      <div class="row-main"><h3><a href="${href}">${esc(item.title)}</a></h3>${item.originalTitle && normalizeSearch(item.originalTitle)!==normalizeSearch(item.title)?`<small class="row-original-title">${esc(item.originalTitle)}</small>`:''}<p>${esc((item.overview || 'Nessuna descrizione disponibile.').slice(0, 180))}</p>
+      <a href="${href}" class="row-poster" style="background:${item.posterGradient || gradient(cleanDisplayedTitle(item.title))}">${item.poster ? `<img class="poster-img" src="${esc(item.poster)}" alt="" decoding="async">` : esc(cleanDisplayedTitle(item.title))}</a>
+      <div class="row-main"><h3><a href="${href}">${esc(cleanDisplayedTitle(item.title))}</a></h3>${item.originalTitle ? `<small class="row-original-title">${esc(item.originalTitle)}</small>`:''}<p>${esc((item.overview || 'Nessuna descrizione disponibile.').slice(0, 180))}</p>
         <div class="row-meta"><span>${item.year || '—'}</span><span>${isSeries ? `${prog.remaining} episodi residui` : item.watched ? `Visto ${fmtDate(item.watchedAt)}` : 'Da vedere'}</span>${item.rating ? `<span>★ ${item.rating}</span>` : ''}${item.favorite ? '<span>♥ Preferito</span>' : ''}</div>
         ${isSeries ? `<div class="progress-track"><div class="progress-fill" style="width:${prog.percent}%"></div></div>` : ''}
       </div>
@@ -3237,7 +3237,7 @@
     const chips = [item.year, ...(item.genres || []).slice(0,3), kind === 'series' ? statusLabel(item.status) : (item.runtime ? minutesToText(item.runtime) : '')].filter(Boolean);
     return `<section class="detail-hero ${banner?'has-detail-banner':'no-detail-banner'}">${banner}<div class="detail-content">
       <div class="detail-poster media-frame media-frame-poster" style="--poster-fallback:${item.posterGradient || gradient(displayTitle)}">${item.poster?`<img class="poster-img" src="${esc(item.poster)}" alt="Locandina di ${esc(displayTitle)}" width="500" height="750" loading="eager" decoding="async">`:`<span class="detail-poster-fallback">${esc(displayTitle)}</span>`}</div>
-      <div class="detail-info"><div class="chip-row">${chips.map(c=>`<span class="chip">${esc(c)}</span>`).join('')}</div><h2>${esc(displayTitle)}</h2>${item.originalTitle && normalizeSearch(item.originalTitle)!==normalizeSearch(displayTitle)?`<p class="original-title">Titolo originale: <strong>${esc(item.originalTitle)}</strong></p>`:''}<p>${esc(item.overview || 'Descrizione non ancora disponibile.')}</p>
+      <div class="detail-info"><div class="chip-row">${chips.map(c=>`<span class="chip">${esc(c)}</span>`).join('')}</div><h2>${esc(displayTitle)}</h2>${item.originalTitle ? `<p class="original-title">Titolo originale: <strong>${esc(item.originalTitle)}</strong></p>`:''}<p>${esc(item.overview || 'Descrizione non ancora disponibile.')}</p>
       <div class="detail-actions"><button class="primary" id="detailMainAction">${kind==='series'?(nextEpisode(item)?'✓ Segna prossimo episodio':'Completata'):(item.watched?'✓ Visto':'Segna visto')}</button><button class="secondary" id="detailFavorite" aria-pressed="${String(Boolean(item.favorite))}">${item.favorite?'♥ Preferito':'♡ Preferito'}</button><button class="ghost" id="detailEdit">Modifica</button></div></div>
     </div></section>`;
   }
