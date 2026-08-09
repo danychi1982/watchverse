@@ -979,6 +979,9 @@ main:focus { outline: none; }
 .provider-logo-only { width:48px; height:48px; display:grid; place-items:center; overflow:hidden; border:1px solid var(--line); border-radius:12px; background:var(--surface-2); }
 .provider-logo-only:hover { border-color:var(--accent); background:var(--surface-3); }
 .provider-logo-only .provider-logo { margin:0; }
+.provider-logo-only.provider-apple { width:72px; border-color:transparent; background:transparent; }
+.provider-logo-only.provider-apple:hover { border-color:transparent; background:transparent; }
+.provider-logo-only.provider-apple .service-apple { width:68px; height:42px; font-size:10px; letter-spacing:-.35px; }
 
 .home-summary-grid {
   display:grid;

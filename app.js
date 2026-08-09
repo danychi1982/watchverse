@@ -2148,9 +2148,10 @@
       const name = providerDisplayName(provider);
       const url = typeof provider === 'object' && provider.url ? provider.url : (groups.link || item.providerLink || '');
       const body = `${providerLogoHtml(name)}`;
+      const wrapperClass = streamingServiceMeta(name).tone === 'apple' ? ' provider-apple' : '';
       return url
-        ? `<a class="provider-logo-only" href="${esc(url)}" target="_blank" rel="noopener noreferrer" aria-label="Apri ${esc(name)}">${body}</a>`
-        : `<span class="provider-logo-only" role="img" aria-label="${esc(name)}">${body}</span>`;
+        ? `<a class="provider-logo-only${wrapperClass}" href="${esc(url)}" target="_blank" rel="noopener noreferrer" aria-label="Apri ${esc(name)}">${body}</a>`
+        : `<span class="provider-logo-only${wrapperClass}" role="img" aria-label="${esc(name)}">${body}</span>`;
     }).join('')}</div>` : '';
     const tv=tvOptionsHtml(item);
     if(blocks||tv)return `<div class="watch-options-stack">${blocks}${tv}</div>`;
