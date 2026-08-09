@@ -172,7 +172,8 @@
   function tmdbCandidateScore(candidate, input, kind) {
     const title = kind === 'movie' ? candidate.title : candidate.name;
     const candidateYear = yearOf(kind === 'movie' ? candidate.release_date : candidate.first_air_date);
-    return Math.max(...unique([input.title, input.originalTitle, ...(input.aliases || [])]).map(wanted => titleScore(title, wanted, candidateYear, input.year)));
+    const targeted = kind === 'movie' ? targetedMovieResolution(input) : null;
+    return Math.max(...unique([...(targeted?.aliases || []), input.title, input.originalTitle, ...(input.aliases || [])]).map(wanted => titleScore(title, wanted, candidateYear, input.year)));
   }
 
   function validTmdbCandidate(candidate, input, kind) {

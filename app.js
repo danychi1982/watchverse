@@ -3867,7 +3867,7 @@
     if (state.targetedMetadataRepairStarted || !state.settings.publicMetadataEnabled || !navigator.onLine) return;
     const resolver = window.WatchversePublicMetadata?.getTargetedMovieResolution;
     if (!resolver) return;
-    const repairVersion = 'localized-match-20260809-v1';
+    const repairVersion = 'localized-match-20260809-v2';
     const targets = state.movies.filter(item => {
       const meta = item.publicMetadata || {};
       const match = resolver(item);
