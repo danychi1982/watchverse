@@ -180,7 +180,7 @@
     { name:'Disney+', mark:'Disney+', tone:'disney', url:'https://www.disneyplus.com/it-it' },
     { name:'NOW', mark:'NOW', tone:'now', url:'https://www.nowtv.it/' },
     { name:'Max / HBO', mark:'max', tone:'max', url:'https://www.max.com/it/it' },
-    { name:'Apple TV+', mark:'tv+', tone:'apple', url:'https://tv.apple.com/it/search?term={query}' },
+    { name:'Apple TV+', mark:'Apple TV+', tone:'apple', url:'https://tv.apple.com/it/search?term={query}' },
     { name:'Paramount+', mark:'P+', tone:'paramount', url:'https://www.paramountplus.com/it/' },
     { name:'RaiPlay', mark:'Rai', tone:'rai', url:'https://www.raiplay.it/ricerca.html?q={query}' },
     { name:'Mediaset Infinity', mark:'∞', tone:'mediaset', url:'https://mediasetinfinity.mediaset.it/' },
@@ -1171,8 +1171,11 @@
     }
     const next = computedSeries(series).episodes.map(ep => ({ ep, schedule: episodeScheduleInfo(series, ep) })).find(x => x.schedule.italy);
     if (next) {
-      const quality = next.schedule.italy.exact ? 'data italiana rilevata da un palinsesto pubblico' : 'orario italiano stimato automaticamente dal momento di uscita originale';
-      return `${next.schedule.italy.provider ? `${next.schedule.italy.provider} · ` : ''}${quality}. Puoi correggerla manualmente se necessario.`;
+      const italy = next.schedule.italy;
+      const date = italy.dateKey ? calendarHeading(italy.dateKey) : 'data italiana non disponibile';
+      const time = italy.time ? ` · ore ${italy.time}` : ' · orario non disponibile';
+      const quality = italy.exact ? 'rilevata da un palinsesto pubblico' : 'stimata automaticamente dal momento di uscita originale';
+      return `${italy.provider ? `${italy.provider} · ` : ''}${date}${time} · ${quality}. Puoi correggerla manualmente se necessario.`;
     }
     return 'Ricerca automatica online attiva. Se non viene trovata una programmazione italiana affidabile, resta disponibile la correzione manuale.';
   }
