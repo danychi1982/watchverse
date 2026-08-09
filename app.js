@@ -3228,12 +3228,16 @@
     });
   }
 
+  function cleanDisplayedTitle(value = '') {
+    return String(value || '').replace(/\s*\((?:film|movie|serie televisiva|television series|TV series|film|movie)\s*(?:19|20)\d{2}\)\s*$/i, '').trim() || String(value || '');
+  }
   function detailHero(item, kind) {
+    const displayTitle = cleanDisplayedTitle(item.title);
     const banner = item.backdrop ? `<figure class="detail-banner media-frame media-frame-backdrop"><img class="detail-backdrop-image" src="${esc(item.backdrop)}" alt="" aria-hidden="true" width="1600" height="420" loading="eager" decoding="async"></figure>` : '';
     const chips = [item.year, ...(item.genres || []).slice(0,3), kind === 'series' ? statusLabel(item.status) : (item.runtime ? minutesToText(item.runtime) : '')].filter(Boolean);
     return `<section class="detail-hero ${banner?'has-detail-banner':'no-detail-banner'}">${banner}<div class="detail-content">
-      <div class="detail-poster media-frame media-frame-poster" style="--poster-fallback:${item.posterGradient || gradient(item.title)}">${item.poster?`<img class="poster-img" src="${esc(item.poster)}" alt="Locandina di ${esc(item.title)}" width="500" height="750" loading="eager" decoding="async">`:`<span class="detail-poster-fallback">${esc(item.title)}</span>`}</div>
-      <div class="detail-info"><div class="chip-row">${chips.map(c=>`<span class="chip">${esc(c)}</span>`).join('')}</div><h2>${esc(item.title)}</h2>${item.originalTitle && normalizeSearch(item.originalTitle)!==normalizeSearch(item.title)?`<p class="original-title">Titolo originale: <strong>${esc(item.originalTitle)}</strong></p>`:''}<p>${esc(item.overview || 'Descrizione non ancora disponibile.')}</p>
+      <div class="detail-poster media-frame media-frame-poster" style="--poster-fallback:${item.posterGradient || gradient(displayTitle)}">${item.poster?`<img class="poster-img" src="${esc(item.poster)}" alt="Locandina di ${esc(displayTitle)}" width="500" height="750" loading="eager" decoding="async">`:`<span class="detail-poster-fallback">${esc(displayTitle)}</span>`}</div>
+      <div class="detail-info"><div class="chip-row">${chips.map(c=>`<span class="chip">${esc(c)}</span>`).join('')}</div><h2>${esc(displayTitle)}</h2>${item.originalTitle && normalizeSearch(item.originalTitle)!==normalizeSearch(displayTitle)?`<p class="original-title">Titolo originale: <strong>${esc(item.originalTitle)}</strong></p>`:''}<p>${esc(item.overview || 'Descrizione non ancora disponibile.')}</p>
       <div class="detail-actions"><button class="primary" id="detailMainAction">${kind==='series'?(nextEpisode(item)?'✓ Segna prossimo episodio':'Completata'):(item.watched?'✓ Visto':'Segna visto')}</button><button class="secondary" id="detailFavorite" aria-pressed="${String(Boolean(item.favorite))}">${item.favorite?'♥ Preferito':'♡ Preferito'}</button><button class="ghost" id="detailEdit">Modifica</button></div></div>
     </div></section>`;
   }
@@ -3242,7 +3246,7 @@
     const s = state.series.find(x=>x.id===id); if(!s){setPage('Serie non trovata','Errore','series');setMain('<div class="empty-state"><h3>Serie non trovata</h3><a class="primary" href="#/series">Torna alla libreria</a></div>');return;}
     const detailRequestId = state.navigationRequestId;
     const totalEpisodes=(s.seasons||[]).reduce((sum,season)=>sum+(season.episodes||[]).length,0)||Number(s.episodeCount||0);
-    setPage(s.title,'Dettaglio serie','series'); const prog=seriesProgress(s); const ep=nextEpisode(s); const latest=latestReleasedUnwatched(s);
+    setPage(cleanDisplayedTitle(s.title),'Dettaglio serie','series'); const prog=seriesProgress(s); const ep=nextEpisode(s); const latest=latestReleasedUnwatched(s);
     const info = `<div class="two-column"><div>
       <section class="content-card section"><div class="content-card-heading"><h3>Trama</h3>${publicMetadataSourceHtml(s)}</div>${publicMetadataWarningHtml(s)}<p>${esc(s.overview||'Descrizione non disponibile.')}</p></section>
       ${availabilityAndTrailerHtml(s,'series')}
@@ -3295,7 +3299,7 @@
       dbPut('movies', m);
     }
     const detailRequestId = state.navigationRequestId;
-    setPage(m.title,'Dettaglio film','movies');
+    setPage(cleanDisplayedTitle(m.title),'Dettaglio film','movies');
     setMain(`${detailHero(m,'movie')}<div class="two-column"><div>
       <section class="content-card section"><div class="content-card-heading"><h3>Trama</h3>${publicMetadataSourceHtml(m)}</div>${publicMetadataWarningHtml(m)}<p>${esc(m.overview||'Descrizione non disponibile.')}</p></section>
       ${cinemaProgrammingHtml(m)}

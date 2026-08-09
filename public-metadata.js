@@ -37,7 +37,7 @@
 
   function cleanWikiTitle(value = '') {
     return String(value)
-      .replace(/\s*\((?:film|serie televisiva|television series|TV series|[12][0-9]{3} film)\)\s*$/i, '')
+      .replace(/\s*\((?:film|movie|serie televisiva|television series|TV series|[12][0-9]{3} film|film [12][0-9]{3}|movie [12][0-9]{3})\)\s*$/i, '')
       .trim();
   }
 
@@ -205,7 +205,7 @@
       name: person.name, role: person.character || 'Cast', tmdbId: person.id,
       photo: tmdbImage(person.profile_path, TMDB_IMAGE), sourceUrl: `https://www.themoviedb.org/person/${person.id}`
     }));
-    const title = hasLatinTitle(resolvedDetail.title) ? resolvedDetail.title : (englishDetail?.title || resolvedDetail.original_title || match.candidate.title || input.title);
+    const title = cleanWikiTitle(hasLatinTitle(resolvedDetail.title) ? resolvedDetail.title : (englishDetail?.title || resolvedDetail.original_title || match.candidate.title || input.title));
     const originalTitle = resolvedDetail.original_title || input.originalTitle || title;
     return {
       provider: 'tmdb', providerLabel: 'TMDB', providerId: id,
@@ -255,7 +255,7 @@
     return {
       provider: 'tmdb', providerLabel: 'TMDB', providerId: id,
       providerSearchUrl: match.url, tmdbId: id, imdbId: resolvedDetail.external_ids?.imdb_id || null,
-      tvdbId: resolvedDetail.external_ids?.tvdb_id || null, title: hasLatinTitle(resolvedDetail.name) ? resolvedDetail.name : (englishDetail?.name || resolvedDetail.original_name || input.title),
+      tvdbId: resolvedDetail.external_ids?.tvdb_id || null, title: cleanWikiTitle(hasLatinTitle(resolvedDetail.name) ? resolvedDetail.name : (englishDetail?.name || resolvedDetail.original_name || input.title)),
       originalTitle: resolvedDetail.original_name || input.originalTitle || resolvedDetail.name || input.title,
       year: yearOf(resolvedDetail.first_air_date), overview: resolvedDetail.overview || '',
       poster: tmdbImage(resolvedDetail.poster_path), backdrop: tmdbImage(resolvedDetail.backdrop_path, TMDB_BACKDROP),
