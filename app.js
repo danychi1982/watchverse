@@ -2303,6 +2303,8 @@
   function castSectionHtml(item) {
     if ((item.cast || []).length) return castHtml(item.cast,10);
     const attempted = !!item.publicMetadata?.parts?.castComplete;
+    const failed = item.publicMetadata?.manualRetryRequired || item.publicMetadata?.error || item.publicMetadata?.failedAt;
+    if (failed) return `<div class="metadata-detail-warning"><strong>Cast non recuperato.</strong> ${esc(item.publicMetadata?.error || 'Le fonti non hanno restituito un cast verificabile.')} Aggiorna manualmente il titolo per riprovare.</div>`;
     if (attempted) return '<p class="notice">Non è stato trovato un cast nelle fonti pubbliche disponibili. Puoi riprovare con il pulsante di aggiornamento.</p>';
     return `<div class="metadata-loading" role="status"><span class="inline-spinner" aria-hidden="true"></span><div><strong>Ricerca del cast in corso</strong><p>La scheda si aggiornerà automaticamente.</p></div></div><div class="cast-strip cast-grid cast-skeleton-grid">${Array.from({length:10},()=>'<span class="cast-card skeleton-card" aria-hidden="true"></span>').join('')}</div>`;
   }
@@ -3844,6 +3846,7 @@
   }
   function publicMetadataSourceHtml(item) {
     const meta = item.publicMetadata;
+    if (meta?.manualRetryRequired || meta?.error || meta?.failedAt) return '<span class="metadata-source metadata-source-warning">Metadati non recuperati · aggiornamento manuale richiesto</span>';
     if (!meta?.providerLabel) return '<span class="metadata-source pending">Metadati pubblici in aggiornamento</span>';
     const link = meta.sourceUrl ? ` href="${esc(meta.sourceUrl)}" target="_blank" rel="noopener noreferrer"` : '';
     return `<a class="metadata-source"${link}>Fonte: ${esc(meta.providerLabel)}${meta.language==='en'?' · testo inglese':''}</a>`;
