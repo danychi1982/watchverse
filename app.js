@@ -168,6 +168,9 @@
     state.metadataCycleCompletedAt = null;
     state.metadataCycleDurationMs = null;
     state.metadataRecoveryPasses = 0;
+    state.metadataStallAttempts = 0;
+    state.metadataLastCoveragePercent = null;
+    state.metadataAutoHalted = false;
     saveMetadataCycle();
   }
   function metadataDurationLabel(durationMs) {
@@ -256,7 +259,7 @@
     detailTab: 'info', tvScheduleFilter: 'today', importPreview: null, gdprPreview: null, deferredInstall: null, seasonAccordionState: new Map(),
     notifications: [], tmdbResults: [], publicResults: [], catalogResults: [], recommendationResults: [], searchQuery: '', isLoading: false, pendingAvatarProfileId: null, personFilmographyFilter: 'all', profileSettingsTab: 'identity',
     catalogEntries: [], catalogIndex: new Map(), catalogHydratedThisSession: 0, catalogNetworkAvoidedThisSession: 0,
-    metadataQueue: [], metadataRunning: 0, metadataQueuedIds: new Set(), metadataAutoBudget: 72, metadataConcurrency: 4, metadataRenderPending: false, metadataRerenderTimer: null, metadataBackgroundStarted: false, metadataContinuationTimer: null, metadataRetryTimer: null, metadataHeaderTimer: null, metadataCompletedThisSession: 0, metadataFailedThisSession: 0, metadataRecoveryScheduled: false, metadataRecoveryDone: false, metadataRecoveryPasses: 0, metadataCycleStartedAt: null, metadataCycleCompletedAt: null, metadataCycleDurationMs: null, wcagStatusFilter: 'all', wcagLevelFilter: 'all', accessibilityTab: 'declaration', searchRecommendationFilter: 'all', navigationLoaderToken: 0, navigationRequestId: 0, initialCloudHydrationPending: false, initialCloudHydrationError: null,
+    metadataQueue: [], metadataRunning: 0, metadataQueuedIds: new Set(), metadataAutoBudget: 72, metadataConcurrency: 4, metadataRenderPending: false, metadataRerenderTimer: null, metadataBackgroundStarted: false, metadataContinuationTimer: null, metadataRetryTimer: null, metadataHeaderTimer: null, metadataCompletedThisSession: 0, metadataFailedThisSession: 0, metadataRecoveryScheduled: false, metadataRecoveryDone: false, metadataRecoveryPasses: 0, metadataCycleStartedAt: null, metadataCycleCompletedAt: null, metadataCycleDurationMs: null, metadataStallAttempts: 0, metadataLastCoveragePercent: null, metadataAutoHalted: false, wcagStatusFilter: 'all', wcagLevelFilter: 'all', accessibilityTab: 'declaration', searchRecommendationFilter: 'all', navigationLoaderToken: 0, navigationRequestId: 0, initialCloudHydrationPending: false, initialCloudHydrationError: null,
     sidebarCollapsed: localStorage.getItem('watchverse.sidebarCollapsed') === '1', cinemaSearchLocation: null, cinemaSearchQuery: '', cinemaLocationFeedback: null, aivengersInitialized: false, lastRenderedRoute: '', defaultSourceStatus: null, defaultSourceSyncRunning: false, viewActionBusy: false, pendingFavoriteKeys: new Set(), cloudRefreshRunning: false, cloudRefreshAt: 0, lastUserInteractionAt: 0, cloudRefreshTimer: null, routeProgressTimer: null, dataRevision: 0, viewCache: { revision: -1, searchRecommendations: null, programmingMarkup: null }
   };
 
@@ -1741,6 +1744,8 @@
       active,
       betweenBatches,
       retryScheduled,
+      autoHalted: state.metadataAutoHalted,
+      stallAttempts: state.metadataStallAttempts,
       remainingWork,
       waitingForRetry,
       manualRetryRequired,
@@ -1881,7 +1886,7 @@
     const cinemaShowtimes=state.movies.reduce((sum,x)=>sum+(x.cinemaShowtimes||[]).length,0);
     const linkedCinemas=preferredCinemas().filter(x=>x.officialUrl).length;
     return [
-      {name:'Catalogo e metadati',percent:status.coveragePercent,state:status.active?`Aggiornamento in corso · copertura ${status.coveragePercent}%`:status.manualRetryRequired?`Completato con ${status.manualRetryRequired} retry manuali`:(status.essentialIncomplete||status.failed)?`Copertura ${status.coveragePercent}% · ${status.essentialIncomplete} titoli da verificare${status.failed?` · ${status.failed} errori tecnici`:''}`:'Catalogo completo',updated:status.coreReady,updatedLabel:'Titoli con locandina e descrizione',errors:status.failed,last:state.catalogEntries.map(x=>x.updatedAt).sort().at(-1)||null,next:status.active?'In corso':status.manualRetryRequired?'Aggiornamento manuale richiesto':status.essentialIncomplete?'Aggiornamento manuale dal dettaglio elementi':'Controllo quando aggiungi un nuovo titolo'},
+      {name:'Catalogo e metadati',percent:status.coveragePercent,state:status.active?`Aggiornamento in corso · copertura ${status.coveragePercent}%`:status.autoHalted?`Aggiornamento automatico sospeso · ${status.stallAttempts} tentativi senza avanzamento`:status.manualRetryRequired?`Completato con ${status.manualRetryRequired} retry manuali`:(status.essentialIncomplete||status.failed)?`Copertura ${status.coveragePercent}% · ${status.essentialIncomplete} titoli da verificare${status.failed?` · ${status.failed} errori tecnici`:''}`:'Catalogo completo',updated:status.coreReady,updatedLabel:'Titoli con locandina e descrizione',errors:status.failed,last:state.catalogEntries.map(x=>x.updatedAt).sort().at(-1)||null,next:status.active?'In corso':status.autoHalted?'Aggiornamento manuale dai titoli problematici':status.manualRetryRequired?'Aggiornamento manuale richiesto':status.essentialIncomplete?'Aggiornamento manuale dal dettaglio elementi':'Controllo quando aggiungi un nuovo titolo'},
       {name:'Disponibilità streaming in Italia',percent:Math.round(streamingCount/total*100),state:streamingCount?`Disponibilità effettiva trovata per ${streamingCount} titoli`:tmdbReady?'Nessuna disponibilità ancora trovata':'TMDB non configurato',updated:sourceState.streaming.checked||0,updatedLabel:'Titoli controllati',errors:0,last:sourceState.streaming.last||null,next:tmdbReady?'Su apertura o aggiornamento del titolo':'Configura TMDB per il controllo JustWatch'},
       {name:'Palinsesti TV italiani',percent:publicMetadataApi()?100:0,state:publicMetadataApi()?`Fonte pubblica preconfigurata${sourceState.tv.matches?` · ${sourceState.tv.matches} passaggi trovati`:''}`:'Da configurare',updated:sourceState.tv.checked||tvCount,updatedLabel:'Titoli controllati',errors:0,last:sourceState.tv.last||null,next:`Controllo automatico ogni ${Number(defaults.tvSchedule.refreshHours||12)} ore`},
       {name:'Programmazione cinema',percent:state.movies.length?Math.round(state.movies.filter(x=>x.cinemaCheckedAt).length/state.movies.length*100):0,state:linkedCinemas?`${linkedCinemas} siti ufficiali collegati${cinemaShowtimes?` · ${cinemaShowtimes} spettacoli trovati`:' · nessun orario ancora trovato'}`:'Da configurare',updated:state.movies.filter(x=>x.cinemaCheckedAt).length,updatedLabel:'Film controllati',errors:0,last:sourceState.cinema.last||null,next:'Su apertura del film; solo orari dai siti ufficiali'}
@@ -1893,10 +1898,12 @@
 
   function metadataStatusModalHtml(s) {
     const groups = syncSourceGroups(s);
-    const cycleLabel = s.active ? 'Aggiornamento in corso' : s.manualRetryRequired ? 'Richiede retry manuale' : s.betweenBatches ? 'Preparazione prossimo lotto' : s.waitingForRetry ? 'Retry pianificato' : s.remainingWork ? 'Ciclo parziale' : 'Ciclo completato';
+    const cycleLabel = s.active ? 'Aggiornamento in corso' : s.autoHalted ? 'Aggiornamento automatico sospeso' : s.manualRetryRequired ? 'Richiede retry manuale' : s.betweenBatches ? 'Preparazione prossimo lotto' : s.waitingForRetry ? 'Retry pianificato' : s.remainingWork ? 'Ciclo parziale' : 'Ciclo completato';
     const durationCopy = s.cycleDurationLabel ? `<p class="metadata-cycle-duration"><strong>Durata complessiva del ciclo:</strong> ${esc(s.cycleDurationLabel)}</p>` : '';
     const liveCopy = s.active
       ? `<p class="metadata-live-line"><span class="inline-spinner" aria-hidden="true"></span>Aggiornamento in corso: ${s.running} elaborazioni attive e ${s.queued} titoli in coda. Puoi continuare a usare l’app.</p>`
+      : s.autoHalted
+        ? `<p class="metadata-live-line metadata-retry-line"><strong>Aggiornamento automatico sospeso.</strong> La copertura non avanza da ${MAX_METADATA_STALL_ATTEMPTS} tentativi; aggiorna manualmente i titoli problematici.</p>`
       : s.manualRetryRequired
         ? `<p class="metadata-live-line metadata-retry-line"><strong>Retry automatici esauriti.</strong> ${s.manualRetryRequired} titoli richiedono un aggiornamento manuale.</p>`
       : s.betweenBatches
@@ -1934,7 +1941,8 @@
       row.failedAt ? `Ultimo tentativo: ${fmtDateTime(row.failedAt)}` : '',
       row.nextRetryAt ? `Prossimo retry: ${fmtDateTime(row.nextRetryAt)}` : ''
     ].filter(Boolean).join(' · ');
-    return `<article class="metadata-issue-row" data-kind="${row.kind}" data-id="${esc(row.item.id)}"><div class="metadata-issue-main"><span class="result-kicker">${type}${row.item.year?` · ${esc(row.item.year)}`:''}</span><h4>${esc(row.item.title||'Titolo senza nome')}</h4><p><strong>Da completare:</strong> ${esc(missing)}</p>${row.error?`<p class="metadata-error-copy"><strong>Errore tecnico:</strong> ${esc(row.error)}</p>`:''}${diagnostics?`<p class="metadata-diagnostics">${esc(diagnostics)}</p>`:''}</div><div class="metadata-issue-actions"><a class="ghost compact" data-metadata-open href="${route}">Apri scheda</a><button class="secondary compact" type="button" data-metadata-retry>Riprova</button></div></article>`;
+    const warning = row.classification !== 'Completato' ? '<p class="metadata-manual-warning"><strong>Azione consigliata:</strong> verifica la fonte e prova l’aggiornamento manuale dalla scheda del titolo.</p>' : '';
+    return `<article class="metadata-issue-row" data-kind="${row.kind}" data-id="${esc(row.item.id)}"><div class="metadata-issue-main"><span class="result-kicker">${type}${row.item.year?` · ${esc(row.item.year)}`:''}</span><h4>${esc(row.item.title||'Titolo senza nome')}</h4><p><strong>Da completare:</strong> ${esc(missing)}</p>${row.error?`<p class="metadata-error-copy"><strong>Errore tecnico:</strong> ${esc(row.error)}</p>`:''}${diagnostics?`<p class="metadata-diagnostics">${esc(diagnostics)}</p>`:''}${warning}</div><div class="metadata-issue-actions"><a class="ghost compact" data-metadata-open href="${route}">Apri scheda</a><button class="secondary compact" type="button" data-metadata-retry>Riprova</button></div></article>`;
   }
 
   function showMetadataIssuesLegacy(filter = 'all') {
@@ -3365,6 +3373,7 @@
   // dei falliti. Dopo quel recupero l'eventuale errore richiede un'azione
   // esplicita: la navigazione non deve riavviare richieste alla fonte.
   const MAX_METADATA_AUTO_RETRIES = 4;
+  const MAX_METADATA_STALL_ATTEMPTS = 5;
   const METADATA_TASK_TIMEOUT_MS = 45000;
   const METADATA_RETRY_DELAYS_MS = Object.freeze([15 * 60 * 1000, 60 * 60 * 1000, 6 * 60 * 60 * 1000, 24 * 60 * 60 * 1000]);
   function metadataRetryDelayMs(attempts) { return METADATA_RETRY_DELAYS_MS[Math.min(Math.max(0, Number(attempts || 1) - 1), METADATA_RETRY_DELAYS_MS.length - 1)]; }
@@ -3606,10 +3615,32 @@
 
   function scheduleNextMetadataBatch() {
     if (state.metadataContinuationTimer || !navigator.onLine || !state.settings.publicMetadataEnabled || libraryIsEmpty()) return;
+    if (state.metadataAutoHalted) {
+      state.metadataBackgroundStarted = false;
+      return;
+    }
     // Il riallineamento cloud può azzerare il flag mentre il lotto appena
     // concluso lascia ancora titoli da elaborare. In quel caso la coda deve
     // riattivarsi invece di restare ferma nello stato di attesa.
     state.metadataBackgroundStarted = true;
+    const coveragePercent = metadataGlobalStatus().coveragePercent;
+    if (state.metadataLastCoveragePercent !== null && coveragePercent <= state.metadataLastCoveragePercent) state.metadataStallAttempts += 1;
+    else state.metadataStallAttempts = 0;
+    state.metadataLastCoveragePercent = coveragePercent;
+    if (state.metadataStallAttempts >= MAX_METADATA_STALL_ATTEMPTS) {
+      state.metadataAutoHalted = true;
+      clearTimeout(state.metadataContinuationTimer);
+      state.metadataContinuationTimer = null;
+      clearTimeout(state.metadataRetryTimer);
+      state.metadataRetryTimer = null;
+      state.metadataQueue = [];
+      state.metadataQueuedIds.clear();
+      state.metadataBackgroundStarted = false;
+      completeMetadataCycle();
+      showToast('Aggiornamento automatico sospeso', `La copertura non avanza da ${MAX_METADATA_STALL_ATTEMPTS} tentativi. Aggiorna manualmente i singoli titoli problematici.`, '!', 6500, { kind:'warning' });
+      scheduleMetadataHeaderUpdate();
+      return;
+    }
     const remaining = [...state.series, ...state.movies].some(item => {
       const kind = state.series.includes(item) ? 'series' : 'movie';
       return needsPublicMetadata(item, kind, false);
@@ -3719,6 +3750,9 @@
     clearTimeout(state.metadataRecoveryTimer);
     state.metadataRecoveryScheduled = false;
     state.metadataRecoveryDone = false;
+    state.metadataAutoHalted = false;
+    state.metadataStallAttempts = 0;
+    state.metadataLastCoveragePercent = null;
     state.metadataBackgroundStarted = true;
     if (state.metadataCycleCompletedAt || !state.metadataCycleStartedAt) startMetadataCycle();
     for (const row of retryRows) queuePublicMetadata(row.kind, [row.item], { force:true, unlimited:true, includeCast:true, silent });
@@ -3745,6 +3779,11 @@
       return !meta.manualRetryRequired && Boolean(meta.failedAt || meta.error) && dateMs(meta.nextRetryAt) > Date.now();
     });
     if (!navigator.onLine || !state.settings.publicMetadataEnabled || libraryIsEmpty()) return;
+    if (state.metadataAutoHalted) {
+      state.metadataBackgroundStarted = false;
+      scheduleMetadataHeaderUpdate();
+      return;
+    }
     if (metadataHasOnlyManualRetries()) {
       clearTimeout(state.metadataContinuationTimer);
       state.metadataContinuationTimer = null;
@@ -3807,6 +3846,9 @@
     if (!navigator.onLine) { showToast('Connessione assente', 'I metadati pubblici richiedono internet.', '!', 5000, { kind: 'error' }); return; }
     if (announce) showToast('Aggiornamento avviato', item.title, '↻', 2500);
     item.publicMetadata = { ...(item.publicMetadata || {}), failedAt:null, error:null, nextRetryAt:null, manualRetryRequired:false };
+    state.metadataAutoHalted = false;
+    state.metadataStallAttempts = 0;
+    state.metadataLastCoveragePercent = null;
     await dbPut(kind === 'series' ? 'series' : 'movies', item);
     queuePublicMetadata(kind, [item], { force: true, includeCast: true, silent: false });
   }
