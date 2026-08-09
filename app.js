@@ -141,6 +141,28 @@
       durationMs: state.metadataCycleDurationMs
     }));
   }
+  function metadataAuditStorageKey() { return `watchverse.metadataAudit.v1.${state.profileId || 'account'}`; }
+  function metadataAuditRows() { return safeJson(localStorage.getItem(metadataAuditStorageKey()), []) || []; }
+  function recordMetadataAudit(kind, item, outcome, error = null) {
+    const meta = item.publicMetadata || {};
+    const rows = metadataAuditRows();
+    rows.push({
+      at: new Date().toISOString(), outcome, kind, id: item.id, title: item.title || 'Titolo senza nome', year: item.year || null,
+      provider: meta.provider || meta.resolution?.provider || null, providerId: meta.providerId || null, sourceUrl: meta.sourceUrl || null,
+      error: error ? String(error.message || error) : meta.error || null, errorCode: meta.errorCode || null, errorCategory: meta.errorCategory || null,
+      attempts: Number(meta.attempts || 0), failedAt: meta.failedAt || null, nextRetryAt: meta.nextRetryAt || null,
+      manualRetryRequired: Boolean(meta.manualRetryRequired), resolution: meta.resolution || null,
+      missing: metadataItemDiagnostics(item, kind).missing
+    });
+    localStorage.setItem(metadataAuditStorageKey(), JSON.stringify(rows.slice(-2000)));
+  }
+  function exportMetadataAudit() {
+    const payload = { exportedAt: new Date().toISOString(), profileId: state.profileId || null, current: metadataDiagnostics().diagnostics, history: metadataAuditRows() };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' });
+    const url = URL.createObjectURL(blob); const link = document.createElement('a');
+    link.href = url; link.download = `watchverse-metadati-${state.profileId || 'account'}.json`; link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
   function startMetadataCycle() {
     state.metadataCycleStartedAt = new Date().toISOString();
     state.metadataCycleCompletedAt = null;
@@ -1581,7 +1603,19 @@
     }
     const error = item.publicMetadata?.error || null;
     const failedAt = item.publicMetadata?.failedAt || null;
+    const meta = item.publicMetadata || {};
     const essentialMissing = missing.filter(label => label === 'Locandina' || label === 'Descrizione');
+    const classification = meta.manualRetryRequired
+      ? 'Retry manuale richiesto'
+      : (error || failedAt)
+        ? 'Errore tecnico'
+        : (meta.nextRetryAt && dateMs(meta.nextRetryAt) > Date.now())
+          ? 'Risultato parziale · retry pianificato'
+          : essentialMissing.length
+            ? 'Risultato incompleto da indagare'
+            : missing.length
+              ? 'Metadati supplementari mancanti'
+              : 'Completato';
     return {
       item,
       kind,
@@ -1595,6 +1629,8 @@
       provider: item.publicMetadata?.provider || item.publicMetadata?.resolution?.provider || null,
       providerId: item.publicMetadata?.providerId || null,
       resolution: item.publicMetadata?.resolution || null,
+      classification,
+      reason: error || (essentialMissing.length ? `Mancano: ${essentialMissing.join(', ')}` : (missing.length ? `Mancano: ${missing.join(', ')}` : 'Nessun errore registrato')),
       essentialComplete: essentialMissing.length === 0,
       extendedComplete: missing.length === 0 && !error
     };
@@ -1857,16 +1893,16 @@
 
   function metadataStatusModalHtml(s) {
     const groups = syncSourceGroups(s);
-    const cycleLabel = s.active ? 'Aggiornamento in corso' : s.betweenBatches ? 'Preparazione prossimo lotto' : s.waitingForRetry ? 'Retry pianificato' : s.manualRetryRequired ? 'Richiede retry manuale' : s.remainingWork ? 'Ciclo parziale' : 'Ciclo completato';
+    const cycleLabel = s.active ? 'Aggiornamento in corso' : s.manualRetryRequired ? 'Richiede retry manuale' : s.betweenBatches ? 'Preparazione prossimo lotto' : s.waitingForRetry ? 'Retry pianificato' : s.remainingWork ? 'Ciclo parziale' : 'Ciclo completato';
     const durationCopy = s.cycleDurationLabel ? `<p class="metadata-cycle-duration"><strong>Durata complessiva del ciclo:</strong> ${esc(s.cycleDurationLabel)}</p>` : '';
     const liveCopy = s.active
       ? `<p class="metadata-live-line"><span class="inline-spinner" aria-hidden="true"></span>Aggiornamento in corso: ${s.running} elaborazioni attive e ${s.queued} titoli in coda. Puoi continuare a usare l’app.</p>`
+      : s.manualRetryRequired
+        ? `<p class="metadata-live-line metadata-retry-line"><strong>Retry automatici esauriti.</strong> ${s.manualRetryRequired} titoli richiedono un aggiornamento manuale.</p>`
       : s.betweenBatches
         ? `<p class="metadata-live-line"><strong>Preparazione prossimo lotto.</strong> ${s.incomplete} titoli ancora da verificare.</p>`
       : s.waitingForRetry
         ? `<p class="metadata-live-line metadata-retry-line"><strong>Retry pianificato.</strong> ${s.failed} errori tecnici registrati${s.nextRetryAt ? ` · prossimo tentativo ${fmtDateTime(s.nextRetryAt)}` : ''}.</p>`
-        : s.manualRetryRequired
-          ? `<p class="metadata-live-line metadata-retry-line"><strong>Retry automatici esauriti.</strong> ${s.manualRetryRequired} titoli richiedono un aggiornamento manuale.</p>`
         : durationCopy;
     return `<div class="metadata-status-detail"><div class="metadata-status-overview"><div class="metadata-status-big"><strong>${s.coveragePercent}%</strong><div><span>Copertura effettiva dei metadati</span><small class="metadata-cycle-state">${cycleLabel}</small></div></div><div class="metadata-status-live">${liveCopy}</div><div class="progress-track metadata-progress large"><div class="progress-fill" style="width:${s.coveragePercent}%"></div></div><div class="metadata-recap-grid"><div><strong>${s.totalTitles.toLocaleString('it-IT')}</strong><span>Titoli del profilo</span></div><div><strong>${s.essentialIncomplete.toLocaleString('it-IT')}</strong><span>Titoli da verificare</span></div><div><strong>${s.partial.toLocaleString('it-IT')}</strong><span>Risultati parziali</span></div><div><strong>${s.failed.toLocaleString('it-IT')}</strong><span>Errori tecnici</span></div></div></div><div class="metadata-top-actions" role="group" aria-label="Azioni metadati"><button class="primary" id="resumeMetadata" type="button">Aggiorna ora</button><button class="ghost" id="openMetadataIssues" type="button">Dettaglio titoli</button><button class="ghost" id="openSourceDetails" type="button">Vedi fonti</button><button class="secondary" id="retryMetadata" type="button">Riprova non riusciti</button></div><div class="sync-source-groups">${groups.map(syncGroupHtml).join('')}</div></div>`;
   }
@@ -1886,6 +1922,8 @@
     const type = row.kind === 'series' ? 'Serie TV' : 'Film';
     const missing = row.missing.length ? row.missing.join(', ') : 'Nessun campo mancante';
     const diagnostics = [
+      row.classification ? `Stato: ${row.classification}` : '',
+      row.reason ? `Motivo: ${row.reason}` : '',
       row.errorCategory ? `Categoria: ${row.errorCategory}` : '',
       row.provider ? `Fonte: ${row.provider}${row.providerId ? ` · ${row.providerId}` : ''}` : '',
       row.resolution?.resolvedTitle ? `Corrispondenza: ${row.resolution.resolvedTitle}${row.resolution.resolvedYear ? ` (${row.resolution.resolvedYear})` : ''}` : '',
@@ -1985,8 +2023,10 @@
     const technicalErrors = rows.filter(row => row.error || row.failedAt).length;
     const analysis = metadataErrorAnalysis(all);
     openModal('Dettaglio metadati', `<div class="metadata-issues"><button class="ghost compact metadata-back-button" id="backMetadataStatus" type="button">← Torna allo stato fonti</button><div class="metadata-issues-summary"><div><strong>${coreIssues}</strong><span>Titoli senza locandina o descrizione</span></div><div><strong>${technicalErrors}</strong><span>Errori tecnici registrati</span></div><div><strong>${rows.length}</strong><span>Elementi mostrati</span></div></div>${metadataErrorAnalysisHtml(analysis)}<div class="metadata-issue-filters" role="tablist" aria-label="Filtra elementi"><button type="button" role="tab" class="${filter==='all'?'active':''}" data-metadata-filter="all">Tutti</button><button type="button" role="tab" class="${filter==='movie'?'active':''}" data-metadata-filter="movie">Film</button><button type="button" role="tab" class="${filter==='series'?'active':''}" data-metadata-filter="series">Serie TV</button></div><p class="notice">La percentuale metadati usa lo stesso criterio in header, librerie e pannello fonti: un titolo è coperto quando dispone almeno di locandina e descrizione. Cast ed episodi incompleti sono indicati nel dettaglio, ma non alterano questa percentuale.</p><div class="metadata-issue-list">${rows.length?rows.map(metadataIssueRowHtml).join(''):'<div class="empty-state compact"><h3>Nessun elemento da verificare</h3><p>La copertura dei metadati essenziali è completa.</p></div>'}</div></div>`, `<button class="secondary" id="retryAllMetadataIssues" type="button">Riprova tutti gli elementi mostrati</button><button class="primary" id="closeMetadataIssues" type="button">Chiudi</button>`);
+    $('.modal-actions')?.insertAdjacentHTML('afterbegin', '<button class="ghost" id="exportMetadataAudit" type="button">Esporta audit JSON</button>');
     $$('[data-metadata-filter]').forEach(button => button.addEventListener('click', () => showMetadataIssues(button.dataset.metadataFilter)));
     $('#backMetadataStatus')?.addEventListener('click', showMetadataStatus);
+    $('#exportMetadataAudit')?.addEventListener('click', exportMetadataAudit);
     $$('[data-metadata-jump]').forEach(button => button.addEventListener('click', () => {
       const target = $(`.metadata-issue-row[data-kind="${CSS.escape(button.dataset.kind)}"][data-id="${CSS.escape(button.dataset.id)}"]`);
       if (!target) return;
@@ -3574,10 +3614,23 @@
       const kind = state.series.includes(item) ? 'series' : 'movie';
       return needsPublicMetadata(item, kind, false);
     });
-    const pendingRetry = [...state.series, ...state.movies].some(item => item.publicMetadata?.failedAt || item.publicMetadata?.error);
+    const pendingAutomaticRetry = [...state.series, ...state.movies].some(item => {
+      const meta = item.publicMetadata || {};
+      return !meta.manualRetryRequired && (meta.failedAt || meta.error);
+    });
+    const pendingManualRetry = [...state.series, ...state.movies].some(item => item.publicMetadata?.manualRetryRequired);
     if (!remaining) {
-      if (pendingRetry && !state.metadataRecoveryDone) {
+      if (pendingAutomaticRetry && !state.metadataRecoveryDone) {
         scheduleMetadataRecoveryPass();
+        return;
+      }
+      if (pendingManualRetry && !pendingAutomaticRetry) {
+        clearTimeout(state.metadataContinuationTimer);
+        state.metadataContinuationTimer = null;
+        clearTimeout(state.metadataRetryTimer);
+        state.metadataRetryTimer = null;
+        completeMetadataCycle();
+        state.metadataBackgroundStarted = false;
         return;
       }
       if (scheduleMetadataRetryTimer()) {
@@ -3605,6 +3658,7 @@
       withMetadataTimeout(enrichWithPublicMetadata(task.kind, task.item, { includeCast: task.includeCast, force: task.force }))
         .then(() => {
           state.metadataCompletedThisSession++;
+          recordMetadataAudit(task.kind, task.item, 'success');
           if (!task.silent) showToast('Metadati aggiornati', task.item.title, '✓', 2600);
           scheduleMetadataRerender(task.item.id);
         })
@@ -3617,6 +3671,7 @@
           const manualRetryRequired = attempts > MAX_METADATA_AUTO_RETRIES;
           const nextRetryAt = manualRetryRequired ? null : new Date(Date.now() + metadataRetryDelayMs(attempts)).toISOString();
           task.item.publicMetadata = { ...previous, failedAt: now.toISOString(), error: error.message, errorCode: errorInfo.code, errorCategory: errorInfo.label, attempts, nextRetryAt, manualRetryRequired };
+          recordMetadataAudit(task.kind, task.item, manualRetryRequired ? 'manual-retry-required' : 'error', error);
           try { await dbPut(task.kind === 'series' ? 'series' : 'movies', task.item); } catch {}
           try { await saveSharedCatalog(task.kind, task.item, 'public-metadata-error'); } catch {}
           if (!task.silent) showToast('Metadati non trovati', `${task.item.title}: ${error.message}`, '!', 6000, { kind: 'error' });
@@ -3687,6 +3742,16 @@
       const kind = state.series.includes(item) ? 'series' : 'movie';
       return needsPublicMetadata(item, kind, false);
     });
+    if (!hasRemainingMetadata && !hasLegacyRetry) {
+      clearTimeout(state.metadataContinuationTimer);
+      state.metadataContinuationTimer = null;
+      clearTimeout(state.metadataRetryTimer);
+      state.metadataRetryTimer = null;
+      state.metadataBackgroundStarted = false;
+      completeMetadataCycle();
+      scheduleMetadataHeaderUpdate();
+      return;
+    }
     if (hasRemainingMetadata && (!state.metadataBackgroundStarted && (!state.metadataCycleStartedAt || state.metadataCycleCompletedAt))) startMetadataCycle();
     state.metadataBackgroundStarted = true;
     idle(() => {
