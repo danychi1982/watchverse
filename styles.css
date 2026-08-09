@@ -976,11 +976,10 @@ main:focus { outline: none; }
 .metadata-live-line { display:flex; align-items:center; gap:10px; margin:0; color:#d9d9dd; }
 .metadata-back-button { margin-bottom:12px; }
 .provider-logo-list { display:flex; flex-wrap:wrap; gap:10px; }
-.provider-logo-only { width:48px; height:48px; display:grid; place-items:center; overflow:hidden; border:1px solid var(--line); border-radius:12px; background:var(--surface-2); }
-.provider-logo-only:hover { border-color:var(--accent); background:var(--surface-3); }
+.provider-logo-only { width:72px; height:48px; display:grid; place-items:center; overflow:visible; border:0; border-radius:0; background:transparent; }
+.provider-logo-only:hover { border-color:transparent; background:transparent; }
 .provider-logo-only .provider-logo { margin:0; }
-.provider-logo-only.provider-apple { width:72px; border-color:transparent; background:transparent; }
-.provider-logo-only.provider-apple:hover { border-color:transparent; background:transparent; }
+.provider-logo-only:not(.provider-apple) .provider-logo { width:42px; height:42px; }
 .provider-logo-only.provider-apple .service-apple { width:68px; height:42px; font-size:10px; letter-spacing:-.35px; }
 
 .home-summary-grid {
