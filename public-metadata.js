@@ -46,7 +46,9 @@
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .toLowerCase()
       .replace(/\b(the|a|an|il|lo|la|i|gli|le|un|uno|una)\b/g, ' ')
-      .replace(/[^a-z0-9]+/g, ' ')
+      // Preserve Japanese, Korean, Chinese, Cyrillic and other Unicode titles.
+      // Removing non-ASCII characters made those titles impossible to match.
+      .replace(/[^\p{L}\p{N}]+/gu, ' ')
       .replace(/\s+/g, ' ')
       .trim();
   }
@@ -194,27 +196,27 @@
 
   async function tmdbMovieMetadata(input, match, includeCast) {
     const id = match.candidate.id;
-    const [detail, credits] = await Promise.all([
-      tmdbJson(`/movie/${id}`, { language: 'it-IT' }),
-      includeCast ? tmdbJson(`/movie/${id}/credits`, { language: 'it-IT' }) : Promise.resolve(null)
-    ]);
+    const detail = await tmdbJson(`/movie/${id}`, { language: 'it-IT' });
+    const englishDetail = (!detail.overview || !detail.poster_path) ? await tmdbJson(`/movie/${id}`, { language: 'en-US' }).catch(() => null) : null;
+    const credits = includeCast ? await tmdbJson(`/movie/${id}/credits`, { language: 'it-IT' }).catch(() => null) : null;
+    const resolvedDetail = { ...(englishDetail || {}), ...detail, overview: detail.overview || englishDetail?.overview || '', poster_path: detail.poster_path || englishDetail?.poster_path || null };
     const cast = (credits?.cast || []).slice(0, 18).map(person => ({
       name: person.name, role: person.character || 'Cast', tmdbId: person.id,
       photo: tmdbImage(person.profile_path, TMDB_IMAGE), sourceUrl: `https://www.themoviedb.org/person/${person.id}`
     }));
-    const title = detail.title || match.candidate.title || input.title;
-    const originalTitle = detail.original_title || input.originalTitle || title;
+    const title = resolvedDetail.title || match.candidate.title || input.title;
+    const originalTitle = resolvedDetail.original_title || input.originalTitle || title;
     return {
       provider: 'tmdb', providerLabel: 'TMDB', providerId: id,
-      providerSearchUrl: match.url, tmdbId: id, imdbId: detail.imdb_id || input.imdbId || null,
-      title, originalTitle, year: yearOf(detail.release_date), overview: detail.overview || '',
-      poster: tmdbImage(detail.poster_path), backdrop: tmdbImage(detail.backdrop_path, TMDB_BACKDROP),
-      genres: (detail.genres || []).map(genre => genre.name), runtime: detail.runtime || null,
+      providerSearchUrl: match.url, tmdbId: id, imdbId: resolvedDetail.imdb_id || input.imdbId || null,
+      title, originalTitle, year: yearOf(resolvedDetail.release_date), overview: resolvedDetail.overview || '',
+      poster: tmdbImage(resolvedDetail.poster_path), backdrop: tmdbImage(resolvedDetail.backdrop_path, TMDB_BACKDROP),
+      genres: (resolvedDetail.genres || []).map(genre => genre.name), runtime: resolvedDetail.runtime || null,
       sourceUrl: `https://www.themoviedb.org/movie/${id}`, cast,
       language: 'it', matchScore: match.validation.score, rejectionReasons: match.validation.reasons,
-      resolvedType: 'movie', coreComplete: Boolean(detail.poster_path && detail.overview),
+      resolvedType: 'movie', coreComplete: Boolean(resolvedDetail.poster_path && resolvedDetail.overview),
       castComplete: !includeCast || cast.length > 0,
-      posterSource: detail.poster_path ? 'tmdb' : null, overviewSource: detail.overview ? 'tmdb' : null,
+      posterSource: resolvedDetail.poster_path ? 'tmdb' : null, overviewSource: resolvedDetail.overview ? 'tmdb' : null,
       castSource: cast.length ? 'tmdb' : null
     };
   }
@@ -237,31 +239,31 @@
 
   async function tmdbSeriesFallback(input, match, includeCast) {
     const id = match.candidate.id;
-    const [detail, credits] = await Promise.all([
-      tmdbJson(`/tv/${id}`, { language: 'it-IT' }),
-      includeCast ? tmdbJson(`/tv/${id}/credits`, { language: 'it-IT' }) : Promise.resolve(null)
-    ]);
+    const detail = await tmdbJson(`/tv/${id}`, { language: 'it-IT' });
+    const englishDetail = (!detail.overview || !detail.poster_path) ? await tmdbJson(`/tv/${id}`, { language: 'en-US' }).catch(() => null) : null;
+    const credits = includeCast ? await tmdbJson(`/tv/${id}/credits`, { language: 'it-IT' }).catch(() => null) : null;
+    const resolvedDetail = { ...(englishDetail || {}), ...detail, overview: detail.overview || englishDetail?.overview || '', poster_path: detail.poster_path || englishDetail?.poster_path || null };
     const cast = (credits?.cast || []).slice(0, 24).map(person => ({
       name: person.name, role: person.character || 'Cast', tmdbId: person.id,
       photo: tmdbImage(person.profile_path, TMDB_IMAGE), sourceUrl: `https://www.themoviedb.org/person/${person.id}`
     }));
-    const seasons = (detail.seasons || []).map(season => ({
+    const seasons = (resolvedDetail.seasons || []).map(season => ({
       number: Number(season.season_number), name: season.name || `Stagione ${season.season_number}`,
       overview: season.overview || '', airDate: season.air_date || null, episodes: []
     }));
     return {
       provider: 'tmdb', providerLabel: 'TMDB', providerId: id,
-      providerSearchUrl: match.url, tmdbId: id, imdbId: detail.external_ids?.imdb_id || null,
-      tvdbId: detail.external_ids?.tvdb_id || null, title: detail.name || input.title,
-      originalTitle: detail.original_name || input.originalTitle || detail.name || input.title,
-      year: yearOf(detail.first_air_date), overview: detail.overview || '',
-      poster: tmdbImage(detail.poster_path), backdrop: tmdbImage(detail.backdrop_path, TMDB_BACKDROP),
-      genres: (detail.genres || []).map(genre => genre.name), runtime: detail.episode_run_time?.[0] || null,
-      statusText: detail.status || null, sourceUrl: `https://www.themoviedb.org/tv/${id}`,
+      providerSearchUrl: match.url, tmdbId: id, imdbId: resolvedDetail.external_ids?.imdb_id || null,
+      tvdbId: resolvedDetail.external_ids?.tvdb_id || null, title: resolvedDetail.name || input.title,
+      originalTitle: resolvedDetail.original_name || input.originalTitle || resolvedDetail.name || input.title,
+      year: yearOf(resolvedDetail.first_air_date), overview: resolvedDetail.overview || '',
+      poster: tmdbImage(resolvedDetail.poster_path), backdrop: tmdbImage(resolvedDetail.backdrop_path, TMDB_BACKDROP),
+      genres: (resolvedDetail.genres || []).map(genre => genre.name), runtime: resolvedDetail.episode_run_time?.[0] || null,
+      statusText: resolvedDetail.status || null, sourceUrl: `https://www.themoviedb.org/tv/${id}`,
       cast, seasons, language: 'it', matchScore: match.validation.score,
-      resolvedType: 'tv', coreComplete: Boolean(detail.poster_path && detail.overview),
+      resolvedType: 'tv', coreComplete: Boolean(resolvedDetail.poster_path && resolvedDetail.overview),
       castComplete: !includeCast || cast.length > 0,
-      posterSource: detail.poster_path ? 'tmdb' : null, overviewSource: detail.overview ? 'tmdb' : null,
+      posterSource: resolvedDetail.poster_path ? 'tmdb' : null, overviewSource: resolvedDetail.overview ? 'tmdb' : null,
       castSource: cast.length ? 'tmdb' : null
     };
   }
