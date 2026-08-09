@@ -143,15 +143,21 @@
   }
   function metadataAuditStorageKey() { return `watchverse.metadataAudit.v1.${state.profileId || 'account'}`; }
   function metadataAuditRows() { return safeJson(localStorage.getItem(metadataAuditStorageKey()), []) || []; }
+  function resetMetadataDiagnosticsForCleanRun() {
+    localStorage.removeItem(metadataAuditStorageKey());
+    state.metadataStallAttempts = 0;
+    state.metadataLastCoveragePercent = null;
+    state.metadataAutoHalted = false;
+  }
   function recordMetadataAudit(kind, item, outcome, error = null) {
     const meta = item.publicMetadata || {};
     const rows = metadataAuditRows();
     rows.push({
-      at: new Date().toISOString(), outcome, kind, id: item.id, title: item.title || 'Titolo senza nome', year: item.year || null,
+      at: new Date().toISOString(), cycleStartedAt: state.metadataCycleStartedAt, outcome, kind, id: item.id, title: item.title || 'Titolo senza nome', year: item.year || null,
       provider: meta.provider || meta.resolution?.provider || null, providerId: meta.providerId || null, sourceUrl: meta.sourceUrl || null,
       error: error ? String(error.message || error) : meta.error || null, errorCode: meta.errorCode || null, errorCategory: meta.errorCategory || null,
       attempts: Number(meta.attempts || 0), failedAt: meta.failedAt || null, nextRetryAt: meta.nextRetryAt || null,
-      manualRetryRequired: Boolean(meta.manualRetryRequired), resolution: meta.resolution || null,
+      manualRetryRequired: Boolean(meta.manualRetryRequired), stallAttempts: state.metadataStallAttempts, coveragePercent: metadataGlobalStatus().coveragePercent, resolution: meta.resolution || null,
       missing: metadataItemDiagnostics(item, kind).missing
     });
     localStorage.setItem(metadataAuditStorageKey(), JSON.stringify(rows.slice(-2000)));
@@ -4712,7 +4718,7 @@
       await dbPut('imports',{id:`${profileId}|gdpr-${Date.now()}`,profileId,sourceName:plan.sourceFileName||'TV Time GDPR ZIP',date:new Date().toISOString(),report,counts:plan.counts});
       state.settings.demoSeeded=false;state.settings.seriesFilter='unwatched';state.settings.movieFilter='watched';state.settings.seriesSort='latestEpisode';state.settings.movieSort='recent';saveSettings();
       state.seriesFilter='unwatched';state.movieFilter='watched';state.seriesSort='latestEpisode';state.movieSort='recent';state.metadataAutoBudget=36;
-      state.gdprPreview=null;await reloadData();state.metadataBackgroundStarted=false;state.metadataRecoveryDone=false;idle(()=>scheduleBackgroundMetadataSync(true));setOperationProgress(100,'Importazione locale completata.','La libreria è pronta. La sincronizzazione cloud continua in background.');clearGdprResume(plan);await new Promise(resolve=>setTimeout(resolve,250));
+      state.gdprPreview=null;await reloadData();resetMetadataDiagnosticsForCleanRun();state.metadataBackgroundStarted=false;state.metadataRecoveryDone=false;idle(()=>scheduleBackgroundMetadataSync(true));setOperationProgress(100,'Importazione locale completata.','La libreria è pronta. La sincronizzazione cloud continua in background.');clearGdprResume(plan);await new Promise(resolve=>setTimeout(resolve,250));
       if(cloudWritesSuspended){
         window.WatchverseCloudSync.resumeWrites?.();cloudWritesSuspended=false;
         showToast('Sincronizzazione cloud avviata','La libreria locale è pronta; il salvataggio online continua in background.','↻',7000,{kind:'sync'});
