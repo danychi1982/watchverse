@@ -1119,8 +1119,13 @@
     const c = computedSeries(series);
     return dateMs(c.latestReleasedUnwatched?.airDate || c.latestEpisodeAirDate || series.metadataUpdatedAt || c.latestWatchedAt || series.followedAt);
   }
+  function providerLabel(value = '') {
+    if (typeof value === 'string') return value;
+    if (!value || typeof value !== 'object') return '';
+    return value.name || value.provider_name || value.provider || value.label || '';
+  }
   function firstStreamingProvider(series) {
-    return series.italyReleaseRule?.provider || series.providerGroups?.streaming?.[0] || '';
+    return providerLabel(series.italyReleaseRule?.provider) || providerLabel(series.providerGroups?.streaming?.[0]);
   }
   function episodeScheduleInfo(series, episode) {
     const originalDate = episode.airDate || (episode.airStamp ? localDateKey(new Date(episode.airStamp)) : '');
@@ -1136,7 +1141,7 @@
     if (rule?.enabled && originalDate) {
       italy = {
         dateKey: addDaysToDateKey(originalDate, Number(rule.delayDays || 0)),
-        time: rule.time || '', provider: rule.provider || firstStreamingProvider(series),
+        time: rule.time || '', provider: providerLabel(rule.provider) || firstStreamingProvider(series),
         source: 'Correzione manuale del profilo', exact: true, confidence: 'manual'
       };
     } else if (episode.italyAirStamp || episode.italyAirDate) {
@@ -1145,7 +1150,7 @@
       italy = {
         dateKey,
         time: stamp ? new Intl.DateTimeFormat('it-IT', { hour:'2-digit', minute:'2-digit', timeZone:'Europe/Rome', hour12:false }).format(new Date(stamp)) : (episode.italyAirTime || ''),
-        provider: episode.italyProvider || firstStreamingProvider(series),
+        provider: providerLabel(episode.italyProvider) || firstStreamingProvider(series),
         source: episode.italyScheduleSource || 'Ricerca automatica online',
         exact: episode.italyScheduleExact === true,
         confidence: episode.italyScheduleConfidence || (episode.italyScheduleExact ? 'exact' : 'estimated')
@@ -1161,7 +1166,8 @@
     if (rule?.enabled) {
       const delay = Number(rule.delayDays || 0);
       const when = delay === 0 ? 'stesso giorno' : delay === 1 ? 'giorno successivo' : delay > 1 ? `${delay} giorni dopo` : `${Math.abs(delay)} giorni prima`;
-      return `${rule.provider ? `${rule.provider} · ` : ''}${when}${rule.time ? ` alle ${rule.time}` : ''}. Correzione manuale con priorità sui dati automatici.`;
+      const provider = providerLabel(rule.provider);
+      return `${provider ? `${provider} · ` : ''}${when}${rule.time ? ` alle ${rule.time}` : ''}. Correzione manuale con priorità sui dati automatici.`;
     }
     const next = computedSeries(series).episodes.map(ep => ({ ep, schedule: episodeScheduleInfo(series, ep) })).find(x => x.schedule.italy);
     if (next) {
@@ -1172,7 +1178,7 @@
   }
   function showItalyScheduleEditor(series) {
     const current = series.italyReleaseRule || {};
-    const suggestedProvider = current.provider || firstStreamingProvider(series) || '';
+    const suggestedProvider = providerLabel(current.provider) || firstStreamingProvider(series) || '';
     openModal('Programmazione Italia', `<p class="notice">Watchverse prova prima a ricavare automaticamente data, ora e piattaforma italiane dai palinsesti pubblici disponibili. La regola qui sotto è una correzione manuale: quando è attiva ha sempre la precedenza.</p>
       <div class="form-grid">
         <div class="form-field full"><label><input id="italyRuleEnabled" type="checkbox" ${current.enabled ? 'checked' : ''}> Usa una correzione manuale per questa serie</label></div>
