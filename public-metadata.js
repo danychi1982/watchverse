@@ -174,8 +174,15 @@
       const data = await tmdbJson('/search/movie', { query: input.title, year: input.year || undefined, language: 'it-IT', region: 'IT', include_adult: 'false' });
       attempts.push(...(data?.results || []).slice(0, 8).map(candidate => ({ candidate, via: 'title', url: `${TMDB_BASE}/search/movie` })));
     }
-    const ranked = attempts.map(row => ({ ...row, validation: validTmdbCandidate(row.candidate, input, 'movie') }))
+    let ranked = attempts.map(row => ({ ...row, validation: validTmdbCandidate(row.candidate, input, 'movie') }))
       .sort((a, b) => b.validation.score - a.validation.score);
+    if (!ranked.some(row => row.validation.accepted) && input.year) {
+      const fallback = await tmdbJson('/search/movie', { query: input.originalTitle || input.title, language: 'it-IT', region: 'IT', include_adult: 'false' });
+      const knownIds = new Set(attempts.map(row => row.candidate.id));
+      attempts.push(...(fallback?.results || []).filter(candidate => !knownIds.has(candidate.id)).slice(0, 8).map(candidate => ({ candidate, via: 'title-without-year', url: `${TMDB_BASE}/search/movie` })));
+      ranked = attempts.map(row => ({ ...row, validation: validTmdbCandidate(row.candidate, input, 'movie') }))
+        .sort((a, b) => b.validation.score - a.validation.score);
+    }
     const best = ranked[0];
     return best?.validation.accepted ? { ...best, rejected: ranked.filter(row => !row.validation.accepted).map(row => row.validation.reasons).flat() } : null;
   }
