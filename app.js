@@ -3871,7 +3871,8 @@
     const targets = state.movies.filter(item => {
       const meta = item.publicMetadata || {};
       const match = resolver(item);
-      return match && meta.targetedRepairVersion !== repairVersion && needsPublicMetadata(item, 'movie', false);
+      const coreIncomplete = !item.poster || isImportedPlaceholder(item.overview);
+      return match && meta.targetedRepairVersion !== repairVersion && coreIncomplete;
     });
     if (!targets.length) return;
     state.targetedMetadataRepairStarted = true;
