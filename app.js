@@ -2875,9 +2875,14 @@
   function renderHomeContent() {
 
     const recentlyWatched = state.series
-      .map(s => ({ s, ep: nextEpisode(s), watchedAt: latestWatchedAt(s.id) }))
-      .filter(x => x.ep && x.watchedAt)
-      .sort((a, b) => dateMs(b.watchedAt) - dateMs(a.watchedAt))
+      .map(s => ({
+        s,
+        ep: nextEpisode(s),
+        watchedAt: latestWatchedAt(s.id),
+        activityAt: latestWatchedAt(s.id) || s.metadataUpdatedAt || s.followedAt || s.addedAt || null
+      }))
+      .filter(x => x.ep && seriesNeedsWatching(x.s))
+      .sort((a, b) => dateMs(b.activityAt) - dateMs(a.activityAt))
       .slice(0, 12);
 
     const recentIds = new Set(recentlyWatched.map(x => x.s.id));
