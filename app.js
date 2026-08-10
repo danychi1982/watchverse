@@ -1928,7 +1928,8 @@
       : s.waitingForRetry
         ? `<p class="metadata-live-line metadata-retry-line"><strong>Retry pianificato.</strong> ${s.failed} errori tecnici registrati${s.nextRetryAt ? ` · prossimo tentativo ${fmtDateTime(s.nextRetryAt)}` : ''}.</p>`
         : durationCopy;
-    return `<div class="metadata-status-detail"><div class="metadata-status-overview"><div class="metadata-status-big"><strong>${s.coveragePercent}%</strong><div><span>Copertura effettiva dei metadati</span><small class="metadata-cycle-state">${cycleLabel}</small></div></div><div class="metadata-status-live">${liveCopy}</div><div class="progress-track metadata-progress large"><div class="progress-fill" style="width:${s.coveragePercent}%"></div></div><div class="metadata-recap-grid"><div><strong>${s.totalTitles.toLocaleString('it-IT')}</strong><span>Titoli del profilo</span></div><div><strong>${s.essentialIncomplete.toLocaleString('it-IT')}</strong><span>Titoli da verificare</span></div><div><strong>${s.partial.toLocaleString('it-IT')}</strong><span>Risultati parziali</span></div><div><strong>${s.failed.toLocaleString('it-IT')}</strong><span>Errori tecnici</span></div></div></div><div class="metadata-top-actions" role="group" aria-label="Azioni metadati"><button class="primary" id="resumeMetadata" type="button">Aggiorna ora</button><button class="ghost" id="openMetadataIssues" type="button">Dettaglio titoli</button><button class="ghost" id="openSourceDetails" type="button">Vedi fonti</button><button class="secondary" id="retryMetadata" type="button">Riprova non riusciti</button></div><div class="sync-source-groups">${groups.map(syncGroupHtml).join('')}</div></div>`;
+    const stopAction = s.active ? '<button class="danger-button" id="stopMetadata" type="button">Arresta aggiornamento</button>' : '';
+    return `<div class="metadata-status-detail"><div class="metadata-status-overview"><div class="metadata-status-big"><strong>${s.coveragePercent}%</strong><div><span>Copertura effettiva dei metadati</span><small class="metadata-cycle-state">${cycleLabel}</small></div></div><div class="metadata-status-live">${liveCopy}</div><div class="progress-track metadata-progress large"><div class="progress-fill" style="width:${s.coveragePercent}%"></div></div><div class="metadata-recap-grid"><div><strong>${s.totalTitles.toLocaleString('it-IT')}</strong><span>Titoli del profilo</span></div><div><strong>${s.essentialIncomplete.toLocaleString('it-IT')}</strong><span>Titoli da verificare</span></div><div><strong>${s.partial.toLocaleString('it-IT')}</strong><span>Risultati parziali</span></div><div><strong>${s.failed.toLocaleString('it-IT')}</strong><span>Errori tecnici</span></div></div></div><div class="metadata-top-actions" role="group" aria-label="Azioni metadati">${stopAction}<button class="primary" id="resumeMetadata" type="button">Aggiorna ora</button><button class="ghost" id="openMetadataIssues" type="button">Dettaglio titoli</button><button class="ghost" id="openSourceDetails" type="button">Vedi fonti</button><button class="secondary" id="retryMetadata" type="button">Riprova non riusciti</button></div><div class="sync-source-groups">${groups.map(syncGroupHtml).join('')}</div></div>`;
   }
 
   function updateMetadataStatusModal() {
@@ -2022,6 +2023,25 @@
   // Override del pannello fonti: il contenuto resta sincronizzato anche quando la modale rimane aperta.
   function bindMetadataStatusActions() {
     $('#openSourceDetails')?.addEventListener('click',()=>{closeModal();state.profileSettingsTab='data';location.hash='#/settings';route();});
+    $('#stopMetadata')?.addEventListener('click', () => {
+      state.metadataAutoHalted = true;
+      state.metadataBackgroundStarted = false;
+      state.metadataRecoveryScheduled = false;
+      state.metadataRecoveryDone = true;
+      state.metadataQueue = [];
+      state.metadataQueuedIds.clear();
+      clearTimeout(state.metadataContinuationTimer);
+      state.metadataContinuationTimer = null;
+      clearTimeout(state.metadataRetryTimer);
+      state.metadataRetryTimer = null;
+      clearTimeout(state.metadataRecoveryTimer);
+      state.metadataRecoveryTimer = null;
+      saveMetadataCycle();
+      completeMetadataCycle();
+      scheduleMetadataHeaderUpdate();
+      updateMetadataStatusModal();
+      showToast('Aggiornamento arrestato', 'La coda è stata svuotata. Le elaborazioni già in corso termineranno.', '!', 4500, { kind:'warning' });
+    });
     $('#openMetadataIssues')?.addEventListener('click',()=>showMetadataIssues('all'));
     $('#retryMetadata')?.addEventListener('click',()=>{for(const item of [...state.series,...state.movies])if(item.publicMetadata?.failedAt||item.publicMetadata?.error)item.publicMetadata={...(item.publicMetadata||{}),failedAt:null,error:null,nextRetryAt:null,manualRetryRequired:false,parts:{...(item.publicMetadata?.parts||{}),coreComplete:false}};state.metadataBackgroundStarted=false;state.metadataRecoveryScheduled=false;state.metadataRecoveryDone=false;state.metadataAutoBudget+=50;scheduleBackgroundMetadataSync(true);syncDefaultPublicSources(true);closeModal();showToast('Nuovo tentativo avviato','Le fonti non riuscite verranno ricontrollate.','↻');});
     $('#resumeMetadata')?.addEventListener('click', () => { state.metadataBackgroundStarted = false; state.metadataAutoBudget += 50; scheduleBackgroundMetadataSync(true); syncDefaultPublicSources(true); updateMetadataStatusModal(); showToast('Aggiornamento in background', 'Catalogo, streaming, TV e cinema verranno controllati secondo le fonti configurate.', '↻', 4200); });
@@ -3319,7 +3339,10 @@
     $$('[data-season-toggle]').forEach(b=>b.addEventListener('click',()=>{const body=$(`[data-season-body="${b.dataset.seasonToggle}"]`);body.classList.toggle('hidden');const open=!body.classList.contains('hidden');b.setAttribute('aria-expanded',String(open));state.seasonAccordionState.set(`${s.id}:${b.dataset.seasonToggle}`,open);}));
     $('#refreshSeriesMetadata')?.addEventListener('click',()=>refreshDetailMetadata('series',s));
     $('#editItalySchedule')?.addEventListener('click',()=>showItalyScheduleEditor(s));
-     queuePublicMetadata('series',[s],{silent:true,includeCast:true});
+     // A suspended automatic cycle must remain suspended even when the user
+     // opens a title with gradual enrichment enabled. Explicit refresh
+     // actions still use force:true and are handled separately.
+     if (!state.metadataAutoHalted) queuePublicMetadata('series',[s],{silent:true,includeCast:true});
      idle(()=>maybeLoadProviders('series',s));
      idle(()=>maybeLoadTrailer('series',s));
      scheduleSimilarSection(s, 'series', detailRequestId);
@@ -3350,7 +3373,8 @@
     $$('.star-rating button').forEach(b=>b.addEventListener('click',async()=>{m.rating=Number(b.dataset.value);await dbPut('movies',m);renderMovieDetail(id);}));
     $('#saveMovieMeta').addEventListener('click',async()=>{m.notes=$('#movieNotes').value.trim();const d=$('#watchedDate').value;if(d){m.watched=true;m.state='watched';m.watchedAt=new Date(`${d}T12:00:00`).toISOString();}await dbPut('movies',m);showToast('Film aggiornato',m.title);route();});
     $('#refreshMovieMetadata')?.addEventListener('click',()=>refreshDetailMetadata('movie',m));
-     queuePublicMetadata('movie',[m],{silent:true,includeCast:true});
+     // Do not let opening a detail page bypass the persisted auto-halt state.
+     if (!state.metadataAutoHalted) queuePublicMetadata('movie',[m],{silent:true,includeCast:true});
      idle(()=>maybeLoadProviders('movie',m));
      idle(()=>maybeLoadTrailer('movie',m));
      idle(()=>maybeLoadCinemaShowtimes(m));
