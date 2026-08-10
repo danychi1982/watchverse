@@ -57,6 +57,7 @@
   // Importati da TV Time con titolo originale o variante non indicizzata.
   // Il resolver è volutamente limitato a queste famiglie verificate.
   const TARGETED_MOVIE_RESOLUTIONS = [
+    { aliases: ['(500) Days of Summer – Music From the Motion Picture', '(500) Days of Summer', '500 Days of Summer'], tmdbId: 19913 },
     { aliases: ["La Vie d'Adèle - Chapitres 1 et 2", "La Vie d'Adèle", 'Blue Is the Warmest Color'] },
     { aliases: ['F*ck Valentines Day', "F Valentine's Day"], tmdbId: 1429605 },
     { aliases: ['映画『８番出口』', 'Exit 8', '８番出口'] },
@@ -73,6 +74,21 @@
     { aliases: ['Sidelined: The QB & Me', 'Sidelined: The QB and Me', 'The QB Bad Boy and Me'] },
     { aliases: ['The Good Father: The Martin MacNeill Story', 'The Good Father'] }
   ];
+
+  const TARGETED_SERIES_ALIASES = [
+    { aliases: ['Accidentally Famous: The Story of 883', 'Accidentally Famous: The Story Of 883'] },
+    { aliases: ['Rebel Cheer Squad - A Get Even Series', 'Rebel Cheer Squad: A Get Even Series'] },
+    { aliases: ['The Walking Dead: Daryl Dixon', 'Daryl Dixon'] },
+    { aliases: ['Queen Charlotte: A Bridgerton Story', 'Queen Charlotte'] },
+    { aliases: ['Lockwood & Co.', 'Lockwood and Co'] },
+    { aliases: ['The O.C.', 'The OC'] },
+    { aliases: ['The Office (US)', 'The Office'] }
+  ];
+
+  function targetedSeriesAliases(input = {}) {
+    const values = unique([input.title, input.originalTitle, ...(input.aliases || [])]);
+    return TARGETED_SERIES_ALIASES.find(rule => rule.aliases.some(alias => values.some(value => normalize(value) === normalize(alias))))?.aliases || [];
+  }
 
   function targetedMovieResolution(input = {}) {
     const values = unique([input.title, input.originalTitle, ...(input.aliases || [])]);
@@ -547,7 +563,15 @@
   }
 
   async function findTvmazeShow({ title, originalTitle = null, aliases = [], year = null, tvdbId = null }) {
-    const wantedTitles = unique([originalTitle, title, ...aliases]);
+    // L'ID TVDB arriva dall'importazione TV Time ed è più affidabile del
+    // titolo visualizzato, che può contenere localizzazioni o descrittori.
+    if (tvdbId) {
+      try {
+        const byTvdb = await fetchJson(`${TVMAZE}/lookup/shows?thetvdb=${encodeURIComponent(tvdbId)}`);
+        if (byTvdb?.id) return byTvdb;
+      } catch { /* fallback alla ricerca testuale */ }
+    }
+    const wantedTitles = unique([...targetedSeriesAliases({ title, originalTitle, aliases }), originalTitle, title, ...aliases]);
     const candidates = [];
     for (const wanted of wantedTitles.slice(0, 3)) {
       try {
@@ -564,10 +588,6 @@
     const best = dedup[0];
     const score = best ? Math.max(...wantedTitles.map(w => titleScore(best.name, w, yearOf(best.premiered), year))) : 0;
     if (best && score >= 35) return best;
-    if (tvdbId) {
-      try { return await fetchJson(`${TVMAZE}/lookup/shows?thetvdb=${encodeURIComponent(tvdbId)}`); }
-      catch { /* the external id may be stale; no console-visible failure is propagated */ }
-    }
     return null;
   }
 

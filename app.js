@@ -1101,7 +1101,11 @@
     if (options.migrate !== false) await migrateLegacyRecordsIntoSharedCatalog(series, movies);
     const pendingRemovals = readPendingLibraryRemovals();
     const pendingIds = new Set(pendingRemovals.map(entry => `${entry.kind}:${entry.id}`));
-    state.series = series.filter(x => x.profileId === state.profileId && !pendingIds.has(`series:${x.id}`));
+    const ignoredImportedSeries = series.filter(x => x.profileId === state.profileId && normalizeSearch(x.title) === 'nhk newsline focus');
+    for (const item of ignoredImportedSeries) {
+      try { await dbDelete('series', item.id); } catch (error) { console.warn('Watchverse ignored-series cleanup:', error); }
+    }
+    state.series = series.filter(x => x.profileId === state.profileId && !pendingIds.has(`series:${x.id}`) && normalizeSearch(x.title) !== 'nhk newsline focus');
     state.movies = movies.filter(x => x.profileId === state.profileId && !pendingIds.has(`movie:${x.id}`));
     const seriesAddedAtUpdates = state.series.filter(item => ensureLibraryAddedAt(item));
     const movieAddedAtUpdates = state.movies.filter(item => ensureLibraryAddedAt(item));

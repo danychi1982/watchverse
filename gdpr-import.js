@@ -18,6 +18,12 @@
     'stats-prod-cache.csv', 'user_statistics.csv'
   ];
 
+  // Titoli esplicitamente esclusi dall'importazione su richiesta dell'utente.
+  const IGNORED_IMPORTED_SERIES = new Set(['nhk newsline focus']);
+  function isIgnoredImportedSeries(title = '') {
+    return IGNORED_IMPORTED_SERIES.has(String(title).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim());
+  }
+
   // TV Time stores five ordered legacy codes; Watchverse presents them on a 10-point scale.
   const TVTIME_LEGACY_RATING_MAP = Object.freeze({ '1': 2, '27': 4, '28': 6, '29': 8, '3': 10 });
   function legacyVoteCodeToRating(code) { return TVTIME_LEGACY_RATING_MAP[String(code || '').trim()] || 0; }
@@ -146,6 +152,7 @@
 
     const seriesMap = new Map();
     const ensureSeries = (tvdbId, title) => {
+      if (isIgnoredImportedSeries(title)) return null;
       const key = tvdbId ? `tvdb:${tvdbId}` : `title:${slug(title)}`;
       if (!seriesMap.has(key)) {
         const us = tvdbId ? userSeries.get(String(tvdbId)) : null;
@@ -188,6 +195,7 @@
       }
       if (row.uuid && row.series_name) {
         const s = ensureSeries(row.s_id, row.series_name);
+        if (!s) continue;
         s.sourceUuid = row.uuid;
         s.sourceWatchedCount = number(row.ep_watch_count, s.sourceWatchedCount || 0);
         s.status = s.sourceWatchedCount > 0 ? 'watching' : (truthy(row.is_for_later) ? 'watchlist' : 'watchlist');
@@ -210,6 +218,7 @@
       const episode = number(row.episode_number || row.ep_no, 0);
       if (season == null || !episode) continue;
       const s = ensureSeries(row.s_id, row.series_name);
+      if (!s) continue;
       let seasonObj = s.seasons.find(x => Number(x.number) === season);
       if (!seasonObj) { seasonObj = { number: season, name: season === 0 ? 'Speciali' : `Stagione ${season}`, episodes: [] }; s.seasons.push(seasonObj); }
       let ep = seasonObj.episodes.find(x => Number(x.episode) === episode);
