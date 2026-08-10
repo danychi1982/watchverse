@@ -2015,6 +2015,20 @@
     $('#retryMetadata')?.addEventListener('click',()=>{for(const item of [...state.series,...state.movies])if(item.publicMetadata?.failedAt||item.publicMetadata?.error)item.publicMetadata={...(item.publicMetadata||{}),failedAt:null,error:null,nextRetryAt:null,manualRetryRequired:false,parts:{...(item.publicMetadata?.parts||{}),coreComplete:false}};state.metadataBackgroundStarted=false;state.metadataRecoveryScheduled=false;state.metadataRecoveryDone=false;state.metadataAutoBudget+=50;scheduleBackgroundMetadataSync(true);syncDefaultPublicSources(true);closeModal();showToast('Nuovo tentativo avviato','Le fonti non riuscite verranno ricontrollate.','↻');});
     $('#resumeMetadata')?.addEventListener('click', () => { state.metadataBackgroundStarted = false; state.metadataAutoBudget += 50; scheduleBackgroundMetadataSync(true); syncDefaultPublicSources(true); updateMetadataStatusModal(); showToast('Aggiornamento in background', 'Catalogo, streaming, TV e cinema verranno controllati secondo le fonti configurate.', '↻', 4200); });
   }
+  // Il retry globale deve operare solo sui titoli con errore esplicito.
+  // I titoli con soli metadati supplementari mancanti restano fuori coda.
+  function bindMetadataStatusActions() {
+    $('#openSourceDetails')?.addEventListener('click',()=>{closeModal();state.profileSettingsTab='data';location.hash='#/settings';route();});
+    $('#openMetadataIssues')?.addEventListener('click',()=>showMetadataIssues('all'));
+    $('#retryMetadata')?.addEventListener('click',()=>{
+      const retryable=[...state.series,...state.movies].filter(metadataRetryableItem);
+      for(const item of retryable)item.publicMetadata={...(item.publicMetadata||{}),failedAt:null,error:null,nextRetryAt:null,manualRetryRequired:false,parts:{...(item.publicMetadata?.parts||{}),coreComplete:false}};
+      state.metadataBackgroundStarted=false;state.metadataRecoveryScheduled=false;state.metadataRecoveryDone=false;state.metadataAutoBudget+=retryable.length;
+      scheduleBackgroundMetadataSync(true);syncDefaultPublicSources(true);closeModal();
+      showToast('Nuovo tentativo avviato',`${retryable.length} titoli con errore verranno ricontrollati.`,'!',4200);
+    });
+    $('#resumeMetadata')?.addEventListener('click',()=>{state.metadataBackgroundStarted=false;state.metadataAutoBudget+=50;scheduleBackgroundMetadataSync(true);syncDefaultPublicSources(true);updateMetadataStatusModal();showToast('Aggiornamento in background','Verranno controllati i titoli secondo le fonti configurate.','!',4200);});
+  }
   function showMetadataStatus() {
     const s = metadataGlobalStatus();
     openModal('Stato aggiornamento fonti', `<div id="metadataStatusModalContent">${metadataStatusModalHtml(s)}</div>`);
@@ -3782,8 +3796,17 @@
     scheduleMetadataHeaderUpdate();
     idle(pumpMetadataQueue);
   }
+  function metadataRetryableItem(item) {
+    const meta = item?.publicMetadata || {};
+    return Boolean(meta.error || meta.manualRetryRequired);
+  }
+
+  function metadataRetryableRow(row) {
+    return metadataRetryableItem(row?.item);
+  }
+
   async function retryMetadataItems(rows = [], { silent = true } = {}) {
-    const retryRows = rows.filter(row => row?.item && row?.kind);
+    const retryRows = rows.filter(row => row?.item && row?.kind && metadataRetryableRow(row));
     if (!retryRows.length) return 0;
     for (const row of retryRows) {
       row.item.publicMetadata = { ...(row.item.publicMetadata || {}), failedAt:null, error:null, errorCode:null, errorCategory:null, nextRetryAt:null, manualRetryRequired:false, parts:{ ...(row.item.publicMetadata?.parts || {}), coreComplete:false } };
