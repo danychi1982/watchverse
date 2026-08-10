@@ -150,6 +150,7 @@
     state.metadataStallAttempts = 0;
     state.metadataLastCoveragePercent = null;
     state.metadataAutoHalted = false;
+    state.metadataStopRequested = false;
     saveMetadataCycle();
   }
   function recordMetadataAudit(kind, item, outcome, error = null) {
@@ -180,6 +181,7 @@
     state.metadataStallAttempts = 0;
     state.metadataLastCoveragePercent = null;
     state.metadataAutoHalted = false;
+    state.metadataStopRequested = false;
     saveMetadataCycle();
   }
   function metadataDurationLabel(durationMs) {
@@ -268,7 +270,7 @@
     detailTab: 'info', tvScheduleFilter: 'today', importPreview: null, gdprPreview: null, deferredInstall: null, seasonAccordionState: new Map(),
     notifications: [], tmdbResults: [], publicResults: [], catalogResults: [], recommendationResults: [], searchQuery: '', isLoading: false, pendingAvatarProfileId: null, personFilmographyFilter: 'all', profileSettingsTab: 'identity',
     catalogEntries: [], catalogIndex: new Map(), catalogHydratedThisSession: 0, catalogNetworkAvoidedThisSession: 0,
-    metadataQueue: [], metadataRunning: 0, metadataQueuedIds: new Set(), metadataAutoBudget: 72, metadataConcurrency: 4, metadataRenderPending: false, metadataRerenderTimer: null, metadataBackgroundStarted: false, metadataContinuationTimer: null, metadataRetryTimer: null, metadataHeaderTimer: null, metadataCompletedThisSession: 0, metadataFailedThisSession: 0, metadataRecoveryScheduled: false, metadataRecoveryDone: false, metadataRecoveryPasses: 0, metadataCycleStartedAt: null, metadataCycleCompletedAt: null, metadataCycleDurationMs: null, metadataStallAttempts: 0, metadataLastCoveragePercent: null, metadataAutoHalted: false, wcagStatusFilter: 'all', wcagLevelFilter: 'all', accessibilityTab: 'declaration', searchRecommendationFilter: 'all', navigationLoaderToken: 0, navigationRequestId: 0, initialCloudHydrationPending: false, initialCloudHydrationError: null,
+    metadataQueue: [], metadataRunning: 0, metadataQueuedIds: new Set(), metadataAutoBudget: 72, metadataConcurrency: 4, metadataRenderPending: false, metadataRerenderTimer: null, metadataBackgroundStarted: false, metadataContinuationTimer: null, metadataRetryTimer: null, metadataHeaderTimer: null, metadataCompletedThisSession: 0, metadataFailedThisSession: 0, metadataRecoveryScheduled: false, metadataRecoveryDone: false, metadataRecoveryPasses: 0, metadataCycleStartedAt: null, metadataCycleCompletedAt: null, metadataCycleDurationMs: null, metadataStallAttempts: 0, metadataLastCoveragePercent: null, metadataAutoHalted: false, metadataStopRequested: false, wcagStatusFilter: 'all', wcagLevelFilter: 'all', accessibilityTab: 'declaration', searchRecommendationFilter: 'all', navigationLoaderToken: 0, navigationRequestId: 0, initialCloudHydrationPending: false, initialCloudHydrationError: null,
     sidebarCollapsed: localStorage.getItem('watchverse.sidebarCollapsed') === '1', cinemaSearchLocation: null, cinemaSearchQuery: '', cinemaLocationFeedback: null, aivengersInitialized: false, lastRenderedRoute: '', defaultSourceStatus: null, defaultSourceSyncRunning: false, viewActionBusy: false, pendingFavoriteKeys: new Set(), cloudRefreshRunning: false, cloudRefreshAt: 0, lastUserInteractionAt: 0, cloudRefreshTimer: null, routeProgressTimer: null, dataRevision: 0, viewCache: { revision: -1, searchRecommendations: null, programmingMarkup: null }
   };
 
@@ -1759,6 +1761,7 @@
       queued: state.metadataQueue.length,
       running: state.metadataRunning,
       active,
+      stopRequested: state.metadataStopRequested,
       betweenBatches,
       retryScheduled,
       autoHalted: state.metadataAutoHalted,
@@ -1918,7 +1921,7 @@
     const cycleLabel = s.active ? 'Aggiornamento in corso' : s.autoHalted ? 'Aggiornamento automatico sospeso' : s.manualRetryRequired ? 'Richiede retry manuale' : s.betweenBatches ? 'Preparazione prossimo lotto' : s.waitingForRetry ? 'Retry pianificato' : s.remainingWork ? 'Ciclo parziale' : 'Ciclo completato';
     const durationCopy = s.cycleDurationLabel ? `<p class="metadata-cycle-duration"><strong>Durata complessiva del ciclo:</strong> ${esc(s.cycleDurationLabel)}</p>` : '';
     const liveCopy = s.active
-      ? `<p class="metadata-live-line"><span class="inline-spinner" aria-hidden="true"></span>Aggiornamento in corso: ${s.running} elaborazioni attive e ${s.queued} titoli in coda. Puoi continuare a usare l’app.</p>`
+      ? `<p class="metadata-live-line"><span class="inline-spinner" aria-hidden="true"></span>${s.stopRequested ? '<strong>Arresto richiesto.</strong> Le richieste attive stanno terminando.' : `Aggiornamento in corso: ${s.running} elaborazioni attive e ${s.queued} titoli in coda. Puoi continuare a usare l’app. ${'<button class="metadata-stop-link" id="stopMetadata" type="button">Arresta aggiornamento</button>'}`}</p>`
       : s.autoHalted
         ? `<p class="metadata-live-line metadata-retry-line"><strong>Aggiornamento automatico sospeso.</strong> La copertura non avanza da ${MAX_METADATA_STALL_ATTEMPTS} tentativi; aggiorna manualmente i titoli problematici.</p>`
       : s.manualRetryRequired
@@ -1928,8 +1931,7 @@
       : s.waitingForRetry
         ? `<p class="metadata-live-line metadata-retry-line"><strong>Retry pianificato.</strong> ${s.failed} errori tecnici registrati${s.nextRetryAt ? ` · prossimo tentativo ${fmtDateTime(s.nextRetryAt)}` : ''}.</p>`
         : durationCopy;
-    const stopAction = s.active ? '<button class="danger-button" id="stopMetadata" type="button">Arresta aggiornamento</button>' : '';
-    return `<div class="metadata-status-detail"><div class="metadata-status-overview"><div class="metadata-status-big"><strong>${s.coveragePercent}%</strong><div><span>Copertura effettiva dei metadati</span><small class="metadata-cycle-state">${cycleLabel}</small></div></div><div class="metadata-status-live">${liveCopy}</div><div class="progress-track metadata-progress large"><div class="progress-fill" style="width:${s.coveragePercent}%"></div></div><div class="metadata-recap-grid"><div><strong>${s.totalTitles.toLocaleString('it-IT')}</strong><span>Titoli del profilo</span></div><div><strong>${s.essentialIncomplete.toLocaleString('it-IT')}</strong><span>Titoli da verificare</span></div><div><strong>${s.partial.toLocaleString('it-IT')}</strong><span>Risultati parziali</span></div><div><strong>${s.failed.toLocaleString('it-IT')}</strong><span>Errori tecnici</span></div></div></div><div class="metadata-top-actions" role="group" aria-label="Azioni metadati">${stopAction}<button class="primary" id="resumeMetadata" type="button">Aggiorna ora</button><button class="ghost" id="openMetadataIssues" type="button">Dettaglio titoli</button><button class="ghost" id="openSourceDetails" type="button">Vedi fonti</button><button class="secondary" id="retryMetadata" type="button">Riprova non riusciti</button></div><div class="sync-source-groups">${groups.map(syncGroupHtml).join('')}</div></div>`;
+    return `<div class="metadata-status-detail"><div class="metadata-status-overview"><div class="metadata-status-big"><strong>${s.coveragePercent}%</strong><div><span>Copertura effettiva dei metadati</span><small class="metadata-cycle-state">${cycleLabel}</small></div></div><div class="metadata-status-live">${liveCopy}</div><div class="progress-track metadata-progress large"><div class="progress-fill" style="width:${s.coveragePercent}%"></div></div><div class="metadata-recap-grid"><div><strong>${s.totalTitles.toLocaleString('it-IT')}</strong><span>Titoli del profilo</span></div><div><strong>${s.essentialIncomplete.toLocaleString('it-IT')}</strong><span>Titoli da verificare</span></div><div><strong>${s.partial.toLocaleString('it-IT')}</strong><span>Risultati parziali</span></div><div><strong>${s.failed.toLocaleString('it-IT')}</strong><span>Errori tecnici</span></div></div></div><div class="metadata-top-actions" role="group" aria-label="Azioni metadati"><button class="primary" id="resumeMetadata" type="button">Aggiorna ora</button><button class="ghost" id="openMetadataIssues" type="button">Dettaglio titoli</button><button class="ghost" id="openSourceDetails" type="button">Vedi fonti</button><button class="secondary" id="retryMetadata" type="button">Riprova non riusciti</button></div><div class="sync-source-groups">${groups.map(syncGroupHtml).join('')}</div></div>`;
   }
 
   function updateMetadataStatusModal() {
@@ -1937,8 +1939,18 @@
     if (content) {
       const modal = content.closest('.modal'); const scrollTop = modal?.scrollTop || 0;
       content.innerHTML = metadataStatusModalHtml(metadataGlobalStatus());
+      relocateMetadataRetryLink(content);
       if (modal) modal.scrollTop = scrollTop;
       bindMetadataStatusActions();
+    }
+  }
+
+  function relocateMetadataRetryLink(root) {
+    const button = root?.querySelector('#retryMetadata');
+    const errorCard = [...(root?.querySelectorAll('.metadata-recap-grid > div') || [])].find(card => card.textContent.includes('Errori tecnici'));
+    if (button && errorCard) {
+      button.className = 'metadata-inline-action';
+      errorCard.appendChild(button);
     }
   }
 
@@ -2024,6 +2036,7 @@
   function bindMetadataStatusActions() {
     $('#openSourceDetails')?.addEventListener('click',()=>{closeModal();state.profileSettingsTab='data';location.hash='#/settings';route();});
     $('#stopMetadata')?.addEventListener('click', () => {
+      state.metadataStopRequested = true;
       state.metadataAutoHalted = true;
       state.metadataBackgroundStarted = false;
       state.metadataRecoveryScheduled = false;
@@ -2040,7 +2053,7 @@
       completeMetadataCycle();
       scheduleMetadataHeaderUpdate();
       updateMetadataStatusModal();
-      showToast('Aggiornamento arrestato', 'La coda è stata svuotata. Le elaborazioni già in corso termineranno.', '!', 4500, { kind:'warning' });
+      showToast('Arresto richiesto', 'La coda è stata svuotata. Le richieste già attive stanno terminando.', '!', 4500, { kind:'warning' });
     });
     $('#openMetadataIssues')?.addEventListener('click',()=>showMetadataIssues('all'));
     $('#retryMetadata')?.addEventListener('click',()=>{for(const item of [...state.series,...state.movies])if(item.publicMetadata?.failedAt||item.publicMetadata?.error)item.publicMetadata={...(item.publicMetadata||{}),failedAt:null,error:null,nextRetryAt:null,manualRetryRequired:false,parts:{...(item.publicMetadata?.parts||{}),coreComplete:false}};state.metadataBackgroundStarted=false;state.metadataRecoveryScheduled=false;state.metadataRecoveryDone=false;state.metadataAutoBudget+=50;scheduleBackgroundMetadataSync(true);syncDefaultPublicSources(true);closeModal();showToast('Nuovo tentativo avviato','Le fonti non riuscite verranno ricontrollate.','↻');});
@@ -2054,15 +2067,16 @@
     $('#retryMetadata')?.addEventListener('click',()=>{
       const retryable=[...state.series,...state.movies].filter(metadataRetryableItem);
       for(const item of retryable)item.publicMetadata={...(item.publicMetadata||{}),failedAt:null,error:null,nextRetryAt:null,manualRetryRequired:false,parts:{...(item.publicMetadata?.parts||{}),coreComplete:false}};
-      state.metadataBackgroundStarted=false;state.metadataRecoveryScheduled=false;state.metadataRecoveryDone=false;state.metadataAutoHalted=false;saveMetadataCycle();state.metadataAutoBudget+=retryable.length;
+      state.metadataBackgroundStarted=false;state.metadataRecoveryScheduled=false;state.metadataRecoveryDone=false;state.metadataAutoHalted=false;state.metadataStopRequested=false;saveMetadataCycle();state.metadataAutoBudget+=retryable.length;
       scheduleBackgroundMetadataSync(true);syncDefaultPublicSources(true);closeModal();
       showToast('Nuovo tentativo avviato',`${retryable.length} titoli con errore verranno ricontrollati.`,'!',4200);
     });
-    $('#resumeMetadata')?.addEventListener('click',()=>{state.metadataBackgroundStarted=false;state.metadataAutoHalted=false;saveMetadataCycle();state.metadataAutoBudget+=50;scheduleBackgroundMetadataSync(true);syncDefaultPublicSources(true);updateMetadataStatusModal();showToast('Aggiornamento in background','Verranno controllati i titoli secondo le fonti configurate.','!',4200);});
+    $('#resumeMetadata')?.addEventListener('click',()=>{state.metadataBackgroundStarted=false;state.metadataAutoHalted=false;state.metadataStopRequested=false;saveMetadataCycle();state.metadataAutoBudget+=50;scheduleBackgroundMetadataSync(true);syncDefaultPublicSources(true);updateMetadataStatusModal();showToast('Aggiornamento in background','Verranno controllati i titoli secondo le fonti configurate.','!',4200);});
   }
   function showMetadataStatus() {
     const s = metadataGlobalStatus();
     openModal('Stato aggiornamento fonti', `<div id="metadataStatusModalContent">${metadataStatusModalHtml(s)}</div>`);
+    relocateMetadataRetryLink($('#metadataStatusModalContent'));
     clearInterval(state.metadataStatusModalTimer);
     state.metadataStatusModalTimer = setInterval(updateMetadataStatusModal, 1000);
     bindMetadataStatusActions();
@@ -3849,6 +3863,7 @@
     state.metadataRecoveryScheduled = false;
     state.metadataRecoveryDone = false;
     state.metadataAutoHalted = false;
+    state.metadataStopRequested = false;
     saveMetadataCycle();
     state.metadataTargetedRepairActive = true;
     state.metadataStallAttempts = 0;
