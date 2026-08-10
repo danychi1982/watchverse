@@ -3916,7 +3916,7 @@
       }
       // Questo è il worker di ciclo completo: non deve dipendere dalla scelta
       // che limita l'arricchimento visibile nelle singole schermate.
-      for (const target of targets) queuePublicMetadata(target.kind, [target.item], { silent:true, includeCast:false, unlimited:true });
+      for (const target of targets) queuePublicMetadata(target.kind, [target.item], { force: force === true, silent:true, includeCast:false, unlimited:true });
       scheduleMetadataHeaderUpdate();
       if (!state.metadataQueue.length && state.metadataRunning === 0) scheduleNextMetadataBatch();
     });
