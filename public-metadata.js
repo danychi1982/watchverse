@@ -78,6 +78,7 @@
   ];
 
   const TARGETED_SERIES_ALIASES = [
+    { aliases: ['LIGHT & MAGIC', 'Light & Magic'], tvmazeId: 62030 },
     { aliases: ['Accidentally Famous: The Story of 883', 'Accidentally Famous: The Story Of 883'] },
     { aliases: ['Rebel Cheer Squad - A Get Even Series', 'Rebel Cheer Squad: A Get Even Series'] },
     { aliases: ['The Walking Dead: Daryl Dixon', 'Daryl Dixon'] },
@@ -90,6 +91,11 @@
   function targetedSeriesAliases(input = {}) {
     const values = unique([input.title, input.originalTitle, ...(input.aliases || [])]);
     return TARGETED_SERIES_ALIASES.find(rule => rule.aliases.some(alias => values.some(value => normalize(value) === normalize(alias))))?.aliases || [];
+  }
+
+  function targetedSeriesResolution(input = {}) {
+    const values = unique([input.title, input.originalTitle, ...(input.aliases || [])]);
+    return TARGETED_SERIES_ALIASES.find(rule => rule.aliases.some(alias => values.some(value => normalize(value) === normalize(alias)))) || null;
   }
 
   function targetedMovieResolution(input = {}) {
@@ -568,6 +574,13 @@
   async function findTvmazeShow({ title, originalTitle = null, aliases = [], year = null, tvdbId = null }) {
     // L'ID TVDB arriva dall'importazione TV Time ed è più affidabile del
     // titolo visualizzato, che può contenere localizzazioni o descrittori.
+    const targeted = targetedSeriesResolution({ title, originalTitle, aliases });
+    if (targeted?.tvmazeId) {
+      try {
+        const byTvmaze = await fetchJson(`${TVMAZE}/shows/${encodeURIComponent(targeted.tvmazeId)}`);
+        if (byTvmaze?.id) return byTvmaze;
+      } catch { /* fallback to external id and title search */ }
+    }
     if (tvdbId) {
       try {
         const byTvdb = await fetchJson(`${TVMAZE}/lookup/shows?thetvdb=${encodeURIComponent(tvdbId)}`);
