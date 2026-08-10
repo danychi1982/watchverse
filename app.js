@@ -133,12 +133,14 @@
     state.metadataCycleStartedAt = saved.startedAt || null;
     state.metadataCycleCompletedAt = saved.completedAt || null;
     state.metadataCycleDurationMs = Number.isFinite(Number(saved.durationMs)) ? Number(saved.durationMs) : null;
+    state.metadataAutoHalted = Boolean(saved.autoHalted);
   }
   function saveMetadataCycle() {
     localStorage.setItem(metadataCycleStorageKey(), JSON.stringify({
       startedAt: state.metadataCycleStartedAt,
       completedAt: state.metadataCycleCompletedAt,
-      durationMs: state.metadataCycleDurationMs
+      durationMs: state.metadataCycleDurationMs,
+      autoHalted: Boolean(state.metadataAutoHalted)
     }));
   }
   function metadataAuditStorageKey() { return `watchverse.metadataAudit.v1.${state.profileId || 'account'}`; }
@@ -148,6 +150,7 @@
     state.metadataStallAttempts = 0;
     state.metadataLastCoveragePercent = null;
     state.metadataAutoHalted = false;
+    saveMetadataCycle();
   }
   function recordMetadataAudit(kind, item, outcome, error = null) {
     const meta = item.publicMetadata || {};
@@ -2023,11 +2026,11 @@
     $('#retryMetadata')?.addEventListener('click',()=>{
       const retryable=[...state.series,...state.movies].filter(metadataRetryableItem);
       for(const item of retryable)item.publicMetadata={...(item.publicMetadata||{}),failedAt:null,error:null,nextRetryAt:null,manualRetryRequired:false,parts:{...(item.publicMetadata?.parts||{}),coreComplete:false}};
-      state.metadataBackgroundStarted=false;state.metadataRecoveryScheduled=false;state.metadataRecoveryDone=false;state.metadataAutoBudget+=retryable.length;
+      state.metadataBackgroundStarted=false;state.metadataRecoveryScheduled=false;state.metadataRecoveryDone=false;state.metadataAutoHalted=false;saveMetadataCycle();state.metadataAutoBudget+=retryable.length;
       scheduleBackgroundMetadataSync(true);syncDefaultPublicSources(true);closeModal();
       showToast('Nuovo tentativo avviato',`${retryable.length} titoli con errore verranno ricontrollati.`,'!',4200);
     });
-    $('#resumeMetadata')?.addEventListener('click',()=>{state.metadataBackgroundStarted=false;state.metadataAutoBudget+=50;scheduleBackgroundMetadataSync(true);syncDefaultPublicSources(true);updateMetadataStatusModal();showToast('Aggiornamento in background','Verranno controllati i titoli secondo le fonti configurate.','!',4200);});
+    $('#resumeMetadata')?.addEventListener('click',()=>{state.metadataBackgroundStarted=false;state.metadataAutoHalted=false;saveMetadataCycle();state.metadataAutoBudget+=50;scheduleBackgroundMetadataSync(true);syncDefaultPublicSources(true);updateMetadataStatusModal();showToast('Aggiornamento in background','Verranno controllati i titoli secondo le fonti configurate.','!',4200);});
   }
   function showMetadataStatus() {
     const s = metadataGlobalStatus();
@@ -2080,7 +2083,6 @@
       showMetadataIssues(filter);
     }));
     $('#retryAllMetadataIssues')?.addEventListener('click', async () => {
-      for (const row of rows) { row.item.publicMetadata = { ...(row.item.publicMetadata || {}), failedAt:null, error:null, nextRetryAt:null, manualRetryRequired:false, parts:{ ...(row.item.publicMetadata?.parts || {}), coreComplete:false } }; await dbPut(row.kind === 'series' ? 'series' : 'movies', row.item); }
       await retryMetadataItems(rows, { silent:true });
       closeModal();
     });
@@ -3684,6 +3686,7 @@
     state.metadataLastCoveragePercent = coveragePercent;
     if (state.metadataStallAttempts >= MAX_METADATA_STALL_ATTEMPTS) {
       state.metadataAutoHalted = true;
+      saveMetadataCycle();
       clearTimeout(state.metadataContinuationTimer);
       state.metadataContinuationTimer = null;
       clearTimeout(state.metadataRetryTimer);
@@ -3816,6 +3819,7 @@
     state.metadataRecoveryScheduled = false;
     state.metadataRecoveryDone = false;
     state.metadataAutoHalted = false;
+    saveMetadataCycle();
     state.metadataTargetedRepairActive = true;
     state.metadataStallAttempts = 0;
     state.metadataLastCoveragePercent = null;
@@ -3840,17 +3844,25 @@
     return !hasRunnable && !hasAutomaticRetry;
   }
   function scheduleBackgroundMetadataSync(force = false) {
+    // La sospensione automatica deve sopravvivere a refresh e riallineamento
+    // cloud: solo un'azione esplicita dell'utente può riaprire il ciclo.
+    if (state.metadataAutoHalted) {
+      state.metadataBackgroundStarted = false;
+      state.metadataQueue = [];
+      state.metadataQueuedIds.clear();
+      clearTimeout(state.metadataContinuationTimer);
+      state.metadataContinuationTimer = null;
+      clearTimeout(state.metadataRetryTimer);
+      state.metadataRetryTimer = null;
+      scheduleMetadataHeaderUpdate();
+      return;
+    }
     void scheduleTargetedMetadataRepair();
     const hasLegacyRetry = [...state.series, ...state.movies].some(item => {
       const meta = item.publicMetadata || {};
       return !meta.manualRetryRequired && Boolean(meta.failedAt || meta.error) && dateMs(meta.nextRetryAt) > Date.now();
     });
     if (!navigator.onLine || !state.settings.publicMetadataEnabled || libraryIsEmpty()) return;
-    if (state.metadataAutoHalted) {
-      state.metadataBackgroundStarted = false;
-      scheduleMetadataHeaderUpdate();
-      return;
-    }
     if (metadataHasOnlyManualRetries()) {
       clearTimeout(state.metadataContinuationTimer);
       state.metadataContinuationTimer = null;
@@ -3926,6 +3938,7 @@
       try { await dbPut(kind === 'series' ? 'series' : 'movies', item); } catch {}
     }
     state.metadataAutoHalted = false;
+    saveMetadataCycle();
     state.metadataStallAttempts = 0;
     state.metadataLastCoveragePercent = null;
     state.metadataBackgroundStarted = true;
@@ -3948,6 +3961,7 @@
     if (announce) showToast('Aggiornamento avviato', item.title, '↻', 2500);
     item.publicMetadata = { ...(item.publicMetadata || {}), failedAt:null, error:null, nextRetryAt:null, manualRetryRequired:false };
     state.metadataAutoHalted = false;
+    saveMetadataCycle();
     state.metadataStallAttempts = 0;
     state.metadataLastCoveragePercent = null;
     await dbPut(kind === 'series' ? 'series' : 'movies', item);
