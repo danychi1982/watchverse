@@ -63,7 +63,7 @@
     { aliases: ['어쩔수가없다', 'No Other Choice'], tmdbId: 639988 },
     { aliases: ['千と千尋の神隠し', 'Spirited Away'] },
     { aliases: ['君の名は。', 'Your Name'] },
-    { aliases: ['ハウルの動く城', "Howl's Moving Castle"] },
+    { aliases: ['ハウルの動く城', "Howl's Moving Castle"], tmdbId: 4935 },
     { aliases: ['A través de mi ventana', 'Through My Window'] },
     { aliases: ['Das Privileg - Die Auserwählten', 'The Privilege'] },
     { aliases: ['기생충', 'Parasite'] },
@@ -352,6 +352,7 @@
         // A person biography can match a film title lexically. Never accept it
         // as a movie fallback, even when Wikidata later supplies an image.
         if (looksLikePersonDescription(page.extract || '')) continue;
+        if (kind === 'movie' && /\b(soundtrack|original soundtrack|colonna sonora|banda sonora)\b/i.test(`${page.title} ${page.extract || ''}`)) continue;
         const candidateYear = yearOf(page.title + ' ' + (page.extract || ''));
         const score = Math.max(...wantedTitles.map(t => titleScore(cleanWikiTitle(page.title), t, candidateYear, year)));
         if (!best || score > best.score) {
