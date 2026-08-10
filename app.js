@@ -612,10 +612,10 @@
     }
     return localWrite;
   }
-  async function dbBulkPutBatched(store, values, batchSize = 600, onProgress = null) {
+  async function dbBulkPutBatched(store, values, batchSize = 600, onProgress = null, syncCloud = true) {
     let done = 0;
     for (let i = 0; i < values.length; i += batchSize) {
-      const batch = values.slice(i, i + batchSize); await dbBulkPut(store, batch); done += batch.length;
+      const batch = values.slice(i, i + batchSize); await dbBulkPut(store, batch, syncCloud); done += batch.length;
       if (onProgress) onProgress(done, values.length);
       await new Promise(resolve => setTimeout(resolve, 0));
     }
@@ -4806,9 +4806,14 @@
       const allProgress=plan.progress.map(src=>{const seriesId=sourceToId.get(src.sourceSeriesKey);return{id:`${profileId}|${String(seriesId).split('|').pop()}:s${src.season}:e${src.episode}`,profileId,seriesId,season:src.season,episode:src.episode,title:src.title,runtime:src.runtime,watched:true,watchedAt:src.watchedAt,tvdbId:src.tvdbId,rewatchCount:src.rewatchCount,source:src.source};}).filter(x=>x.seriesId);
       const progress=allProgress.filter(item=>!existingProgressKeys.has(`${item.seriesId}|${item.season}|${item.episode}`));
       writeGdprResume(plan,{phase:'series',seriesDone:0,moviesDone:0,progressDone:0});
-      setOperationProgress(10,`Salvataggio di ${series.length.toLocaleString('it-IT')} serie…`,'Inizio importazione serie.');await dbBulkPutBatched('series',series,100,(d,t)=>{writeGdprResume(plan,{phase:'series',seriesDone:d,seriesTotal:t});setOperationProgress(10+d/Math.max(1,t)*20,`Serie: ${d.toLocaleString('it-IT')} di ${t.toLocaleString('it-IT')}`,`${Math.round(d/Math.max(1,t)*100)}% delle serie salvato.`);});
-      setOperationProgress(31,`Salvataggio di ${movies.length.toLocaleString('it-IT')} film…`,'Inizio importazione film e watchlist.');await dbBulkPutBatched('movies',movies,250,(d,t)=>{writeGdprResume(plan,{phase:'movies',moviesDone:d,moviesTotal:t});setOperationProgress(31+d/Math.max(1,t)*20,`Film: ${d.toLocaleString('it-IT')} di ${t.toLocaleString('it-IT')}`,`${Math.round(d/Math.max(1,t)*100)}% dei film salvato.`);});
-      setOperationProgress(52,`Salvataggio di ${progress.length.toLocaleString('it-IT')} episodi…`,'Questa è la fase più lunga.');await dbBulkPutBatched('progress',progress,500,(d,t)=>{writeGdprResume(plan,{phase:'progress',progressDone:d,progressTotal:t});setOperationProgress(52+d/Math.max(1,t)*43,`Episodi: ${d.toLocaleString('it-IT')} di ${t.toLocaleString('it-IT')}`,`${Math.round(d/Math.max(1,t)*100)}% della cronologia episodi salvato.`);});
+      setOperationProgress(10,`Salvataggio di ${series.length.toLocaleString('it-IT')} serie…`,'Importazione locale: la sincronizzazione cloud resta sospesa.');await dbBulkPutBatched('series',series,100,(d,t)=>{writeGdprResume(plan,{phase:'series',seriesDone:d,seriesTotal:t});setOperationProgress(10+d/Math.max(1,t)*20,`Serie: ${d.toLocaleString('it-IT')} di ${t.toLocaleString('it-IT')}`,`${Math.round(d/Math.max(1,t)*100)}% delle serie salvato.`);},false);
+      setOperationProgress(31,`Salvataggio di ${movies.length.toLocaleString('it-IT')} film…`,'Importazione locale: film e watchlist.');await dbBulkPutBatched('movies',movies,250,(d,t)=>{writeGdprResume(plan,{phase:'movies',moviesDone:d,moviesTotal:t});setOperationProgress(31+d/Math.max(1,t)*20,`Film: ${d.toLocaleString('it-IT')} di ${t.toLocaleString('it-IT')}`,`${Math.round(d/Math.max(1,t)*100)}% dei film salvato.`);},false);
+      setOperationProgress(52,`Salvataggio di ${progress.length.toLocaleString('it-IT')} episodi…`,'Importazione locale: cronologia episodi.');await dbBulkPutBatched('progress',progress,500,(d,t)=>{writeGdprResume(plan,{phase:'progress',progressDone:d,progressTotal:t});setOperationProgress(52+d/Math.max(1,t)*43,`Episodi: ${d.toLocaleString('it-IT')} di ${t.toLocaleString('it-IT')}`,`${Math.round(d/Math.max(1,t)*100)}% della cronologia episodi salvato.`);},false);
+      await reloadData();
+      const localImportCounts = { series: state.series.length, movies: state.movies.length, progress: state.progress.length };
+      if (localImportCounts.series !== series.length || localImportCounts.movies !== movies.length || localImportCounts.progress !== progress.length) {
+        throw new Error(`Verifica importazione fallita: previsti ${series.length} serie, ${movies.length} film e ${progress.length} episodi; salvati ${localImportCounts.series}, ${localImportCounts.movies} e ${localImportCounts.progress}.`);
+      }
       setOperationProgress(96,'Creazione del report finale…','Controllo dei conteggi importati.');
       const report={importedMovies:movies.length,importedEpisodes:progress.length,newSeries:series.length,duplicates:0,errors:0,counts:plan.counts,logs:[{level:'Privacy',text:`Esclusi automaticamente ${plan.ignoredSensitive.length} file sensibili.`},{level:'Watchlist',text:`Importati ${plan.counts.watchlistMovies} film da vedere e ${plan.counts.watchlistSeries||0} serie da iniziare.`},{level:'Preferiti',text:`Importati ${plan.counts.favoriteSeries} serie e ${plan.counts.favoriteMovies} film preferiti.`},{level:'Voti',text:`Convertiti ${plan.counts.legacyMovieVotes} voti TV Time nella scala da 1 a 10 stelle.`}]};
       await dbPut('imports',{id:`${profileId}|gdpr-${Date.now()}`,profileId,sourceName:plan.sourceFileName||'TV Time GDPR ZIP',date:new Date().toISOString(),report,counts:plan.counts});
@@ -4817,10 +4822,18 @@
       state.gdprPreview=null;await reloadData();resetMetadataDiagnosticsForCleanRun();state.metadataBackgroundStarted=false;state.metadataRecoveryDone=false;idle(()=>scheduleBackgroundMetadataSync(true));setOperationProgress(100,'Importazione locale completata.','La libreria è pronta. La sincronizzazione cloud continua in background.');clearGdprResume(plan);await new Promise(resolve=>setTimeout(resolve,250));
       if(cloudWritesSuspended){
         window.WatchverseCloudSync.resumeWrites?.();cloudWritesSuspended=false;
-        showToast('Sincronizzazione cloud avviata','La libreria locale è pronta; il salvataggio online continua in background.','↻',7000,{kind:'sync'});
-        void syncCloudProfile(currentProfile()).then(synced=>{
-          if (synced) showToast('Sincronizzazione cloud completata','La libreria è stata salvata anche online.','✓',5000,{kind:'success'});
-        });
+        setOperationProgress(99,'Sincronizzazione cloud del catalogo…','Invio il catalogo completo dopo la verifica locale.');
+        await window.WatchverseCloudSync.pushRecords(currentProfile(),'series',state.series);
+        await window.WatchverseCloudSync.pushRecords(currentProfile(),'movies',state.movies);
+        await window.WatchverseCloudSync.pushRecords(currentProfile(),'progress',state.progress);
+        const cloudSynced = await syncCloudProfile(currentProfile(), { forceFull:true });
+        if (!cloudSynced) throw new Error('Sincronizzazione cloud non completata dopo l’importazione.');
+        await reloadData({ migrate:false });
+        const cloudImportCounts = { series: state.series.length, movies: state.movies.length, progress: state.progress.length };
+        if (cloudImportCounts.series !== series.length || cloudImportCounts.movies !== movies.length || cloudImportCounts.progress !== progress.length) {
+          throw new Error(`Verifica cloud fallita: il catalogo dopo la sincronizzazione contiene ${cloudImportCounts.series} serie, ${cloudImportCounts.movies} film e ${cloudImportCounts.progress} episodi invece di ${series.length}, ${movies.length} e ${progress.length}.`);
+        }
+        showToast('Sincronizzazione cloud completata','La libreria è stata salvata anche online.','✓',5000,{kind:'success'});
       }
       queuePublicMetadata('series',sortSeriesItems(state.series,'latestEpisode').slice(0,8),{silent:true});queuePublicMetadata('movie',sortMovieItems(state.movies.filter(m=>m.watched),'recent').slice(0,8),{silent:true});
       showImportReport(report);showToast('Importazione completata',`${series.length.toLocaleString('it-IT')} serie, ${movies.length.toLocaleString('it-IT')} film e ${progress.length.toLocaleString('it-IT')} episodi salvati.`,'✓',7000,{kind:'success'});
