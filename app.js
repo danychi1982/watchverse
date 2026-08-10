@@ -2077,8 +2077,6 @@
     $$('[data-metadata-retry]').forEach(button => button.addEventListener('click', async () => {
       const row = rows.find(candidate => candidate.item.id === button.closest('[data-id]')?.dataset.id && candidate.kind === button.closest('[data-kind]')?.dataset.kind);
       if (!row) return;
-      row.item.publicMetadata = { ...(row.item.publicMetadata || {}), failedAt:null, error:null, nextRetryAt:null, manualRetryRequired:false, parts:{ ...(row.item.publicMetadata?.parts || {}), coreComplete:false } };
-      await dbPut(row.kind === 'series' ? 'series' : 'movies', row.item);
       await retryMetadataItems([row], { silent:false });
       showMetadataIssues(filter);
     }));
