@@ -61,6 +61,13 @@
     { aliases: ['F*ck Valentines Day', "F Valentine's Day"], tmdbId: 1429605 },
     { aliases: ['映画『８番出口』', 'Exit 8', '８番出口'] },
     { aliases: ['어쩔수가없다', 'No Other Choice'], tmdbId: 639988 },
+    { aliases: ['千と千尋の神隠し', 'Spirited Away'] },
+    { aliases: ['君の名は。', 'Your Name'] },
+    { aliases: ['ハウルの動く城', "Howl's Moving Castle"] },
+    { aliases: ['A través de mi ventana', 'Through My Window'] },
+    { aliases: ['Das Privileg - Die Auserwählten', 'The Privilege'] },
+    { aliases: ['기생충', 'Parasite'] },
+    { aliases: ['Wszyscy moi przyjaciele nie żyją', 'All My Friends Are Dead'] },
     { aliases: ['Mijn beste vriendin Anne Frank', 'My Best Friend Anne Frank'] },
     { aliases: ['Непослушная', 'Naughty'] },
     { aliases: ['Sidelined: The QB & Me', 'Sidelined: The QB and Me', 'The QB Bad Boy and Me'] },
@@ -413,7 +420,7 @@
     return data?.entities || {};
   }
 
-  async function findWikidataMovie({ title, originalTitle, year = null, imdbId = null }) {
+  async function findWikidataMovie({ title, originalTitle, aliases = [], year = null, imdbId = null }) {
     const ids = [];
     if (imdbId) {
       try {
@@ -426,7 +433,7 @@
       } catch { /* continue with title search */ }
     }
     for (const language of ['it', 'en']) {
-      for (const wanted of unique([title, originalTitle]).slice(0, 2)) {
+      for (const wanted of unique([title, originalTitle, ...aliases]).slice(0, 5)) {
         try {
           const params = new URLSearchParams({
             action: 'wbsearchentities', search: wanted, language, uselang: language,
@@ -439,7 +446,7 @@
     }
     const uniqueIds = [...new Set(ids)].slice(0, 25);
     const entities = await wikidataEntities(uniqueIds);
-    const wanted = unique([title, originalTitle]);
+    const wanted = unique([title, originalTitle, ...aliases]);
     const candidates = uniqueIds.map(id => entities[id]).filter(Boolean).filter(entity => !isPersonEntity(entity)).map(entity => {
       const names = unique([entityLabel(entity, 'it'), entityLabel(entity, 'en'), ...entityAliases(entity, 'it'), ...entityAliases(entity, 'en')]);
       const score = Math.max(0, ...names.flatMap(name => wanted.map(w => titleScore(name, w, claimYear(entity), year))));
@@ -624,18 +631,23 @@
         const tmdbMatch = await findTmdbMovie(input);
         if (tmdbMatch) return await tmdbMovieMetadata(input, tmdbMatch, options.includeCast !== false);
       } catch { /* Wikipedia/Wikidata remains the controlled fallback */ }
-      const alt = unique([input.originalTitle, ...(input.aliases || [])]);
+      const targeted = targetedMovieResolution(input);
+      const targetedAliases = targeted?.aliases || [];
+      const alt = unique([...targetedAliases, input.originalTitle, ...(input.aliases || [])]);
       let itWiki = null, enWiki = null;
       try { itWiki = await wikipediaSearchLanguage({ title: input.title, alternativeTitles: alt, year: input.year, kind: 'movie', language: 'it' }); }
       catch { /* English/Wikidata fallback below */ }
-      try { enWiki = await wikipediaSearchLanguage({ title: input.originalTitle || input.title, alternativeTitles: unique([input.title, ...alt]), year: input.year, kind: 'movie', language: 'en' }); }
+      try { enWiki = await wikipediaSearchLanguage({ title: input.originalTitle || targetedAliases[1] || input.title, alternativeTitles: unique([input.title, ...targetedAliases, ...alt]), year: input.year, kind: 'movie', language: 'en' }); }
       catch { /* Wikidata fallback below */ }
 
       let wikidataId = itWiki?.wikidataId || enWiki?.wikidataId || null;
       let entity = null;
       if (wikidataId) entity = (await wikidataEntities([wikidataId]))?.[wikidataId] || null;
       if (!entity) {
-        entity = await findWikidataMovie(input);
+        entity = await findWikidataMovie({
+          ...input,
+          aliases: unique([...(input.aliases || []), ...targetedAliases]),
+        });
         wikidataId = entity?.id || wikidataId;
       }
       if (entity) {
