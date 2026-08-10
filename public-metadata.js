@@ -121,6 +121,19 @@
 
   function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
+  async function readJsonResponse(response, sourceLabel = 'Fonte metadati') {
+    const body = await response.text();
+    try {
+      return JSON.parse(body);
+    } catch {
+      const sample = body.trim().slice(0, 80).replace(/\s+/g, ' ');
+      if (/^<!doctype\s+html|^<html[\s>]/i.test(body.trim())) {
+        throw new Error(`${sourceLabel} ha restituito HTML invece di JSON (${response.status}).`);
+      }
+      throw new Error(`${sourceLabel} ha restituito JSON non valido (${response.status}): ${sample}`);
+    }
+  }
+
   async function fetchJson(url, options = {}, attempt = 0) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), options.timeout || 16000);
@@ -138,7 +151,7 @@
         return fetchJson(url, options, attempt + 1);
       }
       if (!response.ok) throw new Error(`Fonte metadati non disponibile (${response.status})`);
-      return await response.json();
+      return await readJsonResponse(response, 'Fonte metadati');
     } finally {
       clearTimeout(timeout);
     }
@@ -168,7 +181,7 @@
         response = await fetch(url, { headers: { Authorization: `Bearer ${token}`, accept: 'application/json' }, signal: controller.signal });
       }
       if (!response.ok) throw new Error(`Fonte TMDB non disponibile (${response.status})`);
-      return response.json();
+      return readJsonResponse(response, 'Fonte TMDB');
     } finally {
       clearTimeout(timeout);
     }
