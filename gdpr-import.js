@@ -20,8 +20,15 @@
 
   // Titoli esplicitamente esclusi dall'importazione su richiesta dell'utente.
   const IGNORED_IMPORTED_SERIES = new Set(['nhk newsline focus']);
+  const IGNORED_IMPORTED_MOVIES = new Set(['the lord of the rings symphony']);
+  function normalizedImportTitle(title = '') {
+    return String(title).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  }
   function isIgnoredImportedSeries(title = '') {
-    return IGNORED_IMPORTED_SERIES.has(String(title).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim());
+    return IGNORED_IMPORTED_SERIES.has(normalizedImportTitle(title));
+  }
+  function isIgnoredImportedMovie(title = '') {
+    return IGNORED_IMPORTED_MOVIES.has(normalizedImportTitle(title));
   }
 
   // TV Time stores five ordered legacy codes; Watchverse presents them on a 10-point scale.
@@ -261,6 +268,7 @@
     const oldRows = files['tracking-prod-records.csv'] || [];
     for (const row of oldRows) {
       if (row.entity_type !== 'movie' || !row.uuid) continue;
+      if (isIgnoredImportedMovie(row.movie_name)) continue;
       const id = String(row.uuid);
       let m = moviesMap.get(id);
       if (!m) {

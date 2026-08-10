@@ -1102,11 +1102,15 @@
     const pendingRemovals = readPendingLibraryRemovals();
     const pendingIds = new Set(pendingRemovals.map(entry => `${entry.kind}:${entry.id}`));
     const ignoredImportedSeries = series.filter(x => x.profileId === state.profileId && normalizeSearch(x.title) === 'nhk newsline focus');
+    const ignoredImportedMovies = movies.filter(x => x.profileId === state.profileId && normalizeSearch(x.title) === 'the lord of the rings symphony');
     for (const item of ignoredImportedSeries) {
       try { await dbDelete('series', item.id); } catch (error) { console.warn('Watchverse ignored-series cleanup:', error); }
     }
+    for (const item of ignoredImportedMovies) {
+      try { await dbDelete('movies', item.id); } catch (error) { console.warn('Watchverse ignored-movie cleanup:', error); }
+    }
     state.series = series.filter(x => x.profileId === state.profileId && !pendingIds.has(`series:${x.id}`) && normalizeSearch(x.title) !== 'nhk newsline focus');
-    state.movies = movies.filter(x => x.profileId === state.profileId && !pendingIds.has(`movie:${x.id}`));
+    state.movies = movies.filter(x => x.profileId === state.profileId && !pendingIds.has(`movie:${x.id}`) && normalizeSearch(x.title) !== 'the lord of the rings symphony');
     const seriesAddedAtUpdates = state.series.filter(item => ensureLibraryAddedAt(item));
     const movieAddedAtUpdates = state.movies.filter(item => ensureLibraryAddedAt(item));
     if (seriesAddedAtUpdates.length) await dbBulkPut('series', seriesAddedAtUpdates);

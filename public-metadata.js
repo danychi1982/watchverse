@@ -58,6 +58,8 @@
   // Il resolver è volutamente limitato a queste famiglie verificate.
   const TARGETED_MOVIE_RESOLUTIONS = [
     { aliases: ['(500) Days of Summer – Music From the Motion Picture', '(500) Days of Summer', '500 Days of Summer'], tmdbId: 19913 },
+    { aliases: ['Jagged Little Pill'], imdbId: 'tt6811300' },
+    { aliases: ['Dark Hall', 'Down a Dark Hall'], tmdbId: 421792, imdbId: 'tt2372251' },
     { aliases: ["La Vie d'Adèle - Chapitres 1 et 2", "La Vie d'Adèle", 'Blue Is the Warmest Color'] },
     { aliases: ['F*ck Valentines Day', "F Valentine's Day"], tmdbId: 1429605 },
     { aliases: ['映画『８番出口』', 'Exit 8', '８番出口'] },
@@ -233,9 +235,10 @@
         if (candidate?.id) attempts.push({ candidate, via: 'targeted-tmdb-id', query: targeted.aliases[0], url: `${TMDB_BASE}/movie/${targeted.tmdbId}` });
       } catch { /* fallback to aliases */ }
     }
-    if (!attempts.length && input.imdbId) {
+    const targetedImdbId = input.imdbId || targeted?.imdbId;
+    if (!attempts.length && targetedImdbId) {
       try {
-        const found = await tmdbJson('/find/' + encodeURIComponent(input.imdbId), { external_source: 'imdb_id', language: 'it-IT' });
+        const found = await tmdbJson('/find/' + encodeURIComponent(targetedImdbId), { external_source: 'imdb_id', language: 'it-IT' });
         const candidate = found?.movie_results?.[0];
         if (candidate) attempts.push({ candidate, via: 'imdb', url: `${TMDB_BASE}/find/${input.imdbId}` });
       } catch { /* title search remains available */ }
@@ -278,7 +281,7 @@
     const originalTitle = resolvedDetail.original_title || input.originalTitle || title;
     return {
       provider: 'tmdb', providerLabel: 'TMDB', providerId: id,
-      providerSearchUrl: match.url, tmdbId: id, imdbId: resolvedDetail.imdb_id || input.imdbId || null,
+      providerSearchUrl: match.url, tmdbId: id, imdbId: resolvedDetail.imdb_id || input.imdbId || targetedMovieResolution(input)?.imdbId || null,
       title, originalTitle, year: yearOf(resolvedDetail.release_date), overview: resolvedDetail.overview || '',
       poster: tmdbImage(resolvedDetail.poster_path), backdrop: tmdbImage(resolvedDetail.backdrop_path, TMDB_BACKDROP),
       genres: (resolvedDetail.genres || []).map(genre => genre.name), runtime: resolvedDetail.runtime || null,
