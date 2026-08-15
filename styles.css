@@ -4452,3 +4452,28 @@ html[data-theme="buffy"] .brand-mark {
 .compact-trailer-link .trailer-thumb{width:150px;min-height:90px;aspect-ratio:16/9}
 .compact-trailer-link .trailer-copy{padding:10px 12px}
 @media (max-width:720px){.availability-trailer-grid{grid-template-columns:1fr}.compact-trailer-link .trailer-thumb{width:125px}}
+
+/* Sprint 4: provider uniformi, spaziatura compatta e programmazione integrata. */
+html { scroll-behavior: auto; }
+.provider-logo-list { align-items:center; gap:6px; }
+.provider-logo-only,
+.provider-logo-only:not(.provider-apple),
+.provider-logo-only.provider-apple { width:56px; height:42px; min-width:56px; padding:0; display:grid; place-items:center; }
+.provider-logo-only .provider-logo,
+.provider-logo-only:not(.provider-apple) .provider-logo,
+.provider-logo-only.provider-apple .service-apple { width:56px; height:42px; min-width:56px; margin:0; border-radius:10px; display:grid; place-items:center; overflow:hidden; }
+.provider-logo-only.provider-apple .service-apple { font-size:9px; letter-spacing:-.45px; }
+.availability-schedule { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:12px; padding-top:12px; border-top:1px solid var(--line); }
+.availability-schedule > div { min-width:0; display:grid; gap:4px; }
+.availability-label { color:var(--muted); font-size:11px; font-weight:850; text-transform:uppercase; letter-spacing:.06em; }
+.availability-schedule strong { color:var(--text); font-size:13px; line-height:1.35; font-weight:750; }
+.availability-schedule button { flex:0 0 auto; }
+.metadata-diagnostics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px 12px; margin:10px 0 0; }
+.metadata-diagnostics > div { min-width:0; display:grid; gap:2px; padding:7px 9px; border:1px solid color-mix(in srgb,var(--line) 80%,transparent); border-radius:8px; background:color-mix(in srgb,var(--surface-1) 78%,transparent); }
+.metadata-diagnostics dt { color:var(--muted); font-size:11px; font-weight:850; text-transform:uppercase; letter-spacing:.04em; }
+.metadata-diagnostics dd { min-width:0; margin:0; color:var(--text); font-size:13px; line-height:1.35; overflow-wrap:anywhere; }
+@media (max-width:600px) {
+  .availability-schedule { align-items:stretch; flex-direction:column; }
+  .availability-schedule button { width:100%; }
+  .metadata-diagnostics { grid-template-columns:1fr; }
+}

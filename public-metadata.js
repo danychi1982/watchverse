@@ -138,6 +138,25 @@
     return /\b(è un[’']?|e un[’']?|is an?|was an?|attrice|attore|actor|actress|regista|director|scrittor[ec]|writer|nato il|nata il|born)\b/i.test(String(value));
   }
 
+  function looksLikeSoundtrack(value = '') {
+    return /\b(soundtrack|original soundtrack|film score|motion picture soundtrack|colonna sonora|banda sonora|musica del film|album musicale)\b/i.test(String(value));
+  }
+
+  function movieTitleVariants(input = {}) {
+    const stripSoundtrack = value => String(value || '')
+      .replace(/\s*[([{]\s*(?:original\s+)?soundtrack[^)}\]]*[)}]/ig, '')
+      .replace(/\s*[([{]\s*(?:colonna\s+sonora|banda\s+sonora)[^)}\]]*[)}]/ig, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return unique([
+      input.title,
+      stripSoundtrack(input.title),
+      input.originalTitle,
+      stripSoundtrack(input.originalTitle),
+      ...(input.aliases || [])
+    ]);
+  }
+
   function relevantCatalogResult(title, overview, query) {
     if (!title || looksLikePersonDescription(overview)) return false;
     return titleScore(title, query) >= 48;
@@ -217,7 +236,7 @@
     const title = kind === 'movie' ? candidate.title : candidate.name;
     const candidateYear = yearOf(kind === 'movie' ? candidate.release_date : candidate.first_air_date);
     const targeted = kind === 'movie' ? targetedMovieResolution(input) : null;
-    return Math.max(...unique([...(targeted?.aliases || []), input.title, input.originalTitle, ...(input.aliases || [])]).map(wanted => titleScore(title, wanted, candidateYear, input.year)));
+    return Math.max(...unique([...(targeted?.aliases || []), ...movieTitleVariants(input)]).map(wanted => titleScore(title, wanted, candidateYear, input.year)));
   }
 
   function validTmdbCandidate(candidate, input, kind) {
@@ -225,6 +244,8 @@
     const score = tmdbCandidateScore(candidate, input, kind);
     const candidateYear = yearOf(kind === 'movie' ? candidate.release_date : candidate.first_air_date);
     const reasons = [];
+    if (kind === 'movie' && candidate.media_type && candidate.media_type !== 'movie') reasons.push('tipo opera incompatibile');
+    if (kind === 'movie' && looksLikeSoundtrack(`${candidate.title || ''} ${candidate.original_title || ''} ${candidate.overview || ''}`)) reasons.push('corrispondenza soundtrack non compatibile');
     if (score < 58) reasons.push('titolo poco pertinente');
     if (input.year && candidateYear && Math.abs(Number(input.year) - candidateYear) > 3) reasons.push('anno incompatibile');
     return { accepted: reasons.length === 0, score, reasons };
@@ -234,7 +255,7 @@
     // The first title variant is the historical no-year retry (via: 'title-without-year').
     const attempts = [];
     const targeted = targetedMovieResolution(input);
-    const queryTitles = unique([...(targeted?.aliases || []), input.title, input.originalTitle, ...(input.aliases || [])]).filter(Boolean).slice(0, 5);
+    const queryTitles = unique([...(targeted?.aliases || []), ...movieTitleVariants(input)]).filter(Boolean).slice(0, 5);
     if (targeted?.tmdbId) {
       try {
         const candidate = await tmdbJson(`/movie/${targeted.tmdbId}`, { language: 'it-IT' });
@@ -279,6 +300,8 @@
     const englishDetail = (!detail.overview || !detail.poster_path || !hasLatinTitle(detail.title)) ? await tmdbJson(`/movie/${id}`, { language: 'en-US' }).catch(() => null) : null;
     const credits = includeCast ? await tmdbJson(`/movie/${id}/credits`, { language: 'it-IT' }).catch(() => null) : null;
     const resolvedDetail = { ...(englishDetail || {}), ...detail, overview: detail.overview || englishDetail?.overview || '', poster_path: detail.poster_path || englishDetail?.poster_path || null };
+    const detailValidation = validTmdbCandidate({ ...match.candidate, ...resolvedDetail, title: resolvedDetail.title || match.candidate.title }, input, 'movie');
+    if (!detailValidation.accepted) throw new Error(`Corrispondenza film rifiutata: ${detailValidation.reasons.join(', ')}`);
     const cast = (credits?.cast || []).slice(0, 18).map(person => ({
       name: person.name, role: person.character || 'Cast', tmdbId: person.id,
       photo: tmdbImage(person.profile_path, TMDB_IMAGE), sourceUrl: `https://www.themoviedb.org/person/${person.id}`
@@ -377,7 +400,7 @@
         // A person biography can match a film title lexically. Never accept it
         // as a movie fallback, even when Wikidata later supplies an image.
         if (looksLikePersonDescription(page.extract || '')) continue;
-        if (kind === 'movie' && /\b(soundtrack|original soundtrack|colonna sonora|banda sonora)\b/i.test(`${page.title} ${page.extract || ''}`)) continue;
+        if (kind === 'movie' && looksLikeSoundtrack(`${page.title} ${page.extract || ''}`)) continue;
         const candidateYear = yearOf(page.title + ' ' + (page.extract || ''));
         const score = Math.max(...wantedTitles.map(t => titleScore(cleanWikiTitle(page.title), t, candidateYear, year)));
         if (!best || score > best.score) {
@@ -410,6 +433,7 @@
     const page = Object.values(data?.query?.pages || {})[0];
     if (!page || page.missing !== undefined || page.pageprops?.disambiguation) return null;
     if (looksLikePersonDescription(page.extract || '')) return null;
+    if (looksLikeSoundtrack(`${page.title} ${page.extract || ''}`)) return null;
     return {
       title: cleanWikiTitle(page.title), pageTitle: page.title,
       overview: stripHtml(page.extract || ''),
@@ -485,13 +509,15 @@
     }
     const uniqueIds = [...new Set(ids)].slice(0, 25);
     const entities = await wikidataEntities(uniqueIds);
-    const wanted = unique([title, originalTitle, ...aliases]);
+    const wanted = movieTitleVariants({ title, originalTitle, aliases });
     const candidates = uniqueIds.map(id => entities[id]).filter(Boolean).filter(entity => !isPersonEntity(entity)).map(entity => {
       const names = unique([entityLabel(entity, 'it'), entityLabel(entity, 'en'), ...entityAliases(entity, 'it'), ...entityAliases(entity, 'en')]);
+      const descriptions = [entity?.descriptions?.it?.value, entity?.descriptions?.en?.value].filter(Boolean).join(' ');
+      if (looksLikeSoundtrack(`${names.join(' ')} ${descriptions}`)) return null;
       const score = Math.max(0, ...names.flatMap(name => wanted.map(w => titleScore(name, w, claimYear(entity), year))));
       const imdb = entity?.claims?.P345?.[0]?.mainsnak?.datavalue?.value;
       return { entity, score: score + (imdbId && imdb === imdbId ? 200 : 0) };
-    }).sort((a, b) => b.score - a.score);
+    }).filter(Boolean).sort((a, b) => b.score - a.score);
     return candidates[0]?.score >= 34 ? candidates[0].entity : null;
   }
 

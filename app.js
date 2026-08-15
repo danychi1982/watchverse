@@ -1116,6 +1116,79 @@
   function resumePendingLibraryRemovals() {
     for (const entry of readPendingLibraryRemovals()) void completePendingLibraryRemoval(entry, { feedback:false });
   }
+  function movieIdentityKey(item = {}) {
+    const title = normalizeSearch(String(item.title || '')
+      .replace(/\s*[([{]\s*(?:original\s+)?soundtrack[^)}\]]*[)}]/ig, '')
+      .replace(/\s*[([{]\s*(?:colonna\s+sonora|banda\s+sonora)[^)}\]]*[)}]/ig, ''));
+    return title ? `${title}|${Number(item.year || 0) || '*'}` : '';
+  }
+  function movieStrongIds(item = {}) {
+    return [item.tmdbId && `tmdb:${item.tmdbId}`, item.imdbId && `imdb:${String(item.imdbId).toLowerCase()}`, item.wikidataId && `wikidata:${String(item.wikidataId).toLowerCase()}`].filter(Boolean);
+  }
+  function moviesRepresentSameTitle(first = {}, second = {}) {
+    const firstIds = new Set(movieStrongIds(first));
+    if (movieStrongIds(second).some(id => firstIds.has(id))) return true;
+    if (movieIdentityKey(first) !== movieIdentityKey(second)) return false;
+    if (movieLooksLikeSoundtrack(first) !== movieLooksLikeSoundtrack(second)) return true;
+    const firstResolved = normalizeSearch(first.publicMetadata?.resolution?.resolvedTitle || '');
+    const secondResolved = normalizeSearch(second.publicMetadata?.resolution?.resolvedTitle || '');
+    if (firstResolved && firstResolved === secondResolved) return true;
+    const firstSparse = !valueHasContent(first.poster) || isImportedPlaceholder(first.overview);
+    const secondSparse = !valueHasContent(second.poster) || isImportedPlaceholder(second.overview);
+    return firstSparse || secondSparse || (!movieStrongIds(first).length && !movieStrongIds(second).length);
+  }
+  function movieLooksLikeSoundtrack(item = {}) {
+    return metadataLooksLikeSoundtrack([
+      item.title, item.originalTitle, ...(item.aliases || []),
+      item.publicMetadata?.resolution?.resolvedTitle, item.publicMetadata?.resolution?.resolvedOriginalTitle
+    ].filter(Boolean).join(' '));
+  }
+  function movieDuplicateScore(item = {}) {
+    return (movieLooksLikeSoundtrack(item) ? -10000 : 0)
+      + (item.tmdbId ? 1000 : 0) + (item.imdbId ? 600 : 0) + (item.wikidataId ? 200 : 0)
+      + (valueHasContent(item.poster) ? 40 : 0) + (!isImportedPlaceholder(item.overview) ? 40 : 0)
+      + (Array.isArray(item.cast) ? Math.min(18, item.cast.length) : 0)
+      + (item.favorite ? 8 : 0) + (item.watched ? 4 : 0);
+  }
+  function mergeDuplicateMovieData(primary, duplicate) {
+    primary.aliases = mergeAliases(primary.aliases || [], duplicate.aliases || [], duplicate.title, duplicate.originalTitle);
+    for (const key of ['watched', 'favorite', 'liked', 'isFavorite']) if (duplicate[key]) primary[key] = duplicate[key];
+    if (!primary.status && duplicate.status) primary.status = duplicate.status;
+    if (!Number(primary.rating) && Number(duplicate.rating)) primary.rating = duplicate.rating;
+    if (!primary.notes && duplicate.notes) primary.notes = duplicate.notes;
+    if (!primary.watchedAt && duplicate.watchedAt) primary.watchedAt = duplicate.watchedAt;
+    for (const key of ['title', 'originalTitle', 'year', 'overview', 'poster', 'backdrop', 'runtime', 'tmdbId', 'imdbId', 'wikidataId', 'providerGroups', 'trailer', 'publicMetadata', 'metadataUpdatedAt']) {
+      if (!valueHasContent(primary[key]) && valueHasContent(duplicate[key])) primary[key] = deepClone(duplicate[key]);
+    }
+    return primary;
+  }
+  async function collapseDuplicateMovies() {
+    const groups = new Map();
+    for (const movie of state.movies) {
+      const key = movieIdentityKey(movie);
+      if (key) groups.set(key, [...(groups.get(key) || []), movie]);
+    }
+    let removed = 0;
+    for (const candidates of groups.values()) {
+      if (candidates.length < 2) continue;
+      const ordered = candidates.slice().sort((a, b) => movieDuplicateScore(b) - movieDuplicateScore(a) || dateMs(a.addedAt) - dateMs(b.addedAt));
+      const primary = ordered[0];
+      for (const duplicate of ordered.slice(1)) {
+        if (!moviesRepresentSameTitle(primary, duplicate)) continue;
+        mergeDuplicateMovieData(primary, duplicate);
+        try {
+          await dbPut('movies', primary);
+          await dbDelete('movies', duplicate.id);
+          state.movies = state.movies.filter(movie => movie.id !== duplicate.id);
+          removed++;
+        } catch (error) {
+          console.warn('Watchverse duplicate movie cleanup:', error);
+        }
+      }
+    }
+    if (removed) rebuildIndexes();
+    return removed;
+  }
   async function reloadData(options = {}) {
     const [series, movies, progress, people, catalog] = await Promise.all([
       dbGetAll('series'), dbGetAll('movies'), dbGetAll('progress'), dbGetAll('people'), dbGetAll('catalog')
@@ -1136,6 +1209,7 @@
     }
     state.series = series.filter(x => x.profileId === state.profileId && !pendingIds.has(`series:${x.id}`) && normalizeSearch(x.title) !== 'nhk newsline focus');
     state.movies = movies.filter(x => x.profileId === state.profileId && !pendingIds.has(`movie:${x.id}`) && normalizeSearch(x.title) !== 'the lord of the rings symphony');
+    await collapseDuplicateMovies();
     const seriesAddedAtUpdates = state.series.filter(item => ensureLibraryAddedAt(item));
     const movieAddedAtUpdates = state.movies.filter(item => ensureLibraryAddedAt(item));
     if (seriesAddedAtUpdates.length) await dbBulkPut('series', seriesAddedAtUpdates);
@@ -1464,11 +1538,15 @@
   function scrollWindowInstantly(top) {
     const root = document.documentElement;
     const previousBehavior = root.style.scrollBehavior;
+    const body = document.body;
+    const previousBodyBehavior = body?.style.scrollBehavior || '';
     root.style.scrollBehavior = 'auto';
+    if (body) body.style.scrollBehavior = 'auto';
     try {
       window.scrollTo({ left: 0, top: Math.max(0, Number(top) || 0), behavior: 'auto' });
     } finally {
       root.style.scrollBehavior = previousBehavior;
+      if (body) body.style.scrollBehavior = previousBodyBehavior;
     }
   }
   function updateBackToTopButton() {
@@ -1755,6 +1833,9 @@
     const betweenBatches = !active && Boolean(state.metadataContinuationTimer);
     const retryScheduled = !active && Boolean(state.metadataRetryTimer);
     const waitingForRetry = retryScheduled;
+    // Un retry manuale è uno stato finale solo quando non ci sono altri
+    // lotti eseguibili: durante la pausa tra lotti la UI deve restare attiva.
+    const manualRetryReady = manualRetryRequired > 0 && !active && !betweenBatches && !retryScheduled && !remainingWork;
     const nextRetryAt = allRows.map(row => row.nextRetryAt).filter(value => value && dateMs(value) > Date.now()).sort((a, b) => dateMs(a) - dateMs(b))[0] || null;
     const batchCompleted = totalTitles === 0 || (!active && !remainingWork && !!state.metadataCycleCompletedAt);
     const cyclePercent = batchCompleted ? 100 : (active ? Math.max(1, Math.min(99, Math.round((state.metadataCompletedThisSession + state.metadataFailedThisSession) / Math.max(1, state.metadataCompletedThisSession + state.metadataFailedThisSession + state.metadataQueue.length + state.metadataRunning) * 100))) : ((remainingWork || manualRetryRequired) ? Math.min(99, coveragePercent) : 0));
@@ -1791,7 +1872,8 @@
       stallAttempts: state.metadataStallAttempts,
       remainingWork,
       waitingForRetry,
-      manualRetryRequired,
+      manualRetryRequired: manualRetryReady ? manualRetryRequired : 0,
+      manualRetryReady,
       nextRetryAt,
       cycleStartedAt: state.metadataCycleStartedAt,
       cycleCompletedAt: state.metadataCycleCompletedAt,
@@ -1831,6 +1913,8 @@
       ? `${status.running} in corso · ${status.queued} in coda · copertura ${status.coveragePercent}%`
       : status.remainingWork
         ? `${status.incomplete} titoli da verificare · ${status.betweenBatches ? 'preparazione prossimo lotto' : status.waitingForRetry ? 'retry pianificato' : 'ciclo ancora in corso'}`
+      : status.manualRetryReady
+        ? `${status.manualRetryRequired} titoli richiedono retry manuale`
       : status.incomplete > 0
         ? `${status.incomplete} titoli incompleti${status.failed ? ` · ${status.failed} errori` : ''}`
         : 'Catalogo completo';
@@ -1941,16 +2025,16 @@
 
   function metadataStatusModalHtml(s) {
     const groups = syncSourceGroups(s);
-    const cycleLabel = s.active ? 'Aggiornamento in corso' : s.autoHalted ? 'Aggiornamento automatico sospeso' : s.manualRetryRequired ? 'Richiede retry manuale' : s.betweenBatches ? 'Preparazione prossimo lotto' : s.waitingForRetry ? 'Retry pianificato' : s.remainingWork ? 'Ciclo parziale' : 'Ciclo completato';
+    const cycleLabel = s.active ? 'Aggiornamento in corso' : s.autoHalted ? 'Aggiornamento automatico sospeso' : s.betweenBatches ? 'Preparazione prossimo lotto' : s.waitingForRetry ? 'Retry pianificato' : s.manualRetryReady ? 'Richiede retry manuale' : s.remainingWork ? 'Ciclo parziale' : 'Ciclo completato';
     const durationCopy = s.cycleDurationLabel ? `<p class="metadata-cycle-duration"><strong>Durata complessiva del ciclo:</strong> ${esc(s.cycleDurationLabel)}</p>` : '';
     const liveCopy = s.active
       ? `<p class="metadata-live-line"><span class="inline-spinner" aria-hidden="true"></span>${s.stopRequested ? '<strong>Arresto richiesto.</strong> Le richieste attive stanno terminando.' : `Aggiornamento in corso: ${s.running} elaborazioni attive e ${s.queued} titoli in coda. Puoi continuare a usare l’app. ${'<button class="metadata-stop-link" id="stopMetadata" type="button">Arresta aggiornamento</button>'}`}</p>`
       : s.autoHalted
         ? `<p class="metadata-live-line metadata-retry-line"><strong>Aggiornamento automatico sospeso.</strong> La copertura non avanza da ${MAX_METADATA_STALL_ATTEMPTS} tentativi; aggiorna manualmente i titoli problematici.</p>`
-      : s.manualRetryRequired
-        ? `<p class="metadata-live-line metadata-retry-line"><strong>Retry automatici esauriti.</strong> ${s.manualRetryRequired} titoli richiedono un aggiornamento manuale.</p>`
       : s.betweenBatches
         ? `<p class="metadata-live-line"><strong>Preparazione prossimo lotto.</strong> ${s.incomplete} titoli ancora da verificare.</p>`
+      : s.manualRetryReady
+        ? `<p class="metadata-live-line metadata-retry-line"><strong>Retry automatici esauriti.</strong> ${s.manualRetryRequired} titoli richiedono un aggiornamento manuale.</p>`
       : s.waitingForRetry
         ? `<p class="metadata-live-line metadata-retry-line"><strong>Retry pianificato.</strong> ${s.failed} errori tecnici registrati${s.nextRetryAt ? ` · prossimo tentativo ${fmtDateTime(s.nextRetryAt)}` : ''}.</p>`
         : durationCopy;
@@ -1996,6 +2080,30 @@
     ].filter(Boolean).join(' · ');
     const warning = row.classification !== 'Completato' ? '<p class="metadata-manual-warning"><strong>Azione consigliata:</strong> verifica la fonte e prova l’aggiornamento manuale dalla scheda del titolo.</p>' : '';
     return `<article class="metadata-issue-row" data-kind="${row.kind}" data-id="${esc(row.item.id)}"><div class="metadata-issue-main"><span class="result-kicker">${type}${row.item.year?` · ${esc(row.item.year)}`:''}</span><h4>${esc(row.item.title||'Titolo senza nome')}</h4><p><strong>Da completare:</strong> ${esc(missing)}</p>${row.error?`<p class="metadata-error-copy"><strong>Errore tecnico:</strong> ${esc(row.error)}</p>`:''}${diagnostics?`<p class="metadata-diagnostics">${esc(diagnostics)}</p>`:''}${warning}</div><div class="metadata-issue-actions"><a class="ghost compact" data-metadata-open href="${route}">Apri scheda</a><button class="secondary compact" type="button" data-metadata-retry>Riprova</button></div></article>`;
+  }
+
+  // Override della riga diagnostica: etichette e valori restano separati e
+  // leggibili anche quando un titolo contiene molte informazioni di audit.
+  function metadataIssueRowHtml(row) {
+    const route = row.kind === 'series' ? `#/series/${encodeURIComponent(row.item.id)}` : `#/movie/${encodeURIComponent(row.item.id)}`;
+    const type = row.kind === 'series' ? 'Serie TV' : 'Film';
+    const missing = row.missing.length ? row.missing.join(', ') : 'Nessun campo mancante';
+    const fields = [
+      ['Stato', row.classification],
+      ['Motivo', row.reason],
+      ['Categoria', row.errorCategory],
+      ['Fonte', row.provider ? `${row.provider}${row.providerId ? ` · ${row.providerId}` : ''}` : ''],
+      ['Corrispondenza', row.resolution?.resolvedTitle ? `${row.resolution.resolvedTitle}${row.resolution.resolvedYear ? ` (${row.resolution.resolvedYear})` : ''}` : ''],
+      ['Tipo', row.resolution?.resolvedType],
+      ['Punteggio', Number.isFinite(Number(row.resolution?.matchScore)) ? row.resolution.matchScore : ''],
+      ['Locandina', row.resolution?.posterSource],
+      ['Tentativi', row.attempts ? row.attempts : ''],
+      ['Ultimo tentativo', row.failedAt ? fmtDateTime(row.failedAt) : ''],
+      ['Prossimo retry', row.nextRetryAt ? fmtDateTime(row.nextRetryAt) : '']
+    ].filter(([, value]) => value !== undefined && value !== null && value !== '');
+    const diagnostics = fields.length ? `<dl class="metadata-diagnostics">${fields.map(([label, value]) => `<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join('')}</dl>` : '';
+    const warning = row.classification !== 'Completato' ? '<p class="metadata-manual-warning"><strong>Azione consigliata:</strong> verifica la fonte e prova l’aggiornamento manuale dalla scheda del titolo.</p>' : '';
+    return `<article class="metadata-issue-row" data-kind="${row.kind}" data-id="${esc(row.item.id)}"><div class="metadata-issue-main"><span class="result-kicker">${type}${row.item.year ? ` · ${esc(row.item.year)}` : ''}</span><h4>${esc(row.item.title || 'Titolo senza nome')}</h4><p><strong>Da completare:</strong> ${esc(missing)}</p>${row.error ? `<p class="metadata-error-copy"><strong>Errore tecnico:</strong> ${esc(row.error)}</p>` : ''}${diagnostics}${warning}</div><div class="metadata-issue-actions"><a class="ghost compact" data-metadata-open href="${route}">Apri scheda</a><button class="secondary compact" type="button" data-metadata-retry>Riprova</button></div></article>`;
   }
 
   function showMetadataIssuesLegacy(filter = 'all') {
@@ -2283,6 +2391,11 @@
         ||(candidate==='prime video'&&normalized.includes('amazon'));
     })||{name,mark:String(name||'TV').slice(0,2).toUpperCase(),tone:'generic',url:''};
   }
+  function providerPlatformKey(provider) {
+    const name = providerDisplayName(provider);
+    const meta = streamingServiceMeta(name);
+    return normalizeSearch(meta.name || name);
+  }
   function providerLogoHtml(name) {
     const meta=streamingServiceMeta(name);
     return `<span class="provider-logo service-${esc(meta.tone)}" aria-hidden="true">${esc(meta.mark)}</span>`;
@@ -2306,12 +2419,16 @@
     if(!rows.length)return '';
     return `<div class="provider-group tv-provider-group"><h4>In TV</h4><div class="tv-provider-list">${rows.map(row=>`<article class="tv-provider-card">${tvChannelLogoHtml(row.channel||'Canale TV','channel-logo')}<span><strong>${esc(row.channel||'Canale TV')}</strong><small>${esc(showtimeDateLabel(row.startsAt||row.date))}${row.episode?` · ${esc(row.episode)}`:''}</small></span>${row.guideUrl?`<a href="${esc(row.guideUrl)}" target="_blank" rel="noopener noreferrer" aria-label="Apri guida di ${esc(row.channel||'canale TV')}">↗</a>`:''}</article>`).join('')}</div></div>`;
   }
-  function providersHtml(item) {
+  function italyScheduleAvailabilityHtml(item, kind) {
+    if (kind !== 'series') return '';
+    return `<div class="availability-schedule"><div><span class="availability-label">Prossima disponibilità in Italia</span><strong>${esc(italyReleaseRuleSummary(item))}</strong></div><button class="ghost compact" id="editItalySchedule" type="button">Modifica disponibilità</button></div>`;
+  }
+  function providersHtml(item, kind = 'movie') {
     const groups = item.providerGroups || {};
     const seen = new Set();
     const providers = ['streaming', 'rent', 'buy', 'free'].flatMap(key => Array.isArray(groups[key]) ? groups[key] : [])
       .filter(provider => {
-        const key = normalizeSearch(providerDisplayName(provider));
+        const key = providerPlatformKey(provider);
         if (!key || seen.has(key)) return false;
         seen.add(key); return true;
       });
@@ -2325,7 +2442,7 @@
         : `<span class="provider-logo-only${wrapperClass}" role="img" aria-label="${esc(name)}">${body}</span>`;
     }).join('')}</div>` : '';
     const tv=tvOptionsHtml(item);
-    if(blocks||tv)return `<div class="watch-options-stack">${blocks}${tv}</div>`;
+    if(blocks||tv||kind === 'series')return `<div class="watch-options-stack">${blocks}${tv}${italyScheduleAvailabilityHtml(item, kind)}</div>`;
     if(item.providerStatus==='loading')return inlineCinemaLoaderHtml('Verifica disponibilità', 'Controllo esclusivamente i servizi realmente associati al titolo.');
     return '<p class="information-unavailable">Informazione non disponibile</p>';
   }
@@ -2639,7 +2756,8 @@
       else renderSettings();
       state.lastRenderedRoute = routeKey;
       if (preserveScroll) {
-        scrollWindowInstantly(preservedScrollY);
+        const userIsInteracting = Date.now() - state.lastUserInteractionAt < 1200;
+        if (!userIsInteracting) scrollWindowInstantly(preservedScrollY);
         requestAnimationFrame(() => {
           // Do not fight a scroll started by the user while the background
           // rerender was in progress. Restore only layout-induced movement.
@@ -2647,6 +2765,9 @@
             scrollWindowInstantly(preservedScrollY);
           }
           restoreActiveField(preservedField);
+          requestAnimationFrame(() => {
+            if (window.scrollY !== preservedScrollY && Date.now() - state.lastUserInteractionAt >= 1200) scrollWindowInstantly(preservedScrollY);
+          });
         });
       }
       if (!options.skipCloudRefresh && !state.initialCloudHydrationPending) scheduleCloudRouteRefresh(r.page);
@@ -3366,7 +3487,8 @@
     const episodes = `<section><div class="notice ${s.publicMetadata?.provider?'':'warning'}" style="margin-bottom:16px">${s.publicMetadata?.provider?'Calendario ed episodi collegati ai metadati pubblici.':'Gli episodi importati restano tracciabili. Watchverse sta cercando automaticamente titoli, date e nuovi episodi nelle fonti pubbliche.'}</div>
       ${ep?`<article class="content-card" style="margin-bottom:18px"><span class="kicker">Continua il monitoraggio</span><h3>S${pad2(ep.season)} E${pad2(ep.episode)} · ${esc(ep.title)}</h3><p>${esc(ep.overview||'')}</p>${ep.airDate?`<p class="season-meta">Uscita: ${fmtDate(ep.airDate)}</p>`:''}<button class="primary" id="continueEpisode">✓ Segna visto</button></article>`:''}
       ${(s.seasons||[]).slice().sort((a,b)=>a.number-b.number).map(season=>{const eps=(season.episodes||[]).slice().sort((a,b)=>a.episode-b.episode);const watched=eps.filter(e=>isEpisodeWatched(s.id,e.season,e.episode)).length;return `<section class="season"><button class="season-head" data-season-toggle="${season.number}" aria-expanded="true" aria-controls="season-body-${season.number}"><span><strong>${esc(season.name||`Stagione ${season.number}`)}</strong><br><span class="season-meta">${watched}/${eps.length} episodi visti</span></span><span class="season-chevron" aria-hidden="true">⌄</span></button><div class="episode-list" id="season-body-${season.number}" data-season-body="${season.number}">${eps.map(e=>`<article class="episode-row"><div class="episode-thumb">${e.image?`<img src="${esc(e.image)}" alt="" loading="lazy" decoding="async">`:`S${pad2(e.season)}E${pad2(e.episode)}`}</div><div><h4>${esc(e.title||`Episodio ${e.episode}`)}</h4><p>${e.airDate?fmtDate(e.airDate)+' · ':''}${e.runtime||50} min</p>${e.overview?`<small>${esc(e.overview.slice(0,180))}</small>`:''}</div><button class="watch-check ${isEpisodeWatched(s.id,e.season,e.episode)?'watched':''}" data-ep="${e.episode}" data-season="${e.season}" data-title="${esc(e.title||'')}" aria-label="${isEpisodeWatched(s.id,e.season,e.episode)?'Segna come non visto':'Segna come visto'}: S${pad2(e.season)} E${pad2(e.episode)} ${esc(e.title||'')}">✓</button></article>`).join('')}</div></section>`;}).join('')||'<div class="empty-state"><h3>Nessun episodio disponibile</h3><p>L’aggiornamento pubblico verrà tentato automaticamente quando sei online.</p></div>'}</section>`;
-    setMain(`${detailHero(s,'series')}<div class="tabbar"><button class="tab-button ${state.detailTab==='info'?'active':''}" data-detail-tab="info">Info</button><button class="tab-button ${state.detailTab==='episodes'?'active':''}" data-detail-tab="episodes">Episodi</button></div>${state.detailTab==='info'?info:episodes}`);
+    const compactInfo = info.replace(/<section class="content-card italy-schedule-card">[\s\S]*?<\/aside>/, '</aside>');
+    setMain(`${detailHero(s,'series')}<div class="tabbar"><button class="tab-button ${state.detailTab==='info'?'active':''}" data-detail-tab="info">Info</button><button class="tab-button ${state.detailTab==='episodes'?'active':''}" data-detail-tab="episodes">Episodi</button></div>${state.detailTab==='info'?compactInfo:episodes}`);
     const seriesStateList = document.querySelector('.detail-grid aside .info-list');
     if (seriesStateList && !seriesStateList.querySelector('[data-total-episodes]')) {
       seriesStateList.insertAdjacentHTML('afterbegin', `<div class="info-row" data-total-episodes><span>Episodi totali</span><strong>${totalEpisodes || '—'}</strong></div>`);
@@ -3499,7 +3621,22 @@
     if (/network|fetch|connession|offline|failed to/i.test(message)) return { code:'network', label:'Errore di rete' };
     if (/nessuna corrispondenza|non trovata|scheda pubblica/i.test(message)) return { code:'not-found', label:'Titolo non trovato' };
     if (/Fonte metadati non disponibile|5\d\d/i.test(message)) return { code:'source-error', label:'Fonte temporaneamente non disponibile' };
+    if (/corrispondenza|incompatibile|soundtrack/i.test(message)) return { code:'invalid-match', label:'Corrispondenza non valida' };
     return { code:'unknown', label:'Errore tecnico' };
+  }
+  function metadataLooksLikeSoundtrack(value = '') {
+    return /\b(soundtrack|original soundtrack|film score|motion picture soundtrack|colonna sonora|banda sonora|musica del film|album musicale)\b/i.test(String(value));
+  }
+  function validateResolvedMetadata(kind, item, metadata = {}) {
+    const resolvedType = String(metadata.resolvedType || (kind === 'series' ? 'tv' : 'movie')).toLowerCase();
+    if (kind === 'movie' && resolvedType !== 'movie') throw new Error(`Corrispondenza di tipo ${resolvedType} incompatibile con un film`);
+    if (kind === 'series' && resolvedType === 'movie') throw new Error('Corrispondenza film incompatibile con una serie TV');
+    if (kind === 'movie' && metadataLooksLikeSoundtrack(`${metadata.title || ''} ${metadata.originalTitle || ''} ${metadata.resolution?.resolvedTitle || ''}`)) {
+      throw new Error(`Corrispondenza soundtrack non valida per ${item.title}`);
+    }
+    const expectedYear = Number(item.year || 0);
+    const resolvedYear = Number(metadata.year || 0);
+    if (expectedYear && resolvedYear && Math.abs(expectedYear - resolvedYear) > 3) throw new Error(`Anno ${resolvedYear} incompatibile con il titolo ${expectedYear}`);
   }
   // Ogni ciclo prova prima tutti i titoli e fa poi un unico recupero finale
   // dei falliti. Dopo quel recupero l'eventuale errore richiede un'azione
@@ -3593,6 +3730,7 @@
     const metadata = kind === 'series'
       ? await api.lookupSeries({ title: item.title, originalTitle: item.originalTitle, aliases: item.aliases, year: item.year, tvdbId: item.tvdbId }, { includeItalianOverview: true, includeCast })
       : await api.lookupMovie({ title: item.title, originalTitle: item.originalTitle, aliases: item.aliases, year: item.year, imdbId: item.imdbId }, { includeCast, castLimit: 18 });
+    validateResolvedMetadata(kind, item, metadata);
     const now = new Date().toISOString();
     const previousMeta = item.publicMetadata || {}; const previousParts = previousMeta.parts || {};
     const localizedTitle = metadata.title || item.title;
@@ -4383,7 +4521,7 @@
     const trailerBody=href
       ? `<a class="trailer-link compact-trailer-link" href="${esc(href)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(trailer?.name||'Guarda il trailer')}${youtubeKey?' su YouTube':''}"><div class="trailer-thumb" style="background:${item.backdropGradient||gradient(item.title+' trailer')}">${visual?`<img src="${esc(visual)}" alt="Anteprima trailer di ${esc(item.title)}" loading="lazy" decoding="async">`:''}<span class="trailer-play" aria-hidden="true">▶</span></div><div class="trailer-copy"><strong>${esc(trailer?.name||'Guarda il trailer')}</strong><span>${youtubeKey?'YouTube':'Apri trailer'} ↗</span></div></a>`
       : item.trailerLookupStatus==='loading' ? inlineCinemaLoaderHtml('Ricerca trailer ufficiale','Controllo TMDB e i risultati pubblici ufficiali.') : '<p class="information-unavailable">Informazione non disponibile</p>';
-    const providers=providersHtml(item);
+    const providers=providersHtml(item, kind);
     const providersBody=providers||'<p class="information-unavailable">Nessuna disponibilità trovata.</p>';
     return `<section class="content-card section availability-trailer-card"><div class="section-head"><div><h3>Dove guardarlo e trailer</h3><p>Disponibilità e trailer verificati per questo titolo.</p></div></div><div class="availability-trailer-grid"><div class="availability-panel"><h4>${availabilityTitle}</h4>${providersBody}</div><div class="availability-panel"><div class="availability-panel-head"><h4>Guarda il trailer</h4>${href?`<span class="source-state state-ready">${trailer?.official?'Trailer ufficiale':'Trailer trovato'}</span>`:''}</div>${trailerBody}</div></div></section>`;
   }
@@ -4415,12 +4553,13 @@
     if(item.tmdbId)return Number(item.tmdbId);
     if(!tmdbIsReady())return null;
     const tmdbKind=kind==='series'?'tv':'movie';
-    const params={query:item.title,language:'it-IT',include_adult:'false'};
+    const query=String(item.title || '').replace(/\s*[([{]\s*(?:original\s+)?soundtrack[^)}\]]*[)}]/ig, '').trim();
+    const params={query:query || item.title,language:'it-IT',include_adult:'false'};
     if(item.year)params[kind==='series'?'first_air_date_year':'year']=item.year;
     const data=await tmdbFetch(`/search/${tmdbKind}`,params);
-    const rows=data.results||[];
-    const exact=rows.find(row=>normalizeSearch(row.name||row.title)===normalizeSearch(item.title)&&(!item.year||String(row.first_air_date||row.release_date||'').startsWith(String(item.year))));
-    const best=exact||rows[0];
+    const rows=(data.results||[]).filter(row => kind !== 'movie' || !metadataLooksLikeSoundtrack(`${row.title || ''} ${row.original_title || ''} ${row.overview || ''}`));
+    const exact=rows.find(row=>tmdbMatchIsSafe(item,row,kind));
+    const best=exact||rows.find(row=>!item.year || !String(row.first_air_date||row.release_date||'') || Math.abs(Number(String(row.first_air_date||row.release_date||'').slice(0,4))-Number(item.year))<=3)||rows[0];
     if(!best)return null;
     item.tmdbId=Number(best.id);
     return item.tmdbId;
@@ -4509,10 +4648,14 @@
   }
 
   function tmdbMatchIsSafe(item, match, kind) {
-    const matchTitle = normalizeSearch(match?.title || match?.name || '');
-    const titles = mergeAliases(item.title || '', item.originalTitle || '', item.aliases || []).map(normalizeSearch).filter(Boolean);
+    const stripSoundtrack = value => normalizeSearch(value).replace(/\bsoundtrack\b/g, '').trim();
+    const matchTitle = stripSoundtrack(match?.title || match?.name || '');
+    const titles = mergeAliases(item.title || '', item.originalTitle || '', item.aliases || []).map(stripSoundtrack).filter(Boolean);
     const year = String(match?.release_date || match?.first_air_date || '').slice(0, 4);
-    return titles.includes(matchTitle) && (!item.year || !year || String(item.year) === year) && (kind === 'movie' || match?.media_type !== 'movie');
+    return !metadataLooksLikeSoundtrack(`${match?.title || ''} ${match?.original_title || ''} ${match?.overview || ''}`)
+      && titles.includes(matchTitle)
+      && (!item.year || !year || Math.abs(Number(item.year) - Number(year)) <= 3)
+      && (kind === 'movie' || match?.media_type !== 'movie');
   }
   async function applyTmdbMatchToExisting(kind, item, matchId) {
     const type = kind === 'movie' ? 'movie' : 'series';
@@ -5616,6 +5759,8 @@
     if(state.shellBound)return;
     state.shellBound=true;
     document.addEventListener('pointerdown', () => { state.lastUserInteractionAt = Date.now(); }, { passive: true });
+    document.addEventListener('wheel', () => { state.lastUserInteractionAt = Date.now(); }, { passive: true });
+    document.addEventListener('touchstart', () => { state.lastUserInteractionAt = Date.now(); }, { passive: true });
     document.addEventListener('keydown', () => { state.lastUserInteractionAt = Date.now(); }, { passive: true });
     document.addEventListener('click', event => {
       if (event.target.closest?.('#stopMetadata')) {
