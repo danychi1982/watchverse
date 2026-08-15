@@ -134,13 +134,15 @@
     state.metadataCycleCompletedAt = saved.completedAt || null;
     state.metadataCycleDurationMs = Number.isFinite(Number(saved.durationMs)) ? Number(saved.durationMs) : null;
     state.metadataAutoHalted = Boolean(saved.autoHalted);
+    state.metadataStopRequested = Boolean(saved.stopRequested);
   }
   function saveMetadataCycle() {
     localStorage.setItem(metadataCycleStorageKey(), JSON.stringify({
       startedAt: state.metadataCycleStartedAt,
       completedAt: state.metadataCycleCompletedAt,
       durationMs: state.metadataCycleDurationMs,
-      autoHalted: Boolean(state.metadataAutoHalted)
+      autoHalted: Boolean(state.metadataAutoHalted),
+      stopRequested: Boolean(state.metadataStopRequested)
     }));
   }
   function metadataAuditStorageKey() { return `watchverse.metadataAudit.v1.${state.profileId || 'account'}`; }
@@ -198,6 +200,27 @@
     state.metadataCycleDurationMs = Math.max(0, Date.parse(state.metadataCycleCompletedAt) - Date.parse(state.metadataCycleStartedAt));
     saveMetadataCycle();
     if (state.defaultSourceSyncDeferred) idle(() => syncDefaultPublicSources(false));
+  }
+  function stopMetadataUpdate() {
+    if (state.metadataStopRequested && state.metadataAutoHalted) return;
+    state.metadataStopRequested = true;
+    state.metadataAutoHalted = true;
+    state.metadataBackgroundStarted = false;
+    state.metadataRecoveryScheduled = false;
+    state.metadataRecoveryDone = true;
+    state.metadataQueue = [];
+    state.metadataQueuedIds.clear();
+    clearTimeout(state.metadataContinuationTimer);
+    state.metadataContinuationTimer = null;
+    clearTimeout(state.metadataRetryTimer);
+    state.metadataRetryTimer = null;
+    clearTimeout(state.metadataRecoveryTimer);
+    state.metadataRecoveryTimer = null;
+    saveMetadataCycle();
+    completeMetadataCycle();
+    scheduleMetadataHeaderUpdate();
+    updateMetadataStatusModal();
+    showToast('Arresto richiesto', 'La coda è stata svuotata. Le richieste già attive stanno terminando.', '!', 4500, { kind:'warning' });
   }
   const PROFILE_SETTINGS_TABS = Object.freeze([
     { id:'identity', label:'Identità', icon:'◉' },
@@ -2063,6 +2086,26 @@
   // I titoli con soli metadati supplementari mancanti restano fuori coda.
   function bindMetadataStatusActions() {
     $('#openSourceDetails')?.addEventListener('click',()=>{closeModal();state.profileSettingsTab='data';location.hash='#/settings';route();});
+    $('#stopMetadata')?.addEventListener('click', () => {
+      state.metadataStopRequested = true;
+      state.metadataAutoHalted = true;
+      state.metadataBackgroundStarted = false;
+      state.metadataRecoveryScheduled = false;
+      state.metadataRecoveryDone = true;
+      state.metadataQueue = [];
+      state.metadataQueuedIds.clear();
+      clearTimeout(state.metadataContinuationTimer);
+      state.metadataContinuationTimer = null;
+      clearTimeout(state.metadataRetryTimer);
+      state.metadataRetryTimer = null;
+      clearTimeout(state.metadataRecoveryTimer);
+      state.metadataRecoveryTimer = null;
+      saveMetadataCycle();
+      completeMetadataCycle();
+      scheduleMetadataHeaderUpdate();
+      updateMetadataStatusModal();
+      showToast('Arresto richiesto', 'La coda è stata svuotata. Le richieste già attive stanno terminando.', '!', 4500, { kind:'warning' });
+    });
     $('#openMetadataIssues')?.addEventListener('click',()=>showMetadataIssues('all'));
     $('#retryMetadata')?.addEventListener('click',()=>{
       const retryable=[...state.series,...state.movies].filter(metadataRetryableItem);
@@ -3665,6 +3708,11 @@
     const delay = Math.max(1000, dateMs(nextRetryAt) - Date.now());
     state.metadataRetryTimer = setTimeout(() => {
       state.metadataRetryTimer = null;
+      if (state.metadataStopRequested || state.metadataAutoHalted) {
+        state.metadataBackgroundStarted = false;
+        scheduleMetadataHeaderUpdate();
+        return;
+      }
       state.metadataBackgroundStarted = false;
       state.metadataRecoveryDone = false;
       scheduleBackgroundMetadataSync(true);
@@ -3672,7 +3720,7 @@
     return nextRetryAt;
   }
   function scheduleMetadataRecoveryPass() {
-    if (!navigator.onLine || !state.settings.publicMetadataEnabled || !publicMetadataApi() || !state.metadataBackgroundStarted || state.metadataRecoveryScheduled) return;
+    if (state.metadataStopRequested || state.metadataAutoHalted || !navigator.onLine || !state.settings.publicMetadataEnabled || !publicMetadataApi() || !state.metadataBackgroundStarted || state.metadataRecoveryScheduled) return;
     const failedSeries = state.series.filter(item => item.publicMetadata?.failedAt && !item.publicMetadata?.manualRetryRequired);
     const failedMovies = state.movies.filter(item => item.publicMetadata?.failedAt && !item.publicMetadata?.manualRetryRequired);
     const failed = [...failedSeries.map(item => ({ kind:'series', item })), ...failedMovies.map(item => ({ kind:'movie', item }))]
@@ -3703,7 +3751,7 @@
   }
 
   function scheduleNextMetadataBatch() {
-    if (state.metadataContinuationTimer || !navigator.onLine || !state.settings.publicMetadataEnabled || libraryIsEmpty()) return;
+    if (state.metadataStopRequested || state.metadataAutoHalted || state.metadataContinuationTimer || !navigator.onLine || !state.settings.publicMetadataEnabled || libraryIsEmpty()) return;
     if (state.metadataTargetedRepairActive) {
       state.metadataTargetedRepairActive = false;
       state.metadataAutoHalted = true;
@@ -3777,6 +3825,11 @@
     }
     state.metadataContinuationTimer = setTimeout(() => {
       state.metadataContinuationTimer = null;
+      if (state.metadataStopRequested || state.metadataAutoHalted) {
+        state.metadataBackgroundStarted = false;
+        scheduleMetadataHeaderUpdate();
+        return;
+      }
       state.metadataAutoBudget = 72;
       state.metadataBackgroundStarted = false;
       scheduleBackgroundMetadataSync(true);
@@ -3785,7 +3838,7 @@
 
   function pumpMetadataQueue() {
     scheduleMetadataHeaderUpdate();
-    while (state.metadataRunning < state.metadataConcurrency && state.metadataQueue.length) {
+    while (!state.metadataStopRequested && !state.metadataAutoHalted && state.metadataRunning < state.metadataConcurrency && state.metadataQueue.length) {
       const task = state.metadataQueue.shift();
       state.metadataRunning++;
       scheduleMetadataHeaderUpdate();
@@ -3814,7 +3867,7 @@
           state.metadataRunning--;
           state.metadataQueuedIds.delete(`${task.kind}:${task.item.id}`);
           scheduleMetadataHeaderUpdate();
-          if (state.metadataRunning === 0 && state.metadataQueue.length === 0) {
+          if (!state.metadataStopRequested && !state.metadataAutoHalted && state.metadataRunning === 0 && state.metadataQueue.length === 0) {
             scheduleNextMetadataBatch();
           }
           pumpMetadataQueue();
@@ -3823,7 +3876,7 @@
   }
 
   function queuePublicMetadata(kind, items, options = {}) {
-    if (!state.settings.publicMetadataEnabled || (!state.settings.autoEnrichVisible && !options.force && !options.unlimited)) return;
+    if (state.metadataStopRequested || state.metadataAutoHalted || !state.settings.publicMetadataEnabled || (!state.settings.autoEnrichVisible && !options.force && !options.unlimited)) return;
     for (const item of items || []) {
       const key = `${kind}:${item.id}`;
       const queued = state.metadataQueue.find(task => `${task.kind}:${task.item.id}` === key);
@@ -5565,6 +5618,12 @@
     document.addEventListener('pointerdown', () => { state.lastUserInteractionAt = Date.now(); }, { passive: true });
     document.addEventListener('keydown', () => { state.lastUserInteractionAt = Date.now(); }, { passive: true });
     document.addEventListener('click', event => {
+      if (event.target.closest?.('#stopMetadata')) {
+        event.preventDefault();
+        event.stopPropagation();
+        stopMetadataUpdate();
+        return;
+      }
       const link = event.target.closest?.('a[href^="#/"]');
       if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       const rawTarget = link.getAttribute('href').replace(/^#\//, '');

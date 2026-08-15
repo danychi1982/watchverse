@@ -975,10 +975,9 @@ main:focus { outline: none; }
 .metadata-top-actions { position:sticky; top:76px; z-index:2; display:flex; flex-wrap:wrap; gap:8px; margin:0 -20px; padding:10px 20px; background:#111114; border-block:1px solid var(--line); box-shadow:0 8px 12px rgba(0,0,0,.12); }
 .metadata-top-actions button { min-width:150px; }
 .metadata-live-line { display:flex; align-items:center; gap:10px; margin:0; color:#d9d9dd; }
-.metadata-stop-link { appearance:none; border:0; padding:0; background:none; color:var(--danger-text); text-decoration:underline; font:inherit; font-weight:850; cursor:pointer; }
-.metadata-stop-link:hover, .metadata-stop-link:focus-visible { color:var(--danger); }
-.metadata-inline-action { display:block; margin-top:6px; padding:0; border:0; background:none; color:var(--danger-text); text-decoration:underline; font:inherit; font-weight:850; cursor:pointer; }
-.metadata-inline-action:hover, .metadata-inline-action:focus-visible { color:var(--danger); }
+.metadata-stop-link, .metadata-inline-action { appearance:none; border:0; background:none; color:var(--accent-2) !important; text-decoration:underline; text-underline-offset:3px; font:inherit; font-weight:850; cursor:pointer; }
+.metadata-stop-link:hover, .metadata-stop-link:focus-visible, .metadata-inline-action:hover, .metadata-inline-action:focus-visible { color:var(--text); }
+.metadata-inline-action { display:block; margin-top:6px; padding:0; }
 .metadata-detail-warning { margin:12px 0 0; padding:12px 14px; border:1px solid color-mix(in srgb, var(--accent) 55%, var(--line)); border-radius:12px; background:color-mix(in srgb, var(--accent) 12%, var(--surface-2)); color:var(--text); }
 .metadata-back-button { margin-bottom:12px; }
 .provider-logo-list { display:flex; flex-wrap:wrap; gap:10px; }
