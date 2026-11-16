@@ -1,0 +1,60 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function ownsAccount(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function validRevision() {
+      return !request.resource.data.keys().hasAny(['revision'])
+        || (request.resource.data.revision is int && request.resource.data.revision >= 1);
+    }
+
+    function validTimestamps() {
+      return !request.resource.data.keys().hasAny(['updatedAt'])
+        || request.resource.data.updatedAt is timestamp;
+    }
+
+    match /accounts/{uid} {
+      allow read, write: if ownsAccount(uid);
+
+      match /profiles/{profileId} {
+        allow read, write: if ownsAccount(uid)
+          && validRevision()
+          && validTimestamps();
+
+        match /settings/{settingId} {
+          allow read, write: if ownsAccount(uid)
+            && validRevision()
+            && validTimestamps();
+        }
+
+        match /library/{recordId} {
+          allow read, write: if ownsAccount(uid)
+            && validRevision()
+            && validTimestamps();
+        }
+
+        match /progress/{progressId} {
+          allow read, write: if ownsAccount(uid)
+            && validRevision()
+            && validTimestamps();
+        }
+
+        match /syncConflicts/{conflictId} {
+          allow read, write: if ownsAccount(uid);
+        }
+      }
+    }
+
+    // Nessun accesso client ai dati non previsti dal modello.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
